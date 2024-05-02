@@ -28,6 +28,6 @@ model Leaderboard {
   name     String   @db.VarChar(64)
   score    Int      @default(0)
   duration Int      @default(0)
-  time     DateTime
+  time     DateTime @updatedAt
   ip       String   @db.VarChar(64)
 }

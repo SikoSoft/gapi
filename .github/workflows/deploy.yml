@@ -30,6 +30,8 @@ jobs:
           npm run build --if-present
           npx prisma migrate deploy
           popd
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1
         id: fa

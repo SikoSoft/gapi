@@ -50,7 +50,9 @@ export async function leaderboard(
     newRecordId = leaderboard.id;
   }
 
-  const leaderboardScores = await prisma.leaderboard.findMany();
+  const leaderboardScores = await prisma.leaderboard.findMany({
+    orderBy: { score: "desc" },
+  });
   const leaderboardRanks = leaderboardScores.map((game, index) => ({
     ...game,
     rank: index + 1,

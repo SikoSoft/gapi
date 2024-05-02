@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
@@ -21,4 +21,13 @@ model Action {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   occurredAt DateTime @default(now())
+}
+
+model Leaderboard {
+  id       Int      @id @default(autoincrement())
+  name     String   @db.VarChar(64)
+  score    Int      @default(0)
+  duration Int      @default(0)
+  time     DateTime
+  ip       String   @db.VarChar(64)
 }

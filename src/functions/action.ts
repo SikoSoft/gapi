@@ -24,11 +24,15 @@ export async function action(
     case "POST":
       const body = (await request.json()) as RequestBody;
       if (request.params.id) {
+        const occurredAt = new Date(body.occurredAt);
+        context.log(
+          `BODY occurredAt: (${body.occurredAt}) | occurredAt: (${occurredAt})`
+        );
         action = await prisma.action.update({
           data: {
             type: body.type,
             desc: body.desc,
-            occurredAt: new Date(body.occurredAt),
+            occurredAt,
           },
           where: { id: parseInt(request.params.id) },
         });
@@ -59,7 +63,7 @@ export async function action(
         },
       });
       const total = await prisma.action.count();
-      return jsonReply({ actions, total });
+      return jsonReply({ time: new Date().toISOString(), actions, total });
   }
 }
 

@@ -13,6 +13,7 @@ declare interface RequestBody {
   desc: string;
   type: string;
   occurredAt?: string;
+  timeZone: string;
 }
 
 export async function action(
@@ -24,9 +25,14 @@ export async function action(
     case "POST":
       const body = (await request.json()) as RequestBody;
       if (request.params.id) {
-        const occurredAt = new Date(body.occurredAt);
+        const timeZone = parseInt(body.timeZone);
+        const serverTimeZone = new Date().getTimezoneOffset();
+        const timeZoneDiff = serverTimeZone - timeZone;
+        const occurredAt = new Date(
+          new Date(body.occurredAt).getTime() - timeZoneDiff * 60000
+        );
         context.log(
-          `BODY occurredAt: (${body.occurredAt}) | occurredAt: (${occurredAt})`
+          `ID: ${request.params.id} ::: BODY occurredAt: (${body.occurredAt}) | occurredAt: (${occurredAt}) | timeZone: (${timeZone}) | serverTimeZone: (${serverTimeZone}) | timeZoneDiff: (${timeZoneDiff})`
         );
         action = await prisma.action.update({
           data: {

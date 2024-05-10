@@ -21,16 +21,16 @@ model Action {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   occurredAt DateTime @default(now())
-  //  tags       ActionTag[]
+  tags       ActionTag[]
 }
 
-// model ActionTag {
-//   actionId Int    @default(0)
-//   tagId    Int    @default(0)
-//   action   Action @relation(fields: [actionId], references: [id])
-//   tag Tag @relation(fields: [tagId], references: [id])
-//   @@id([actionId, tagId])
-//}
+model ActionTag {
+  actionId Int    @default(0)
+  tagId    Int    @default(0)
+  action   Action @relation(fields: [actionId], references: [id])
+  tag Tag @relation(fields: [tagId], references: [id])
+  @@id([actionId, tagId])
+}
 
 model Leaderboard {
   id       Int      @id @default(autoincrement())
@@ -41,8 +41,8 @@ model Leaderboard {
   ip       String   @db.VarChar(64)
 }
 
-// model Tag {
-//   id    Int    @id @default(autoincrement())
-//   label String @db.VarChar(128)
-//   actionTag ActionTag
-// }
+model Tag {
+  id    Int    @id @default(autoincrement())
+  label String @db.VarChar(128)
+  actionTag ActionTag[]
+}

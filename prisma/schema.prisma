@@ -15,21 +15,23 @@ datasource db {
 }
 
 model Action {
-  id         Int      @id @default(autoincrement())
-  type       String   @db.VarChar(64)
-  desc       String   @db.VarChar(255)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  occurredAt DateTime @default(now())
+  id         Int         @id @default(autoincrement())
+  type       String      @db.VarChar(64)
+  desc       String      @db.VarChar(255)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  occurredAt DateTime    @default(now())
   tags       ActionTag[]
 }
 
 model ActionTag {
   actionId Int    @default(0)
-  tagId    Int    @default(0)
+  //tagId    Int    @default(0)
+  label    String @db.VarChar(128)
   action   Action @relation(fields: [actionId], references: [id])
-  tag Tag @relation(fields: [tagId], references: [id])
-  @@id([actionId, tagId])
+  tag      Tag    @relation(fields: [label], references: [label])
+
+  @@id([actionId, label])
 }
 
 model Leaderboard {
@@ -42,7 +44,7 @@ model Leaderboard {
 }
 
 model Tag {
-  id    Int    @id @default(autoincrement())
-  label String @db.VarChar(128)
+  //id    Int    @id @default(autoincrement())
+  label     String      @unique @db.VarChar(128)
   actionTag ActionTag[]
 }

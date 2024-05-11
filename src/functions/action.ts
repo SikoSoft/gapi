@@ -6,6 +6,7 @@ import {
 } from "@azure/functions";
 import { jsonReply, prisma } from "..";
 import { Action } from "@prisma/client";
+import { Tagging } from "../lib/Tagging";
 
 const perPage = 25;
 
@@ -14,6 +15,7 @@ declare interface RequestBody {
   type: string;
   occurredAt?: string;
   timeZone: string;
+  tags: string[];
 }
 
 export async function action(
@@ -42,6 +44,7 @@ export async function action(
           },
           where: { id: parseInt(request.params.id) },
         });
+        Tagging.syncActionTags(action.id, body.tags);
         return jsonReply({ action });
       }
       action = await prisma.action.create({
@@ -50,6 +53,7 @@ export async function action(
           desc: body.desc,
         },
       });
+      Tagging.syncActionTags(action.id, body.tags);
       return jsonReply({ action });
     case "DELETE":
       action = await prisma.action.delete({
@@ -61,15 +65,26 @@ export async function action(
       if (request.query.has("start")) {
         start = parseInt(request.query.get("start") || "");
       }
-      const actions = await prisma.action.findMany({
+      const rawActions = await prisma.action.findMany({
         skip: start,
         take: perPage,
         orderBy: {
           occurredAt: "desc",
         },
+        include: {
+          tags: true,
+        },
       });
+      const actions = rawActions.map((action) => ({
+        ...action,
+        tags: action.tags.map((tag) => tag.label),
+      }));
       const total = await prisma.action.count();
-      return jsonReply({ time: new Date().toISOString(), actions, total });
+      return jsonReply({
+        time: new Date().toISOString(),
+        actions,
+        total,
+      });
   }
 }
 

@@ -26,7 +26,8 @@ export async function tag(
     case "DELETE":
 
     case "GET":
-      const tags = await prisma.tag.findMany();
+      const rawTags = await prisma.tag.findMany();
+      const tags = rawTags.map((tag) => tag.label);
       return jsonReply({ tags });
   }
 

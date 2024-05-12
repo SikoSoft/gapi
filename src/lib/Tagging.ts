@@ -7,12 +7,20 @@ export class Tagging {
   }
 
   static async saveTags(tags: string[]) {
-    await prisma.tag.createMany({ data: tags.map((tag) => ({ label: tag })) });
+    await prisma.tag.createMany({
+      data: tags.map((tag) => ({ label: tag })),
+      skipDuplicates: true,
+    });
   }
 
   static async saveActionTags(actionId: number, tags: string[]) {
+    console.log(
+      "saveActionTags",
+      tags.map((tag) => ({ label: tag, actionId }))
+    );
     await prisma.actionTag.createMany({
       data: tags.map((tag) => ({ label: tag, actionId })),
+      skipDuplicates: true,
     });
   }
 }

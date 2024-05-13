@@ -4,9 +4,10 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { jsonReply, prisma } from "..";
+import { jsonReply, prisma, userIdFromRequest } from "..";
 import { Action } from "@prisma/client";
 import { Tagging } from "../lib/Tagging";
+import { v4 as uuidv4 } from "uuid";
 
 const perPage = 25;
 
@@ -42,7 +43,10 @@ export async function action(
             desc: body.desc,
             occurredAt,
           },
-          where: { id: parseInt(request.params.id) },
+          where: {
+            id: parseInt(request.params.id),
+            userId: userIdFromRequest(request),
+          },
         });
         Tagging.syncActionTags(action.id, body.tags);
         return jsonReply({ action });
@@ -51,13 +55,17 @@ export async function action(
         data: {
           type: body.type,
           desc: body.desc,
+          userId: userIdFromRequest(request),
         },
       });
       Tagging.syncActionTags(action.id, body.tags);
       return jsonReply({ action });
     case "DELETE":
       action = await prisma.action.delete({
-        where: { id: parseInt(request.params.id) },
+        where: {
+          id: parseInt(request.params.id),
+          userId: userIdFromRequest(request),
+        },
       });
       return jsonReply({ action });
     case "GET":
@@ -68,6 +76,9 @@ export async function action(
       const rawActions = await prisma.action.findMany({
         skip: start,
         take: perPage,
+        where: {
+          userId: userIdFromRequest(request),
+        },
         orderBy: {
           occurredAt: "desc",
         },

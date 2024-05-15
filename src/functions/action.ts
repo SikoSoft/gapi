@@ -5,11 +5,13 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import { jsonReply, prisma, userIdFromRequest } from "..";
-import { Action } from "@prisma/client";
+import { Action, Prisma } from "@prisma/client";
 import { Tagging } from "../lib/Tagging";
 import { v4 as uuidv4 } from "uuid";
 
 const perPage = 25;
+
+const oneOfIsTags = ["food"];
 
 declare interface RequestBody {
   desc: string;
@@ -73,12 +75,26 @@ export async function action(
       if (request.query.has("start")) {
         start = parseInt(request.query.get("start") || "");
       }
+
+      const where = Prisma.validator(
+        prisma,
+        "action",
+        "findMany",
+        "where"
+      )({
+        userId: userIdFromRequest(request),
+        OR: [
+          ...oneOfIsTags.map((tag) => ({
+            tags: { some: { label: tag } },
+          })),
+          { tags: { none: {} } },
+        ],
+      });
+
       const rawActions = await prisma.action.findMany({
         skip: start,
         take: perPage,
-        where: {
-          userId: userIdFromRequest(request),
-        },
+        where,
         orderBy: {
           occurredAt: "desc",
         },
@@ -90,7 +106,7 @@ export async function action(
         ...action,
         tags: action.tags.map((tag) => tag.label),
       }));
-      const total = await prisma.action.count();
+      const total = await prisma.action.count({ where });
       return jsonReply({
         time: new Date().toISOString(),
         actions,

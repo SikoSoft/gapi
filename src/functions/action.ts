@@ -97,26 +97,37 @@ export async function action(
         "where"
       )({
         userId: userIdFromRequest(request),
-        ...(filter.tagging.containsOneOf.length
-          ? {
-              OR: [
-                ...filter.tagging.containsOneOf.map((tag) => ({
-                  tags: { some: { label: tag } },
-                })),
-                //filter.includeUntagged ? { tags: { none: {} } } : {},
-              ],
-            }
-          : {}),
-        ...(filter.tagging.containsAllOf
-          ? {
-              AND: [
-                ...filter.tagging.containsAllOf.map((tag) => ({
-                  tags: { some: { label: tag } },
-                })),
-                //filter.includeUntagged ? { tags: { none: {} } } : {},
-              ],
-            }
-          : {}),
+        OR: [
+          {
+            ...(filter.includeUntagged ? { tags: { none: {} } } : {}),
+          },
+          {
+            AND: [
+              {
+                ...(filter.tagging.containsOneOf.length
+                  ? {
+                      OR: [
+                        ...filter.tagging.containsOneOf.map((tag) => ({
+                          tags: { some: { label: tag } },
+                        })),
+                      ],
+                    }
+                  : {}),
+              },
+              {
+                ...(filter.tagging.containsAllOf
+                  ? {
+                      AND: [
+                        ...filter.tagging.containsAllOf.map((tag) => ({
+                          tags: { some: { label: tag } },
+                        })),
+                      ],
+                    }
+                  : {}),
+              },
+            ],
+          },
+        ],
       });
 
       console.log(JSON.stringify(where, null, 2));

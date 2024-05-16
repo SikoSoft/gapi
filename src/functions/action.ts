@@ -8,7 +8,7 @@ import { jsonReply, prisma, userIdFromRequest } from "..";
 import { Action, Prisma } from "@prisma/client";
 import { Tagging } from "../lib/Tagging";
 import { v4 as uuidv4 } from "uuid";
-import { ListFilters, ListFilterType } from "../models/ListFilters";
+import { ListFilter, ListFilterType } from "../models/ListFilter";
 
 const perPage = 25;
 
@@ -76,7 +76,7 @@ export async function action(
       if (request.query.has("start")) {
         start = parseInt(request.query.get("start") || "");
       }
-      let filter: ListFilters = {
+      let filter: ListFilter = {
         tagging: {
           [ListFilterType.CONTAINS_ONE_OF]: [],
           [ListFilterType.CONTAINS_ALL_OF]: [],

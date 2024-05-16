@@ -76,20 +76,17 @@ export async function action(
       if (request.query.has("start")) {
         start = parseInt(request.query.get("start") || "");
       }
-
       let filter: ListFilters = {
         tagging: {
           [ListFilterType.CONTAINS_ONE_OF]: [],
           [ListFilterType.CONTAINS_ALL_OF]: [],
         },
         includeUntagged: true,
+        includeAll: true,
       };
       if (request.query.has("filter")) {
         filter = JSON.parse(request.query.get("filter"));
       }
-
-      console.log("FILTER", filter);
-
       const where = Prisma.validator(
         prisma,
         "action",
@@ -129,9 +126,6 @@ export async function action(
           },
         ],
       });
-
-      console.log(JSON.stringify(where, null, 2));
-
       const rawActions = await prisma.action.findMany({
         skip: start,
         take: perPage,

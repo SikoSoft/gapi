@@ -8,6 +8,7 @@ import { jsonReply, prisma, userIdFromRequest } from "..";
 import { Action, Prisma } from "@prisma/client";
 import { Tagging } from "../lib/Tagging";
 import { v4 as uuidv4 } from "uuid";
+import { ListFilters, ListFilterType } from "../models/ListFilters";
 
 const perPage = 25;
 
@@ -76,6 +77,19 @@ export async function action(
         start = parseInt(request.query.get("start") || "");
       }
 
+      let filter: ListFilters = {
+        tagging: {
+          [ListFilterType.CONTAINS_ONE_OF]: [],
+          [ListFilterType.CONTAINS_ALL_OF]: [],
+        },
+        includeUntagged: true,
+      };
+      if (request.query.has("filter")) {
+        filter = JSON.parse(request.query.get("filter"));
+      }
+
+      console.log("FILTER", filter);
+
       const where = Prisma.validator(
         prisma,
         "action",
@@ -83,13 +97,29 @@ export async function action(
         "where"
       )({
         userId: userIdFromRequest(request),
-        OR: [
-          ...oneOfIsTags.map((tag) => ({
-            tags: { some: { label: tag } },
-          })),
-          { tags: { none: {} } },
-        ],
+        ...(filter.tagging.containsOneOf.length
+          ? {
+              OR: [
+                ...filter.tagging.containsOneOf.map((tag) => ({
+                  tags: { some: { label: tag } },
+                })),
+                //filter.includeUntagged ? { tags: { none: {} } } : {},
+              ],
+            }
+          : {}),
+        ...(filter.tagging.containsAllOf
+          ? {
+              AND: [
+                ...filter.tagging.containsAllOf.map((tag) => ({
+                  tags: { some: { label: tag } },
+                })),
+                //filter.includeUntagged ? { tags: { none: {} } } : {},
+              ],
+            }
+          : {}),
       });
+
+      console.log(JSON.stringify(where, null, 2));
 
       const rawActions = await prisma.action.findMany({
         skip: start,

@@ -85,7 +85,7 @@ export async function action(
         includeAll: true,
       };
       if (request.query.has("filter")) {
-        filter = JSON.parse(request.query.get("filter"));
+        filter = JSON.parse(request.query.get("filter")) as ListFilter;
       }
       const where = Prisma.validator(
         prisma,
@@ -94,37 +94,41 @@ export async function action(
         "where"
       )({
         userId: userIdFromRequest(request),
-        OR: [
-          {
-            ...(filter.includeUntagged ? { tags: { none: {} } } : {}),
-          },
-          {
-            AND: [
-              {
-                ...(filter.tagging.containsOneOf.length
-                  ? {
-                      OR: [
-                        ...filter.tagging.containsOneOf.map((tag) => ({
-                          tags: { some: { label: tag } },
-                        })),
-                      ],
-                    }
-                  : {}),
-              },
-              {
-                ...(filter.tagging.containsAllOf
-                  ? {
-                      AND: [
-                        ...filter.tagging.containsAllOf.map((tag) => ({
-                          tags: { some: { label: tag } },
-                        })),
-                      ],
-                    }
-                  : {}),
-              },
-            ],
-          },
-        ],
+        ...(!filter.includeAll
+          ? {
+              OR: [
+                {
+                  ...(filter.includeUntagged ? { tags: { none: {} } } : {}),
+                },
+                {
+                  AND: [
+                    {
+                      ...(filter.tagging.containsOneOf.length
+                        ? {
+                            OR: [
+                              ...filter.tagging.containsOneOf.map((tag) => ({
+                                tags: { some: { label: tag } },
+                              })),
+                            ],
+                          }
+                        : {}),
+                    },
+                    {
+                      ...(filter.tagging.containsAllOf
+                        ? {
+                            AND: [
+                              ...filter.tagging.containsAllOf.map((tag) => ({
+                                tags: { some: { label: tag } },
+                              })),
+                            ],
+                          }
+                        : {}),
+                    },
+                  ],
+                },
+              ],
+            }
+          : {}),
       });
       const rawActions = await prisma.action.findMany({
         skip: start,

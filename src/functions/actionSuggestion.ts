@@ -13,6 +13,7 @@ export async function actionSuggestion(
   context.log(`Http function processed request for url "${request.url}"`);
 
   const actions = await prisma.action.findMany({
+    take: 10,
     where: { desc: { startsWith: request.params.query } },
   });
   const suggestions = [

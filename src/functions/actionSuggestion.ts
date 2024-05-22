@@ -12,7 +12,9 @@ export async function actionSuggestion(
 ): Promise<HttpResponseInit> {
   context.log(`Http function processed request for url "${request.url}"`);
 
-  const actions = await prisma.action.findMany();
+  const actions = await prisma.action.findMany({
+    where: { desc: { startsWith: request.params.query } },
+  });
   const suggestions = [
     ...new Set(actions.map((row) => row.desc.toLowerCase().trim())),
   ];
@@ -28,4 +30,5 @@ app.http("actionSuggestion", {
   methods: ["GET"],
   authLevel: "anonymous",
   handler: actionSuggestion,
+  route: "actionSuggestion/{query?}",
 });

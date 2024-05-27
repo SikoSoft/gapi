@@ -8,7 +8,11 @@ import { jsonReply, prisma, userIdFromRequest } from "..";
 import { Action, Prisma } from "@prisma/client";
 import { Tagging } from "../lib/Tagging";
 import { v4 as uuidv4 } from "uuid";
-import { ListFilter, ListFilterType } from "../models/ListFilter";
+import {
+  ListFilter,
+  ListFilterTimeType,
+  ListFilterType,
+} from "../models/ListFilter";
 
 const perPage = 25;
 
@@ -81,12 +85,27 @@ export async function action(
           [ListFilterType.CONTAINS_ONE_OF]: [],
           [ListFilterType.CONTAINS_ALL_OF]: [],
         },
+        time: {
+          type: ListFilterTimeType.ALL_TIME,
+        },
         includeUntagged: true,
         includeAll: true,
       };
       if (request.query.has("filter")) {
         filter = JSON.parse(request.query.get("filter")) as ListFilter;
       }
+      console.log("###########", filter);
+      let startTime: Date;
+      let endTime: Date;
+      if (filter.time.type === ListFilterTimeType.EXACT_DATE) {
+        startTime = new Date(filter.time.date);
+        endTime = new Date(startTime.getTime() + 86400000);
+      }
+      if (filter.time.type === ListFilterTimeType.RANGE) {
+        startTime = new Date(filter.time.start);
+        endTime = new Date(new Date(filter.time.end).getTime() + 86400000);
+      }
+
       const where = Prisma.validator(
         prisma,
         "action",
@@ -96,33 +115,51 @@ export async function action(
         userId: userIdFromRequest(request),
         ...(!filter.includeAll
           ? {
-              OR: [
+              AND: [
                 {
-                  ...(filter.includeUntagged ? { tags: { none: {} } } : {}),
+                  ...(filter.time.type === ListFilterTimeType.ALL_TIME
+                    ? { occurredAt: { lte: new Date() } }
+                    : {
+                        AND: [
+                          { occurredAt: { gte: startTime } },
+                          { occurredAt: { lte: endTime } },
+                        ],
+                      }),
                 },
                 {
-                  AND: [
+                  OR: [
                     {
-                      ...(filter.tagging.containsOneOf.length
-                        ? {
-                            OR: [
-                              ...filter.tagging.containsOneOf.map((tag) => ({
-                                tags: { some: { label: tag } },
-                              })),
-                            ],
-                          }
-                        : {}),
+                      ...(filter.includeUntagged ? { tags: { none: {} } } : {}),
                     },
                     {
-                      ...(filter.tagging.containsAllOf
-                        ? {
-                            AND: [
-                              ...filter.tagging.containsAllOf.map((tag) => ({
-                                tags: { some: { label: tag } },
-                              })),
-                            ],
-                          }
-                        : {}),
+                      AND: [
+                        {
+                          ...(filter.tagging.containsOneOf.length
+                            ? {
+                                OR: [
+                                  ...filter.tagging.containsOneOf.map(
+                                    (tag) => ({
+                                      tags: { some: { label: tag } },
+                                    })
+                                  ),
+                                ],
+                              }
+                            : {}),
+                        },
+                        {
+                          ...(filter.tagging.containsAllOf
+                            ? {
+                                AND: [
+                                  ...filter.tagging.containsAllOf.map(
+                                    (tag) => ({
+                                      tags: { some: { label: tag } },
+                                    })
+                                  ),
+                                ],
+                              }
+                            : {}),
+                        },
+                      ],
                     },
                   ],
                 },

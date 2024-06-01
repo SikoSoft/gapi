@@ -11,7 +11,9 @@ import {
   ListFilter,
   ListFilterTimeType,
   ListFilterType,
-} from "../models/ListFilter";
+  ListSortProperty,
+  ListSortDirection,
+} from "api-spec/models/List";
 
 const perPage = 25;
 
@@ -175,7 +177,7 @@ export async function action(
           take: perPage,
           where,
           orderBy: {
-            occurredAt: "desc",
+            [ListSortProperty.OCCURRED_AT]: ListSortDirection.DESC,
           },
           include: {
             tags: true,

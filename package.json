@@ -2,12 +2,12 @@
   "name": "gapi",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/src/functions/*.js",
+  "main": "dist/functions/*.mjs",
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsc",
+    "build": "tsup",
     "build:production": "npm run prestart && npm prune --production",
-    "watch": "tsc --w",
+    "watch": "tsup --watch",
     "prestart": "npm run clean && npm run build && func extensions install",
     "start:host": "func start --port 9999",
     "start": "npm-run-all --parallel start:host watch"
@@ -22,9 +22,11 @@
     "prisma": "^5.13.0",
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.2",
+    "tsup": "^8.0.2",
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "api-spec": "github:SikoSoft/api-spec#1.0.2",
     "@azure/functions": "^4.4.0",
     "@prisma/client": "^5.13.0",
     "uuid": "^9.0.1"

@@ -15,6 +15,7 @@ export async function actionSuggestion(
   const actions = await prisma.action.findMany({
     take: 10,
     where: { desc: { startsWith: request.params.query } },
+    orderBy: { desc: "asc" },
   });
   const suggestions = [
     ...new Set(actions.map((row) => row.desc.toLowerCase().trim())),

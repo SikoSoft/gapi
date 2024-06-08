@@ -13,6 +13,7 @@ import {
   ListFilterType,
   ListSortProperty,
   ListSortDirection,
+  ListSort,
 } from "api-spec/models/List";
 
 const perPage = 25;
@@ -40,6 +41,17 @@ function getFilter(request: HttpRequest): ListFilter {
     },
     includeUntagged: true,
     includeAll: true,
+  };
+}
+
+function getSort(request: HttpRequest): ListSort {
+  if (request.query.has("sort")) {
+    return JSON.parse(request.query.get("sort")) as ListSort;
+  }
+
+  return {
+    property: ListSortProperty.OCCURRED_AT,
+    direction: ListSortDirection.DESC,
   };
 }
 
@@ -169,6 +181,7 @@ export async function action(
         : 0;
       const userId = userIdFromRequest(request);
       const filter = getFilter(request);
+      const sort = getSort(request);
       const where = getFilteredConditions(userId, filter);
 
       const actions = (
@@ -177,7 +190,7 @@ export async function action(
           take: perPage,
           where,
           orderBy: {
-            [ListSortProperty.OCCURRED_AT]: ListSortDirection.DESC,
+            [sort.property]: sort.direction,
           },
           include: {
             tags: true,

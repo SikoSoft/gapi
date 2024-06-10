@@ -86,8 +86,6 @@ function getFilteredConditions(userId: string, filter: ListFilter) {
                       desc: { [textFilter.type]: textFilter.subStr },
                     })),
                   }),
-
-              //{ desc: { not: "" } }),
             },
             {
               ...(filter.time.type === ListFilterTimeType.ALL_TIME

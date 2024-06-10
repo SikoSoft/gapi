@@ -39,6 +39,7 @@ function getFilter(request: HttpRequest): ListFilter {
     time: {
       type: ListFilterTimeType.ALL_TIME,
     },
+    text: [],
     includeUntagged: true,
     includeAll: true,
   };
@@ -77,6 +78,17 @@ function getFilteredConditions(userId: string, filter: ListFilter) {
     ...(!filter.includeAll
       ? {
           AND: [
+            {
+              ...(filter.text.length === 0
+                ? { desc: { not: "" } }
+                : {
+                    AND: filter.text.map((textFilter) => ({
+                      desc: { [textFilter.type]: textFilter.subStr },
+                    })),
+                  }),
+
+              //{ desc: { not: "" } }),
+            },
             {
               ...(filter.time.type === ListFilterTimeType.ALL_TIME
                 ? { occurredAt: { lte: new Date() } }

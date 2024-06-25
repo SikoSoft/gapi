@@ -4,7 +4,7 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { jsonReply } from "..";
+import { jsonReply, prisma } from "..";
 import { BulkOperation, OperationType } from "api-spec/models/Operation";
 import { Tagging } from "../lib/Tagging";
 
@@ -18,6 +18,12 @@ export async function operation(
 
   console.log("operation", body);
   switch (body.operation.type) {
+    case OperationType.DELETE:
+      for (const actionId of body.actions) {
+        await Tagging.deleteAllActionTags(actionId);
+        await prisma.action.delete({ where: { id: actionId } });
+      }
+      break;
     case OperationType.ADD_TAGS:
       console.log("add tags");
       for (const actionId of body.actions) {

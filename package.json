@@ -26,9 +26,9 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "api-spec": "github:SikoSoft/api-spec#1.2.2",
     "@azure/functions": "^4.4.0",
-    "@prisma/client": "^5.13.0",
+    "@prisma/client": "5.13.0",
+    "api-spec": "github:SikoSoft/api-spec#1.2.2",
     "uuid": "^9.0.1"
   }
 }

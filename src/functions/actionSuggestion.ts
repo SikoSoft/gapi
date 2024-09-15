@@ -12,7 +12,9 @@ export async function actionSuggestion(
 ): Promise<HttpResponseInit> {
   context.log(`Http function processed request for url "${request.url}"`);
 
+  console.log("query", request.params.query);
   const actions = await prisma.action.findMany({
+    distinct: ["desc"],
     take: 10,
     where: { desc: { startsWith: request.params.query } },
     orderBy: { desc: "asc" },

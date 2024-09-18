@@ -16,7 +16,7 @@ export async function actionSuggestion(
   const actions = await prisma.action.findMany({
     distinct: ["desc"],
     take: 10,
-    where: { desc: { startsWith: request.params.query } },
+    where: { desc: { startsWith: request.params.query, mode: "insensitive" } },
     orderBy: { desc: "asc" },
   });
   const suggestions = [

@@ -83,7 +83,10 @@ function getFilteredConditions(userId: string, filter: ListFilter) {
                 ? { desc: { not: "" } }
                 : {
                     AND: filter.text.map((textFilter) => ({
-                      desc: { [textFilter.type]: textFilter.subStr },
+                      desc: {
+                        [textFilter.type]: textFilter.subStr,
+                        mode: "insensitive",
+                      },
                     })),
                   }),
             },

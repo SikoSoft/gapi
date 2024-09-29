@@ -147,6 +147,8 @@ export async function action(
   switch (request.method) {
     case "POST":
       const body = (await request.json()) as RequestBody;
+      const tagLabels = await Tagging.getTagsFromDesc(body.desc);
+      const tags = [...new Set([...tagLabels, ...body.tags])];
       if (request.params.id) {
         const timeZone = parseInt(body.timeZone);
         const serverTimeZone = new Date().getTimezoneOffset();
@@ -168,7 +170,7 @@ export async function action(
             userId: userIdFromRequest(request),
           },
         });
-        Tagging.syncActionTags(action.id, body.tags);
+        Tagging.syncActionTags(action.id, tags);
         return jsonReply({ action });
       }
       action = await prisma.action.create({
@@ -178,7 +180,7 @@ export async function action(
           userId: userIdFromRequest(request),
         },
       });
-      Tagging.syncActionTags(action.id, body.tags);
+      Tagging.syncActionTags(action.id, tags);
       return jsonReply({ action });
     case "DELETE":
       action = await prisma.action.delete({

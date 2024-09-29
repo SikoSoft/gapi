@@ -47,6 +47,21 @@ export class Tagging {
   static async replaceActionTags(actionId: number, tags: string[]) {
     Tagging.deleteAllActionTags(actionId);
   }
+
+  static async getTagsFromDesc(desc: string): Promise<string[]> {
+    const actionIds = (await prisma.action.findMany({ where: { desc } })).map(
+      (action) => action.id
+    );
+    return [
+      ...new Set(
+        (
+          await prisma.actionTag.findMany({
+            where: { actionId: { in: actionIds } },
+          })
+        ).map((actionTag) => actionTag.label)
+      ),
+    ];
+  }
 }
 
 export const tagging = new Tagging();

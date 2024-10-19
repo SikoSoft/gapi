@@ -14,6 +14,9 @@ import {
   ListSortProperty,
   ListSortDirection,
   ListSort,
+  ListContext,
+  ListContextType,
+  ListContextUnit,
 } from "api-spec/models/List";
 
 const perPage = 25;
@@ -54,6 +57,28 @@ function getSort(request: HttpRequest): ListSort {
     property: ListSortProperty.OCCURRED_AT,
     direction: ListSortDirection.DESC,
   };
+}
+
+function getContext(request: HttpRequest): ListContext | null {
+  if (request.query.has("context")) {
+    return JSON.parse(request.query.get("context")) as ListContext;
+  }
+
+  return null;
+}
+
+function secondsFromQuantityUnits(
+  quantity: number,
+  unit: ListContextUnit
+): number {
+  switch (unit) {
+    case ListContextUnit.MINUTE:
+      return quantity * 60;
+    case ListContextUnit.HOUR:
+      return quantity * 3600;
+    case ListContextUnit.DAY:
+      return quantity * 86400;
+  }
 }
 
 function getFilteredConditions(userId: string, filter: ListFilter) {
@@ -216,10 +241,48 @@ export async function action(
         tags: action.tags.map((tag) => tag.label),
       }));
 
+      const listContext = getContext(request);
+      context.log(`The context is ${JSON.stringify(listContext)}`);
+
+      let contextActions: Record<number, Action[]> = {};
+
+      if (listContext) {
+        for (let i = 0; i < actions.length; i++) {
+          let startTime: Date, endTime: Date;
+          if (listContext.type === ListContextType.BEFORE) {
+            endTime = new Date(actions[i].occurredAt.getTime() - 1);
+            startTime = new Date(
+              endTime.getTime() -
+                secondsFromQuantityUnits(listContext.quantity, listContext.unit)
+            );
+          } else if (listContext.type === ListContextType.AFTER) {
+            startTime = new Date(actions[i].occurredAt.getTime() + 1);
+            endTime = new Date(
+              startTime.getTime() +
+                secondsFromQuantityUnits(listContext.quantity, listContext.unit)
+            );
+          }
+          const actionContext = await prisma.action.findMany({
+            where: {
+              AND: [
+                { occurredAt: { gte: startTime } },
+                { occurredAt: { lte: endTime } },
+              ],
+            },
+            include: {
+              tags: true,
+            },
+          });
+
+          contextActions[actions[i].id] = actionContext;
+        }
+      }
+
       const total = await prisma.action.count({ where });
       return jsonReply({
         time: new Date().toISOString(),
         actions,
+        context: contextActions,
         total,
       });
   }

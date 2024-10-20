@@ -269,6 +269,9 @@ export async function action(
                 { occurredAt: { lte: endTime } },
               ],
             },
+            orderBy: {
+              [sort.property]: sort.direction,
+            },
             include: {
               tags: true,
             },

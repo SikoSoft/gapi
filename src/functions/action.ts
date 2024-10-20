@@ -73,11 +73,11 @@ function secondsFromQuantityUnits(
 ): number {
   switch (unit) {
     case ListContextUnit.MINUTE:
-      return quantity * 60;
+      return quantity * 60000;
     case ListContextUnit.HOUR:
-      return quantity * 3600;
+      return quantity * 3600000;
     case ListContextUnit.DAY:
-      return quantity * 86400;
+      return quantity * 86400000;
   }
 }
 

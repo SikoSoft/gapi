@@ -29,8 +29,8 @@ model ActionTag {
   actionId Int    @default(0)
   //tagId    Int    @default(0)
   label    String @db.VarChar(128)
-  action   Action @relation(fields: [actionId], references: [id])
-  tag      Tag    @relation(fields: [label], references: [label])
+  action   Action @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [label], references: [label], onDelete: Cascade)
 
   @@id([actionId, label])
 }
@@ -49,3 +49,41 @@ model Tag {
   label     String      @unique @db.VarChar(128)
   actionTag ActionTag[]
 }
+
+// model User {
+//   id        String     @id @db.Uuid
+//   username  String     @unique @db.VarChar(64)
+//   firstName String     @db.VarChar(64)
+//   lastName  String     @db.VarChar(64)
+//   password  String     @db.VarChar(255)
+//   roles     UserRole[]
+// }
+
+// model UserRole {
+//   userId  String   @db.Uuid
+//   roleId  Int      @default(0)
+//   addedAt DateTime @updatedAt
+//   user    User     @relation(fields: [userId], references: [id])
+
+//   //role    Role     @relation(fields: [roleId], references: [id])
+//   @@id([userId(), roleId()])
+// }
+
+// model Role {
+//   id    Int    @id @default(autoincrement())
+//   label String @db.VarChar(128)
+// }
+
+// model Ott {
+//   userId       String   @db.Uuid
+//   oneTimeToken String   @id @db.VarChar(128)
+//   authToken    String   @db.VarChar(128)
+//   createdAt    DateTime @default(now())
+// }
+
+// model LoginAttempt {
+//   id          Int      @id @default(autoincrement())
+//   userId      String   @db.Uuid
+//   attemptedAt DateTime @updatedAt
+//   ip          String   @db.VarChar(128)
+// }

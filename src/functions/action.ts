@@ -172,8 +172,7 @@ export async function action(
   switch (request.method) {
     case "POST":
       const body = (await request.json()) as RequestBody;
-      const tagLabels = await Tagging.getTagsFromDesc(body.desc);
-      const tags = [...new Set([...tagLabels, ...body.tags])];
+      const tags = [...body.tags];
       if (request.params.id) {
         const timeZone = parseInt(body.timeZone);
         const serverTimeZone = new Date().getTimezoneOffset();

@@ -4,7 +4,13 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { jsonReply, prisma, userIdFromRequest } from "..";
+import {
+  getDefaultFilter,
+  getDefaultSort,
+  jsonReply,
+  prisma,
+  userIdFromRequest,
+} from "..";
 import { Action, Prisma } from "@prisma/client";
 import { Tagging } from "../lib/Tagging";
 import {
@@ -34,18 +40,7 @@ function getFilter(request: HttpRequest): ListFilter {
     return JSON.parse(request.query.get("filter")) as ListFilter;
   }
 
-  return {
-    tagging: {
-      [ListFilterType.CONTAINS_ONE_OF]: [],
-      [ListFilterType.CONTAINS_ALL_OF]: [],
-    },
-    time: {
-      type: ListFilterTimeType.ALL_TIME,
-    },
-    text: [],
-    includeUntagged: true,
-    includeAll: true,
-  };
+  return getDefaultFilter();
 }
 
 function getSort(request: HttpRequest): ListSort {
@@ -53,10 +48,7 @@ function getSort(request: HttpRequest): ListSort {
     return JSON.parse(request.query.get("sort")) as ListSort;
   }
 
-  return {
-    property: ListSortProperty.OCCURRED_AT,
-    direction: ListSortDirection.DESC,
-  };
+  return getDefaultSort();
 }
 
 function getContext(request: HttpRequest): ListContext | null {

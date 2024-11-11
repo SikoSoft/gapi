@@ -50,6 +50,20 @@ model Tag {
   actionTag ActionTag[]
 }
 
+model ListConfig {
+  id   String    @id @db.Uuid
+  name String    @db.VarChar(128)
+  sort ListSort?
+}
+
+model ListSort {
+  //id         Int        @id @default(autoincrement())
+  listId     String     @unique @db.VarChar(128)
+  property   String     @db.VarChar(64)
+  direction  String     @db.VarChar(64)
+  listConfig ListConfig @relation(fields: [listId], references: [id], onDelete: Cascade)
+}
+
 // model User {
 //   id        String     @id @db.Uuid
 //   username  String     @unique @db.VarChar(64)

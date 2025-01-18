@@ -5,8 +5,10 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import {
+  forbiddenReply,
   getDefaultFilter,
   getDefaultSort,
+  introspect,
   jsonReply,
   prisma,
   userIdFromRequest,
@@ -160,6 +162,12 @@ export async function action(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  const introspection = await introspect(request);
+  console.log({ introspection });
+  if (!introspection.isLoggedIn) {
+    return forbiddenReply();
+  }
+
   let action: Action;
   switch (request.method) {
     case "POST":

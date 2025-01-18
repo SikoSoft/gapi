@@ -12,6 +12,9 @@ import {
   ListSortDirection,
   ListSortProperty,
 } from "api-spec/models/List";
+import { Introspection } from "./models/Introspection";
+
+export const defaultUser = "f00300fd-dd74-4e17-8624-b67295cfa053";
 
 export const prisma = new PrismaClient();
 
@@ -28,8 +31,35 @@ export const jsonReply = (
   };
 };
 
+export const forbiddenReply = (): HttpResponseInit => {
+  return {
+    status: 403,
+  };
+};
+
+export const introspect = async (
+  request: HttpRequest
+): Promise<Introspection> => {
+  if (request.headers.has("authorization")) {
+    const authToken = request.headers.get("authorization")!;
+    if (authToken === "test123") {
+      return {
+        isLoggedIn: true,
+        user: {
+          id: defaultUser,
+          sessionId: "",
+        },
+      };
+    }
+  }
+
+  return {
+    isLoggedIn: false,
+  };
+};
+
 export const userIdFromRequest = (request: HttpRequest): string => {
-  return "f00300fd-dd74-4e17-8624-b67295cfa053";
+  return defaultUser;
 };
 
 export function getDefaultFilter(): ListFilter {

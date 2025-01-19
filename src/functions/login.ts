@@ -1,15 +1,43 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import {
+  app,
+  HttpRequest,
+  HttpResponseInit,
+  InvocationContext,
+} from "@azure/functions";
+import { forbiddenReply, jsonReply } from "..";
+import { IdentityManager } from "../lib/IdentityManager";
 
-export async function login(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    context.log(`Http function processed request for url "${request.url}"`);
+declare interface RequestBody {
+  username: string;
+  password: string;
+}
 
-    const name = request.query.get('name') || await request.text() || 'world';
+export async function login(
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> {
+  const body = (await request.json()) as RequestBody;
 
-    return { body: `Hello, ${name}!` };
-};
+  const user = await IdentityManager.getUserByUserName(body.username);
 
-app.http('login', {
-    methods: ['GET', 'POST'],
-    authLevel: 'anonymous',
-    handler: login
+  if (user) {
+    console.log({ user });
+    const passwordIsValid = await IdentityManager.verifyPassword(
+      user.id,
+      body.password
+    );
+    console.log({ passwordIsValid });
+    if (passwordIsValid) {
+      const authToken = await IdentityManager.createSession(user.id);
+      return jsonReply({ authToken });
+    }
+  }
+
+  return forbiddenReply();
+}
+
+app.http("login", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: login,
 });

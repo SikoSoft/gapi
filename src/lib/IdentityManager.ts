@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import Crypto from "crypto";
 import * as argon2 from "argon2";
 import { prisma } from "..";
+import { User } from "../models/Identity";
 
 export interface UserPayload {
   username: string;
@@ -31,23 +32,19 @@ export class IdentityManager {
     return user.id;
   }
 
-  static async getUserById(id: string) {
-    /*
-    const user = await prisma.user.find({ where: { id } });
+  static async getUserById(id: string): Promise<User> {
+    const user = await prisma.user.findFirst({ where: { id } });
     return user;
-    */
   }
 
-  static async getUserByUserName(username: string) {
-    /*
-    const user = await prisma.user.find({
+  static async getUserByUserName(username: string): Promise<User | null> {
+    const user = await prisma.user.findFirst({
       where: {
-        username,
+        username: { equals: username, mode: "insensitive" },
       },
     });
 
     return user;
-    */
   }
 
   static createOtt(userId: string) {
@@ -90,10 +87,7 @@ export class IdentityManager {
     try {
       const user = await IdentityManager.getUserById(userId);
 
-      success = await argon2.verify(
-        "$argon2id$v=19$m=65536,t=3,p=4$FO+FD8E9r0yivYAf/uMEnQ$TGd+1TqTH8kjdm9zOJ2BeaqpFVU2ODe7osuu/acXd0M",
-        "password"
-      );
+      success = await argon2.verify(user.password, password);
     } catch (error) {
       console.error(
         "Something went wrong when trying to verify the password",
@@ -106,15 +100,16 @@ export class IdentityManager {
 
   static async createSession(userId: string): Promise<string> {
     let sessionId = "";
+    let authToken = "";
 
     try {
-      const authToken = IdentityManager.generateRandomToken();
+      authToken = IdentityManager.generateRandomToken();
 
       await prisma.session.create({ data: { userId, authToken } });
     } catch (error) {
       console.error("Something went wrong creating a session");
     }
 
-    return sessionId;
+    return authToken;
   }
 }

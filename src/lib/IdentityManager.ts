@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import Crypto from "crypto";
 import * as argon2 from "argon2";
 import { prisma } from "..";
@@ -7,20 +8,27 @@ export interface UserPayload {
 }
 
 export class IdentityManager {
-  static createUser(
+  static async createUser(
     username: string,
     firstName: string,
     lastName: string,
     password: string
   ) {
-    /*
-    prisma.user.create({
-      username,
-      firstName: firstName || '',
-      lastName: lastName || '',
-      password,
+    const id = uuidv4();
+
+    const passwordHash = await IdentityManager.hashPassword(password);
+
+    const user = await prisma.user.create({
+      data: {
+        id,
+        username,
+        firstName: firstName || "",
+        lastName: lastName || "",
+        password: passwordHash,
+      },
     });
-    */
+
+    return user.id;
   }
 
   static async getUserById(id: string) {
@@ -55,30 +63,34 @@ export class IdentityManager {
   static exchangeOtt() {}
 
   static generateRandomToken(length = 64): string {
-    /*
     return Crypto.randomBytes(length)
-      .toString('base64Url')
-      .replace(/[\W_,]/g, '');
-      */
-    return "";
+      .toString("base64url")
+      .replace(/[\W_,]/g, "");
   }
 
-  static async hashPassword(password: string) {
+  static async hashPassword(password: string): Promise<string> {
+    let passwordHash = "";
     try {
-      await argon2.hash(password);
+      passwordHash = await argon2.hash(password);
     } catch (error) {
       console.error(
         "Something went wrong when trying to hash the password",
         error
       );
     }
+    return passwordHash;
   }
 
-  static async verifyPassword(userId: string, password: string) {
+  static async verifyPassword(
+    userId: string,
+    password: string
+  ): Promise<boolean> {
+    let success = false;
+
     try {
       const user = await IdentityManager.getUserById(userId);
 
-      await argon2.verify(
+      success = await argon2.verify(
         "$argon2id$v=19$m=65536,t=3,p=4$FO+FD8E9r0yivYAf/uMEnQ$TGd+1TqTH8kjdm9zOJ2BeaqpFVU2ODe7osuu/acXd0M",
         "password"
       );
@@ -88,5 +100,21 @@ export class IdentityManager {
         error
       );
     }
+
+    return success;
+  }
+
+  static async createSession(userId: string): Promise<string> {
+    let sessionId = "";
+
+    try {
+      const authToken = IdentityManager.generateRandomToken();
+
+      await prisma.session.create({ data: { userId, authToken } });
+    } catch (error) {
+      console.error("Something went wrong creating a session");
+    }
+
+    return sessionId;
   }
 }

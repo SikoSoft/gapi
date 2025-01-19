@@ -168,6 +168,8 @@ export async function action(
     return forbiddenReply();
   }
 
+  const userId = introspection.user.id;
+
   let action: Action;
   switch (request.method) {
     case "POST":
@@ -191,7 +193,7 @@ export async function action(
           },
           where: {
             id: parseInt(request.params.id),
-            userId: userIdFromRequest(request),
+            userId,
           },
         });
         Tagging.syncActionTags(action.id, tags);
@@ -201,7 +203,7 @@ export async function action(
         data: {
           type: body.type,
           desc: body.desc,
-          userId: userIdFromRequest(request),
+          userId,
         },
       });
       Tagging.syncActionTags(action.id, tags);
@@ -210,7 +212,7 @@ export async function action(
       action = await prisma.action.delete({
         where: {
           id: parseInt(request.params.id),
-          userId: userIdFromRequest(request),
+          userId,
         },
       });
       return jsonReply({ action });
@@ -218,7 +220,6 @@ export async function action(
       const start = request.query.has("start")
         ? parseInt(request.query.get("start") || "")
         : 0;
-      const userId = userIdFromRequest(request);
       const filter = getFilter(request);
       const sort = getSort(request);
       const where = getFilteredConditions(userId, filter);

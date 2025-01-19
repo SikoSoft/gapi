@@ -13,6 +13,7 @@ import {
   ListSortProperty,
 } from "api-spec/models/List";
 import { Introspection } from "./models/Introspection";
+import { IdentityManager } from "./lib/IdentityManager";
 
 export const defaultUser = "f00300fd-dd74-4e17-8624-b67295cfa053";
 
@@ -42,12 +43,15 @@ export const introspect = async (
 ): Promise<Introspection> => {
   if (request.headers.has("authorization")) {
     const authToken = request.headers.get("authorization")!;
-    if (authToken === "test123") {
+
+    const userId = await IdentityManager.getUserIdByAuthToken(authToken);
+
+    if (userId) {
       return {
         isLoggedIn: true,
         user: {
-          id: defaultUser,
-          sessionId: "",
+          id: userId,
+          sessionId: authToken,
         },
       };
     }

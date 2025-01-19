@@ -107,9 +107,26 @@ export class IdentityManager {
 
       await prisma.session.create({ data: { userId, authToken } });
     } catch (error) {
-      console.error("Something went wrong creating a session");
+      console.error("Something went wrong creating a session", error);
     }
 
     return authToken;
+  }
+
+  static async getUserIdByAuthToken(authToken: string): Promise<string> {
+    let userId = "";
+
+    try {
+      const user = await prisma.session.findUnique({ where: { authToken } });
+
+      userId = user.userId;
+    } catch (error) {
+      console.error(
+        "Something went wrong looking up session by authToken",
+        error
+      );
+    }
+
+    return userId;
   }
 }

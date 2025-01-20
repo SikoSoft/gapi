@@ -117,7 +117,9 @@ export class IdentityManager {
     let userId = "";
 
     try {
-      const user = await prisma.session.findUnique({ where: { authToken } });
+      const user = await prisma.session.findUnique({
+        where: { authToken, active: true },
+      });
 
       userId = user.userId;
     } catch (error) {

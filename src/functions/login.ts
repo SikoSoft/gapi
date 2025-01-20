@@ -33,7 +33,9 @@ export async function login(
     }
   }
 
-  return forbiddenReply();
+  return {
+    status: 401,
+  };
 }
 
 app.http("login", {

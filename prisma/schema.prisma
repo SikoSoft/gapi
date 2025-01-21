@@ -117,6 +117,7 @@ model Session {
   userId    String   @db.Uuid
   authToken String   @id @db.VarChar(128)
   createdAt DateTime @default(now())
+  expiresAt DateTime @default(now())
   active    Boolean  @default(true)
 }
 

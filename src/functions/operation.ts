@@ -4,7 +4,7 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { jsonReply, prisma } from "..";
+import { forbiddenReply, introspect, jsonReply, prisma } from "..";
 import { BulkOperation, OperationType } from "api-spec/models/Operation";
 import { Tagging } from "../lib/Tagging";
 
@@ -14,6 +14,11 @@ export async function operation(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  const introspection = await introspect(request);
+  if (!introspection.isLoggedIn) {
+    return forbiddenReply();
+  }
+  const userId = introspection.user.id;
   const body = (await request.json()) as RequestBody;
 
   console.log("operation", body);
@@ -21,7 +26,7 @@ export async function operation(
     case OperationType.DELETE:
       for (const actionId of body.actions) {
         await Tagging.deleteAllActionTags(actionId);
-        await prisma.action.delete({ where: { id: actionId } });
+        await prisma.action.delete({ where: { id: actionId, userId } });
       }
       break;
     case OperationType.ADD_TAGS:

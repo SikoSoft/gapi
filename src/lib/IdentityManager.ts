@@ -136,4 +136,8 @@ export class IdentityManager {
 
     return userId;
   }
+
+  static async revokeAuthToken(authToken: string): Promise<void> {
+    await prisma.session.delete({ where: { authToken } });
+  }
 }

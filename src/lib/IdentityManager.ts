@@ -15,21 +15,26 @@ export class IdentityManager {
     lastName: string,
     password: string
   ) {
-    const id = uuidv4();
+    let userId = "";
 
-    const passwordHash = await IdentityManager.hashPassword(password);
+    try {
+      const id = uuidv4();
+      const passwordHash = await IdentityManager.hashPassword(password);
+      const user = await prisma.user.create({
+        data: {
+          id,
+          username,
+          firstName: firstName || "",
+          lastName: lastName || "",
+          password: passwordHash,
+        },
+      });
+      userId = user.id;
+    } catch (error) {
+      console.error("Something went wrong trying to create user", error);
+    }
 
-    const user = await prisma.user.create({
-      data: {
-        id,
-        username,
-        firstName: firstName || "",
-        lastName: lastName || "",
-        password: passwordHash,
-      },
-    });
-
-    return user.id;
+    return userId;
   }
 
   static async getUserById(id: string): Promise<User> {

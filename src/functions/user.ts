@@ -29,6 +29,12 @@ export async function user(
     body.password
   );
 
+  if (!id) {
+    return {
+      status: 400,
+    };
+  }
+
   return jsonReply({ id });
 }
 

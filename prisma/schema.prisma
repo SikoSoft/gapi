@@ -27,12 +27,16 @@ model Action {
 
 model ActionTag {
   actionId Int    @default(0)
-  //tagId    Int    @default(0)
   label    String @db.VarChar(128)
   action   Action @relation(fields: [actionId], references: [id], onDelete: Cascade)
   tag      Tag    @relation(fields: [label], references: [label], onDelete: Cascade)
 
   @@id([actionId, label])
+}
+
+model Tag {
+  label     String      @unique @db.VarChar(128)
+  actionTag ActionTag[]
 }
 
 model Leaderboard {
@@ -44,32 +48,20 @@ model Leaderboard {
   ip       String   @db.VarChar(64)
 }
 
-model Tag {
-  //id    Int    @id @default(autoincrement())
-  label     String      @unique @db.VarChar(128)
-  actionTag ActionTag[]
-}
-
 model ListConfig {
   id     String      @id @db.Uuid
   name   String      @db.VarChar(128)
+  userId String?     @db.Uuid
   sort   ListSort?
   filter ListFilter?
 }
 
 model ListSort {
-  //id         Int        @id @default(autoincrement())
   listId     String     @id @db.Uuid
   property   String     @db.VarChar(64)
   direction  String     @db.VarChar(64)
   listConfig ListConfig @relation(fields: [listId], references: [id], onDelete: Cascade)
 }
-
-// tagging: Record<ListFilterType, string[]>;
-// includeUntagged: boolean;
-// includeAll: boolean;
-// time: TimeContext;
-// text: TextContext[];
 
 model ListFilter {
   listId          String     @id @db.Uuid
@@ -77,10 +69,6 @@ model ListFilter {
   includeAll      Boolean    @default(false)
   listConfig      ListConfig @relation(fields: [listId], references: [id], onDelete: Cascade)
 }
-
-// model TaggingFilter {
-
-// }
 
 model User {
   id        String     @id @db.Uuid
@@ -97,7 +85,6 @@ model UserRole {
   addedAt DateTime @updatedAt
   user    User     @relation(fields: [userId], references: [id])
 
-  //role    Role     @relation(fields: [roleId], references: [id])
   @@id([userId(), roleId()])
 }
 
@@ -105,13 +92,6 @@ model Role {
   id    Int    @id @default(autoincrement())
   label String @db.VarChar(128)
 }
-
-// model Ott {
-//   userId       String   @db.Uuid
-//   oneTimeToken String   @id @db.VarChar(128)
-//   authToken    String   @db.VarChar(128)
-//   createdAt    DateTime @default(now())
-// }
 
 model Session {
   userId    String   @db.Uuid

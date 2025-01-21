@@ -109,8 +109,10 @@ export class IdentityManager {
 
     try {
       authToken = IdentityManager.generateRandomToken();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 1);
 
-      await prisma.session.create({ data: { userId, authToken } });
+      await prisma.session.create({ data: { userId, authToken, expiresAt } });
     } catch (error) {
       console.error("Something went wrong creating a session", error);
     }
@@ -123,10 +125,12 @@ export class IdentityManager {
 
     try {
       const user = await prisma.session.findUnique({
-        where: { authToken, active: true },
+        where: { authToken, active: true, expiresAt: { gt: new Date() } },
       });
 
-      userId = user.userId;
+      if (user) {
+        userId = user.userId;
+      }
     } catch (error) {
       console.error(
         "Something went wrong looking up session by authToken",

@@ -4,42 +4,28 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { forbiddenReply, jsonReply } from "..";
 import { IdentityManager } from "../lib/IdentityManager";
 
-declare interface RequestBody {
-  username: string;
-  password: string;
-}
-
-export async function login(
+export async function logout(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
-  const body = (await request.json()) as RequestBody;
+  const authToken = request.headers.get("authorization")!;
 
-  const user = await IdentityManager.getUserByUserName(body.username);
-
-  if (user) {
-    console.log({ user });
-    const passwordIsValid = await IdentityManager.verifyPassword(
-      user.id,
-      body.password
-    );
-    console.log({ passwordIsValid });
-    if (passwordIsValid) {
-      const authToken = await IdentityManager.createSession(user.id);
-      return jsonReply({ authToken });
-    }
+  const result = await IdentityManager.revokeAuthToken(authToken);
+  if (result) {
+    return {
+      status: 202,
+    };
   }
 
   return {
-    status: 401,
+    status: 400,
   };
 }
 
-app.http("login", {
-  methods: ["POST"],
+app.http("logout", {
+  methods: ["GET"],
   authLevel: "anonymous",
-  handler: login,
+  handler: logout,
 });

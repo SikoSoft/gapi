@@ -4,17 +4,25 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { prisma } from "..";
+import { forbiddenReply, introspect, prisma } from "..";
 import { Tagging } from "../lib/Tagging";
 
 export async function tagSuggestion(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  const introspection = await introspect(request);
+  if (!introspection.isLoggedIn) {
+    return forbiddenReply();
+  }
+  const userId = introspection.user.id;
   context.log(`Http function processed request for url "${request.url}"`);
 
   console.log("query", request.params.query);
-  const suggestions = await Tagging.getTagsFromDesc(request.params.query);
+  const suggestions = await Tagging.getTagsFromDesc(
+    userId,
+    request.params.query
+  );
 
   const reply = {
     suggestions,

@@ -21,6 +21,9 @@ export async function listConfig(
   switch (request.method) {
     case "GET":
       return jsonReply({ listConfigs: [defaultListConfig] });
+    case "POST":
+      let status = false;
+      return jsonReply({ status });
   }
 }
 

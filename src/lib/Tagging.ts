@@ -48,10 +48,13 @@ export class Tagging {
     Tagging.deleteAllActionTags(actionId);
   }
 
-  static async getTagsFromDesc(desc: string): Promise<string[]> {
-    const actionIds = (await prisma.action.findMany({ where: { desc } })).map(
-      (action) => action.id
-    );
+  static async getTagsFromDesc(
+    userId: string,
+    desc: string
+  ): Promise<string[]> {
+    const actionIds = (
+      await prisma.action.findMany({ where: { userId, desc } })
+    ).map((action) => action.id);
     return [
       ...new Set(
         (

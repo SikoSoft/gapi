@@ -5,3 +5,11 @@ export class User {
   lastName: string;
   password: string;
 }
+
+export class Session {
+  userId: string;
+  authToken: string;
+  createdAt: Date;
+  expiresAt: Date;
+  active: boolean;
+}

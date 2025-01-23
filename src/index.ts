@@ -44,15 +44,16 @@ export const introspect = async (
   if (request.headers.has("authorization")) {
     const authToken = request.headers.get("authorization")!;
 
-    const userId = await IdentityManager.getUserIdByAuthToken(authToken);
+    const session = await IdentityManager.getSessionByAuthToken(authToken);
 
-    if (userId) {
+    if (session) {
       return {
         isLoggedIn: true,
         user: {
-          id: userId,
+          id: session.userId,
           sessionId: authToken,
         },
+        expiresAt: session.expiresAt,
       };
     }
   }

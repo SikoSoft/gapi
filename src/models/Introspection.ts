@@ -4,6 +4,7 @@ export interface IntrospectionUser {
     id: string;
     sessionId: string;
   };
+  expiresAt: Date;
 }
 
 export interface IntrospectionAnonymous {

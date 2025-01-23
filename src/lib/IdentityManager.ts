@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import Crypto from "crypto";
 import * as argon2 from "argon2";
 import { prisma } from "..";
-import { User } from "../models/Identity";
+import { Session, User } from "../models/Identity";
 
 export interface UserPayload {
   username: string;
@@ -120,17 +120,15 @@ export class IdentityManager {
     return authToken;
   }
 
-  static async getUserIdByAuthToken(authToken: string): Promise<string> {
-    let userId = "";
+  static async getSessionByAuthToken(
+    authToken: string
+  ): Promise<Session | null> {
+    let session = null;
 
     try {
-      const user = await prisma.session.findUnique({
+      session = await prisma.session.findUnique({
         where: { authToken, active: true, expiresAt: { gt: new Date() } },
       });
-
-      if (user) {
-        userId = user.userId;
-      }
     } catch (error) {
       console.error(
         "Something went wrong looking up session by authToken",
@@ -138,7 +136,7 @@ export class IdentityManager {
       );
     }
 
-    return userId;
+    return session;
   }
 
   static async revokeAuthToken(authToken: string): Promise<{ userId: string }> {

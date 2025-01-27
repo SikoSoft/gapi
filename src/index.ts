@@ -88,3 +88,9 @@ export function getDefaultSort(): ListSort {
     direction: ListSortDirection.DESC,
   };
 }
+
+export const getIp = (req: HttpRequest): string => {
+  return req.headers["x-forwarded-for"]
+    ? req.headers["x-forwarded-for"].replace(/:[0-9]+/, "")
+    : "0.0.0.0";
+};

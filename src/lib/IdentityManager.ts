@@ -147,4 +147,8 @@ export class IdentityManager {
 
     return result;
   }
+
+  static async saveLoginAttempt(userId: string, ip: string): Promise<void> {
+    await prisma.loginAttempt.create({ data: { userId, ip } });
+  }
 }

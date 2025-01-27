@@ -4,7 +4,7 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { forbiddenReply, jsonReply } from "..";
+import { forbiddenReply, getIp, jsonReply } from "..";
 import { IdentityManager } from "../lib/IdentityManager";
 
 declare interface RequestBody {
@@ -31,6 +31,10 @@ export async function login(
       const authToken = await IdentityManager.createSession(user.id);
       return jsonReply({ authToken });
     }
+
+    const ip = getIp(request);
+
+    await IdentityManager.saveLoginAttempt(user.id, ip);
   }
 
   return {

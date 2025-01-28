@@ -63,11 +63,44 @@ model ListSort {
   listConfig ListConfig @relation(fields: [listId], references: [id], onDelete: Cascade)
 }
 
+model ListFilterTime {
+  //listFilterId  String @id @db.Uuid
+  id         String     @id @db.Uuid
+  type       String     @db.VarChar(64)
+  listFilter ListFilter @relation(fields: [id], references: [listId], onDelete: Cascade)
+}
+
+model ListFilterText {
+  id         String     @id @db.Uuid
+  type       String     @db.VarChar(64)
+  subStr     String     @db.VarChar(255)
+  listFilter ListFilter @relation(fields: [id], references: [listId], onDelete: Cascade)
+}
+
+//  tagging: Record<ListFilterType, string[]>;
+model ListFilterTagging {
+  id         String                @id @db.Uuid
+  type       String                @db.VarChar(64)
+  tags       ListFilterTaggingTag?
+  listFilter ListFilter            @relation(fields: [id], references: [listId], onDelete: Cascade)
+}
+
+model ListFilterTaggingTag {
+  tag               String            @db.VarChar(255)
+  taggingId         String            @id @db.Uuid
+  listFilterTagging ListFilterTagging @relation(fields: [taggingId], references: [id], onDelete: Cascade)
+
+  @@unique([taggingId, tag])
+}
+
 model ListFilter {
-  listId          String     @id @db.Uuid
-  includeUntagged Boolean    @default(false)
-  includeAll      Boolean    @default(false)
-  listConfig      ListConfig @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listId          String             @id @db.Uuid
+  includeUntagged Boolean            @default(false)
+  includeAll      Boolean            @default(false)
+  time            ListFilterTime?
+  text            ListFilterText?
+  tagging         ListFilterTagging?
+  listConfig      ListConfig         @relation(fields: [listId], references: [id], onDelete: Cascade)
 }
 
 model User {

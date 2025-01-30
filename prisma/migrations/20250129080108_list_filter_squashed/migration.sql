@@ -1,3 +1,13 @@
+/*
+  Warnings:
+
+  - The primary key for the `ListFilter` table will be changed. If it partially fails, the table could be left without primary key constraint.
+  - A unique constraint covering the columns `[listId]` on the table `ListFilter` will be added. If there are existing duplicate values, this will fail.
+
+*/
+-- AlterTable
+ALTER TABLE "ListFilter" DROP CONSTRAINT "ListFilter_pkey";
+
 -- CreateTable
 CREATE TABLE "ListFilterTime" (
     "id" UUID NOT NULL,
@@ -17,10 +27,8 @@ CREATE TABLE "ListFilterText" (
 
 -- CreateTable
 CREATE TABLE "ListFilterTagging" (
-    "id" UUID NOT NULL,
-    "type" VARCHAR(64) NOT NULL,
-
-    CONSTRAINT "ListFilterTagging_pkey" PRIMARY KEY ("id")
+    "listFilterId" UUID NOT NULL,
+    "type" VARCHAR(64) NOT NULL
 );
 
 -- CreateTable
@@ -32,7 +40,13 @@ CREATE TABLE "ListFilterTaggingTag" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ListFilterTagging_listFilterId_key" ON "ListFilterTagging"("listFilterId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ListFilterTaggingTag_taggingId_tag_key" ON "ListFilterTaggingTag"("taggingId", "tag");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ListFilter_listId_key" ON "ListFilter"("listId");
 
 -- AddForeignKey
 ALTER TABLE "ListFilterTime" ADD CONSTRAINT "ListFilterTime_id_fkey" FOREIGN KEY ("id") REFERENCES "ListFilter"("listId") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -41,7 +55,7 @@ ALTER TABLE "ListFilterTime" ADD CONSTRAINT "ListFilterTime_id_fkey" FOREIGN KEY
 ALTER TABLE "ListFilterText" ADD CONSTRAINT "ListFilterText_id_fkey" FOREIGN KEY ("id") REFERENCES "ListFilter"("listId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ListFilterTagging" ADD CONSTRAINT "ListFilterTagging_id_fkey" FOREIGN KEY ("id") REFERENCES "ListFilter"("listId") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ListFilterTagging" ADD CONSTRAINT "ListFilterTagging_listFilterId_fkey" FOREIGN KEY ("listFilterId") REFERENCES "ListFilter"("listId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ListFilterTaggingTag" ADD CONSTRAINT "ListFilterTaggingTag_taggingId_fkey" FOREIGN KEY ("taggingId") REFERENCES "ListFilterTagging"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ListFilterTaggingTag" ADD CONSTRAINT "ListFilterTaggingTag_taggingId_fkey" FOREIGN KEY ("taggingId") REFERENCES "ListFilterTagging"("listFilterId") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -193,35 +193,45 @@ export class ListConfig {
   static mapFilterDataToSpec(
     data: PrismaListConfig["filter"]
   ): List.ListFilter {
-    let time: List.TimeContext;
-    const timeType = data.time.type as List.ListFilterTimeType;
-    switch (timeType) {
-      case List.ListFilterTimeType.ALL_TIME:
-        time = {
-          type: List.ListFilterTimeType.ALL_TIME,
-        } as List.AllTimeContext;
-        break;
-      case List.ListFilterTimeType.EXACT_DATE:
-        time = {
-          type: List.ListFilterTimeType.EXACT_DATE,
-          date: data.time.date1,
-        } as List.ExactDateContext;
-        break;
-      case List.ListFilterTimeType.RANGE:
-        time = {
-          type: List.ListFilterTimeType.RANGE,
-          start: data.time.date1,
-          end: data.time.date2,
-        } as List.RangeContext;
-        break;
-    }
     return {
       includeAll: data.includeAll,
       includeUntagged: data.includeUntagged,
       tagging: ListConfig.mapFilterTagsDataToSpec(data.tagging),
-      text: [],
-      time,
+      text: ListConfig.mapTextDataToSpec(data.text),
+      time: ListConfig.mapTimeDataToSpec(data.time),
     };
+  }
+
+  static mapTextDataToSpec(
+    data: PrismaListConfig["filter"]["text"]
+  ): List.TextContext[] {
+    return data.map((text) => ({
+      type: text.type as List.TextType,
+      subStr: text.subStr,
+    }));
+  }
+
+  static mapTimeDataToSpec(
+    data: PrismaListConfig["filter"]["time"]
+  ): List.TimeContext {
+    const timeType = data.type as List.ListFilterTimeType;
+    switch (timeType) {
+      case List.ListFilterTimeType.ALL_TIME:
+        return {
+          type: List.ListFilterTimeType.ALL_TIME,
+        } as List.AllTimeContext;
+      case List.ListFilterTimeType.EXACT_DATE:
+        return {
+          type: List.ListFilterTimeType.EXACT_DATE,
+          date: data.date1,
+        } as List.ExactDateContext;
+      case List.ListFilterTimeType.RANGE:
+        return {
+          type: List.ListFilterTimeType.RANGE,
+          start: data.date1,
+          end: data.date2,
+        } as List.RangeContext;
+    }
   }
 
   static mapSortDataToSpec(data: PrismaListConfig["sort"]): List.ListSort {

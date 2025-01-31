@@ -57,52 +57,44 @@ model ListConfig {
 }
 
 model ListSort {
-  listId     String     @id @db.Uuid
-  property   String     @db.VarChar(64)
-  direction  String     @db.VarChar(64)
-  listConfig ListConfig @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listConfigId String     @unique @db.Uuid
+  property     String     @db.VarChar(64)
+  direction    String     @db.VarChar(64)
+  listConfig   ListConfig @relation(fields: [listConfigId], references: [id])
 }
 
 model ListFilterTime {
-  //listFilterId  String @id @db.Uuid
-  id         String     @id @db.Uuid
-  type       String     @db.VarChar(64)
-  listFilter ListFilter @relation(fields: [id], references: [listId], onDelete: Cascade)
+  listConfigId String     @unique @db.Uuid
+  type         String     @db.VarChar(64)
+  date1        String?
+  date2        String?
+  listFilter   ListFilter @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
 }
 
 model ListFilterText {
-  id         String     @id @db.Uuid
-  type       String     @db.VarChar(64)
-  subStr     String     @db.VarChar(255)
-  listFilter ListFilter @relation(fields: [id], references: [listId], onDelete: Cascade)
+  listConfigId String     @id @db.Uuid
+  type         String     @db.VarChar(64)
+  subStr       String     @db.VarChar(255)
+  listFilter   ListFilter @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
 }
 
-//  tagging: Record<ListFilterType, string[]>;
-// model ListFilterTagging {
-//   listFilterId String                 @unique @db.Uuid
-//   type         String                 @db.VarChar(64)
-//   tags         ListFilterTaggingTag[]
-//   listFilter   ListFilter             @relation(fields: [listFilterId], references: [listId])
-// }
-
 model ListFilterTag {
-  filterId   String     @db.Uuid
-  type       String     @db.VarChar(64)
-  tag        String     @db.VarChar(255)
-  taggingId  String     @id @db.Uuid
-  listFilter ListFilter @relation(fields: [filterId], references: [listId])
+  listConfigId String     @db.Uuid
+  type         String     @db.VarChar(64)
+  tag          String     @db.VarChar(255)
+  listFilter   ListFilter @relation(fields: [listConfigId], references: [listConfigId])
 
-  @@unique([filterId, tag, type])
+  @@unique([listConfigId, tag, type])
 }
 
 model ListFilter {
-  listId          String          @unique @db.Uuid
-  includeUntagged Boolean         @default(false)
-  includeAll      Boolean         @default(false)
+  listConfigId    String           @unique @db.Uuid
+  includeUntagged Boolean          @default(false)
+  includeAll      Boolean          @default(false)
   time            ListFilterTime?
-  text            ListFilterText?
+  text            ListFilterText[]
   tagging         ListFilterTag[]
-  listConfig      ListConfig      @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listConfig      ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 }
 
 model User {

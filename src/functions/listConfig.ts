@@ -5,31 +5,25 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
+import { forbiddenReply, introspect, jsonReply, prisma } from "..";
 import {
-  forbiddenReply,
-  getDefaultFilter,
-  getDefaultSort,
-  introspect,
-  jsonReply,
-  prisma,
-} from "..";
-import {
-  ListConfig,
   ListSortDirection,
   ListSortProperty,
+  ListFilter,
+  ListSort,
+  ListFilterTimeType,
 } from "api-spec/models/List";
+import { ListConfig } from "../lib/ListConfig";
 
-const defaultListConfig: ListConfig = {
-  name: "Example config",
-  id: "test-id",
-  filter: getDefaultFilter(),
-  sort: getDefaultSort(),
-};
-
-export interface RequestBody {
+export interface CreateBody {
   id: string;
   name: string;
   userId: string;
+}
+
+export interface UpdateBody extends CreateBody {
+  filter: ListFilter;
+  sort: ListSort;
 }
 
 export async function listConfig(
@@ -42,21 +36,24 @@ export async function listConfig(
   }
   const userId = introspection.user.id;
 
-  const body = (await request.json()) as RequestBody;
-
   switch (request.method) {
     case "GET":
-      return jsonReply({ listConfigs: [defaultListConfig] });
+      const listConfigs = await ListConfig.getByUser(userId);
+      return jsonReply({ listConfigs });
     case "POST":
-      let status = false;
+      const createBody = (await request.json()) as CreateBody;
       const id = uuidv4();
       await prisma.listConfig.create({
         data: {
           id,
-          name: body.name,
+          name: createBody.name,
           userId,
           filter: {
-            create: { includeAll: true, includeUntagged: true },
+            create: {
+              includeAll: true,
+              includeUntagged: true,
+              time: { create: { type: ListFilterTimeType.ALL_TIME } },
+            },
           },
           sort: {
             create: {
@@ -68,14 +65,9 @@ export async function listConfig(
       });
       return jsonReply({ id });
     case "PUT":
-      await prisma.listConfig.update({
-        data: { id: body.id, name: body.name },
-        where: {
-          id: body.id,
-          userId,
-        },
-      });
-      return jsonReply({ id: body.id });
+      const updateBody = (await request.json()) as UpdateBody;
+      await ListConfig.update(userId, updateBody);
+      return jsonReply({ id: updateBody.id });
   }
 }
 

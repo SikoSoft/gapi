@@ -8,39 +8,10 @@ export class ListConfig {
     userId: string,
     listConfig: List.ListConfig
   ): Promise<List.ListConfig> {
-    //const sort = ListConfig.mapSortSpecToData(listConfig.id, listConfig.sort);
-    //const filterText = ListConfig.mapFilterTextSpecToData(listConfig.filter.text);
-    //const filterTags = ListConfig.mapFilterTagsSpecToData(listConfig.filter.tagging);
-    //const filterTime = ListConfig.mapFilterTimeSpecToData(listConfig.filter.time);
-
-    /*
-    const filter: PrismaListFilter = {
-      listId: listConfig.id,
-      tagging: {
-        
-      }
-    }
-      */
-
-    const result = await prisma.listConfig.update({
+    await prisma.listConfig.update({
       data: {
         id: listConfig.id,
         name: listConfig.name,
-
-        /*
-        filter: {
-          upsert: {
-            create: 
-          }
-        },
-        sort: {
-          upsert: {
-            create: sort,
-            update: sort,
-            where: { listId: listConfig.id },
-          },
-        },
-        */
       },
       where: {
         id: listConfig.id,
@@ -222,11 +193,6 @@ export class ListConfig {
   static mapFilterDataToSpec(
     data: PrismaListConfig["filter"]
   ): List.ListFilter {
-    console.log(
-      "mapFilterDataToSpec",
-      data.listConfigId,
-      JSON.stringify(data, null, 2)
-    );
     let time: List.TimeContext;
     const timeType = data.time.type as List.ListFilterTimeType;
     switch (timeType) {
@@ -254,12 +220,6 @@ export class ListConfig {
       time: { type: List.ListFilterTimeType.EXACT_DATE, date: "" },
     };
   }
-
-  /*
-  static mapFilterSpecToData(
-    spec: List.ListFilter
-  ): PrismaListConfig["filter"] {}
-  */
 
   static mapSortDataToSpec(data: PrismaListConfig["sort"]): List.ListSort {
     return {

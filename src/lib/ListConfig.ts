@@ -200,24 +200,27 @@ export class ListConfig {
         time = {
           type: List.ListFilterTimeType.ALL_TIME,
         } as List.AllTimeContext;
+        break;
       case List.ListFilterTimeType.EXACT_DATE:
         time = {
           type: List.ListFilterTimeType.EXACT_DATE,
           date: data.time.date1,
         } as List.ExactDateContext;
+        break;
       case List.ListFilterTimeType.RANGE:
         time = {
           type: List.ListFilterTimeType.RANGE,
           start: data.time.date1,
           end: data.time.date2,
         } as List.RangeContext;
+        break;
     }
     return {
       includeAll: data.includeAll,
       includeUntagged: data.includeUntagged,
       tagging: ListConfig.mapFilterTagsDataToSpec(data.tagging),
       text: [],
-      time: { type: List.ListFilterTimeType.EXACT_DATE, date: "" },
+      time,
     };
   }
 

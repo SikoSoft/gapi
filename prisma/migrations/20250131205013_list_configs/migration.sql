@@ -30,29 +30,25 @@ ADD COLUMN     "listConfigId" UUID NOT NULL;
 -- CreateTable
 CREATE TABLE "ListFilterTime" (
     "listConfigId" UUID NOT NULL,
-    "id" UUID NOT NULL,
     "type" VARCHAR(64) NOT NULL,
-
-    CONSTRAINT "ListFilterTime_pkey" PRIMARY KEY ("id")
+    "date1" TEXT,
+    "date2" TEXT
 );
 
 -- CreateTable
 CREATE TABLE "ListFilterText" (
-    "id" UUID NOT NULL,
+    "listConfigId" UUID NOT NULL,
     "type" VARCHAR(64) NOT NULL,
     "subStr" VARCHAR(255) NOT NULL,
 
-    CONSTRAINT "ListFilterText_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ListFilterText_pkey" PRIMARY KEY ("listConfigId")
 );
 
 -- CreateTable
 CREATE TABLE "ListFilterTag" (
     "listConfigId" UUID NOT NULL,
     "type" VARCHAR(64) NOT NULL,
-    "tag" VARCHAR(255) NOT NULL,
-    "taggingId" UUID NOT NULL,
-
-    CONSTRAINT "ListFilterTag_pkey" PRIMARY KEY ("taggingId")
+    "tag" VARCHAR(255) NOT NULL
 );
 
 -- CreateIndex
@@ -74,7 +70,7 @@ ALTER TABLE "ListSort" ADD CONSTRAINT "ListSort_listConfigId_fkey" FOREIGN KEY (
 ALTER TABLE "ListFilterTime" ADD CONSTRAINT "ListFilterTime_listConfigId_fkey" FOREIGN KEY ("listConfigId") REFERENCES "ListFilter"("listConfigId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ListFilterText" ADD CONSTRAINT "ListFilterText_id_fkey" FOREIGN KEY ("id") REFERENCES "ListFilter"("listConfigId") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ListFilterText" ADD CONSTRAINT "ListFilterText_listConfigId_fkey" FOREIGN KEY ("listConfigId") REFERENCES "ListFilter"("listConfigId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ListFilterTag" ADD CONSTRAINT "ListFilterTag_listConfigId_fkey" FOREIGN KEY ("listConfigId") REFERENCES "ListFilter"("listConfigId") ON DELETE RESTRICT ON UPDATE CASCADE;

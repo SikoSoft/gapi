@@ -196,6 +196,7 @@ export class ListConfig {
     return {
       includeAll: data.includeAll,
       includeUntagged: data.includeUntagged,
+      includeAllTagging: data.includeAllTagging,
       tagging: ListConfig.mapFilterTagsDataToSpec(data.tagging),
       text: ListConfig.mapTextDataToSpec(data.text),
       time: ListConfig.mapTimeDataToSpec(data.time),

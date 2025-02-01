@@ -79,6 +79,7 @@ export function getDefaultFilter(): ListFilter {
     text: [],
     includeUntagged: true,
     includeAll: true,
+    includeAllTagging: true,
   };
 }
 

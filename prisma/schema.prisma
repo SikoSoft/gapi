@@ -88,13 +88,14 @@ model ListFilterTag {
 }
 
 model ListFilter {
-  listConfigId    String           @unique @db.Uuid
-  includeUntagged Boolean          @default(false)
-  includeAll      Boolean          @default(false)
-  time            ListFilterTime?
-  text            ListFilterText[]
-  tagging         ListFilterTag[]
-  listConfig      ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+  listConfigId      String           @unique @db.Uuid
+  includeUntagged   Boolean          @default(false)
+  includeAll        Boolean          @default(false)
+  includeAllTagging Boolean          @default(false)
+  time              ListFilterTime?
+  text              ListFilterText[]
+  tagging           ListFilterTag[]
+  listConfig        ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 }
 
 model User {

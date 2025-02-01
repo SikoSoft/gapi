@@ -119,6 +119,7 @@ export class ListConfig {
       data: {
         includeAll: filter.includeAll,
         includeUntagged: filter.includeUntagged,
+        includeAllTagging: filter.includeAllTagging,
       },
     });
   }

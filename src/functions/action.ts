@@ -120,37 +120,47 @@ function getFilteredConditions(userId: string, filter: ListFilter) {
                   }),
             },
             {
-              OR: [
-                {
-                  ...(filter.includeUntagged ? { tags: { none: {} } } : {}),
-                },
-                {
-                  AND: [
-                    {
-                      ...(filter.tagging.containsOneOf.length
-                        ? {
-                            OR: [
-                              ...filter.tagging.containsOneOf.map((tag) => ({
-                                tags: { some: { label: tag } },
-                              })),
-                            ],
-                          }
-                        : {}),
-                    },
-                    {
-                      ...(filter.tagging.containsAllOf
-                        ? {
-                            AND: [
-                              ...filter.tagging.containsAllOf.map((tag) => ({
-                                tags: { some: { label: tag } },
-                              })),
-                            ],
-                          }
-                        : {}),
-                    },
-                  ],
-                },
-              ],
+              ...(filter.includeAllTagging
+                ? {}
+                : {
+                    OR: [
+                      {
+                        ...(filter.includeUntagged
+                          ? { tags: { none: {} } }
+                          : {}),
+                      },
+                      {
+                        AND: [
+                          {
+                            ...(filter.tagging.containsOneOf.length
+                              ? {
+                                  OR: [
+                                    ...filter.tagging.containsOneOf.map(
+                                      (tag) => ({
+                                        tags: { some: { label: tag } },
+                                      })
+                                    ),
+                                  ],
+                                }
+                              : {}),
+                          },
+                          {
+                            ...(filter.tagging.containsAllOf
+                              ? {
+                                  AND: [
+                                    ...filter.tagging.containsAllOf.map(
+                                      (tag) => ({
+                                        tags: { some: { label: tag } },
+                                      })
+                                    ),
+                                  ],
+                                }
+                              : {}),
+                          },
+                        ],
+                      },
+                    ],
+                  }),
             },
           ],
         }

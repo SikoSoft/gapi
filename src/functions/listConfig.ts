@@ -68,6 +68,16 @@ export async function listConfig(
       const updateBody = (await request.json()) as UpdateBody;
       await ListConfig.update(userId, updateBody);
       return jsonReply({ id: updateBody.id });
+    case "DELETE":
+      const status = await ListConfig.delete(userId, request.params.id);
+      if (status) {
+        return {
+          status: 204,
+        };
+      }
+      return {
+        status: 400,
+      };
   }
 }
 

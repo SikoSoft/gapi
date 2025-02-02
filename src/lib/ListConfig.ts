@@ -4,6 +4,16 @@ import { PrismaListConfig, PrismaListFilter } from "../models/ListConfig";
 import { ListContextType, ListFilterType } from "api-spec/models/List";
 
 export class ListConfig {
+  static async delete(userId: string, listConfigId: string): Promise<boolean> {
+    const result = await prisma.listConfig.delete({
+      where: { userId, id: listConfigId },
+    });
+    if (result) {
+      return true;
+    }
+    return false;
+  }
+
   static async update(
     userId: string,
     listConfig: List.ListConfig

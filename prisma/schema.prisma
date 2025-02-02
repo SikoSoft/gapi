@@ -60,7 +60,7 @@ model ListSort {
   listConfigId String     @unique @db.Uuid
   property     String     @db.VarChar(64)
   direction    String     @db.VarChar(64)
-  listConfig   ListConfig @relation(fields: [listConfigId], references: [id])
+  listConfig   ListConfig @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 }
 
 model ListFilterTime {
@@ -82,7 +82,7 @@ model ListFilterTag {
   listConfigId String     @db.Uuid
   type         String     @db.VarChar(64)
   tag          String     @db.VarChar(255)
-  listFilter   ListFilter @relation(fields: [listConfigId], references: [listConfigId])
+  listFilter   ListFilter @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
 
   @@unique([listConfigId, tag, type])
 }

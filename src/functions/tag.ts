@@ -27,7 +27,9 @@ export async function tag(
 
     case "GET":
       const rawTags = await prisma.tag.findMany({
-        where: { label: { startsWith: request.params.query } },
+        where: {
+          label: { startsWith: request.params.query, mode: "insensitive" },
+        },
       });
       const tags = rawTags.map((tag) => tag.label);
       return jsonReply({ tags });

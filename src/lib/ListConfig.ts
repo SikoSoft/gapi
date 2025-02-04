@@ -171,6 +171,7 @@ export class ListConfig {
           },
           sort: true,
         },
+        orderBy: { name: "asc" },
       });
 
       if (!listConfigs) {

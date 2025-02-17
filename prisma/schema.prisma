@@ -49,12 +49,12 @@ model Leaderboard {
 }
 
 model ListConfig {
-  id       String      @id @db.Uuid
-  name     String      @db.VarChar(128)
-  userId   String?     @db.Uuid
-  sort     ListSort?
-  filter   ListFilter?
-  settings Settings?
+  id      String      @id @db.Uuid
+  name    String      @db.VarChar(128)
+  userId  String?     @db.Uuid
+  sort    ListSort?
+  filter  ListFilter?
+  setting Setting?
 }
 
 model ListSort {
@@ -138,27 +138,27 @@ model LoginAttempt {
 }
 
 model ToggleSetting {
-  listConfigId String   @id @db.Uuid
-  name         String   @db.VarChar(128)
+  listConfigId String  @id @db.Uuid
+  name         String  @db.VarChar(128)
   value        Boolean
-  settings     Settings @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+  setting      Setting @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
 }
 
 model NumberSetting {
-  listConfigId String   @id @db.Uuid
-  name         String   @db.VarChar(128)
+  listConfigId String  @id @db.Uuid
+  name         String  @db.VarChar(128)
   value        Int
-  settings     Settings @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+  setting      Setting @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
 }
 
 model TextSetting {
-  listConfigId String   @id @db.Uuid
-  name         String   @db.VarChar(128)
-  value        String   @db.VarChar(255)
-  settings     Settings @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+  listConfigId String  @id @db.Uuid
+  name         String  @db.VarChar(128)
+  value        String  @db.VarChar(255)
+  setting      Setting @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
 }
 
-model Settings {
+model Setting {
   listConfigId   String          @id @db.Uuid
   toggleSettings ToggleSetting[]
   numberSettings NumberSetting[]

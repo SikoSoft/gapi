@@ -135,3 +135,31 @@ model LoginAttempt {
   attemptedAt DateTime @updatedAt
   ip          String   @db.VarChar(128)
 }
+
+model ToggleSetting {
+  listConfigId String   @id @db.Uuid
+  name         String   @db.VarChar(128)
+  value        Boolean
+  settings     Settings @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+}
+
+model NumberSetting {
+  listConfigId String   @id @db.Uuid
+  name         String   @db.VarChar(128)
+  value        Int
+  settings     Settings @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+}
+
+model TextSetting {
+  listConfigId String   @id @db.Uuid
+  name         String   @db.VarChar(128)
+  value        String   @db.VarChar(255)
+  settings     Settings @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+}
+
+model Settings {
+  listConfigId   String          @id @db.Uuid
+  toggleSettings ToggleSetting[]
+  numberSettings NumberSetting[]
+  textSettings   TextSetting[]
+}

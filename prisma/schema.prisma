@@ -49,11 +49,12 @@ model Leaderboard {
 }
 
 model ListConfig {
-  id     String      @id @db.Uuid
-  name   String      @db.VarChar(128)
-  userId String?     @db.Uuid
-  sort   ListSort?
-  filter ListFilter?
+  id       String      @id @db.Uuid
+  name     String      @db.VarChar(128)
+  userId   String?     @db.Uuid
+  sort     ListSort?
+  filter   ListFilter?
+  settings Settings?
 }
 
 model ListSort {
@@ -162,4 +163,5 @@ model Settings {
   toggleSettings ToggleSetting[]
   numberSettings NumberSetting[]
   textSettings   TextSetting[]
+  listConfig     ListConfig      @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 }

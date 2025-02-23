@@ -159,9 +159,9 @@ model TextSetting {
 }
 
 model Setting {
-  listConfigId   String           @id @db.Uuid
-  toggleSettings BooleanSetting[]
-  numberSettings NumberSetting[]
-  textSettings   TextSetting[]
-  listConfig     ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+  listConfigId    String           @id @db.Uuid
+  booleanSettings BooleanSetting[]
+  numberSettings  NumberSetting[]
+  textSettings    TextSetting[]
+  listConfig      ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 }

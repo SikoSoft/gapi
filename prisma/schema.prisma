@@ -137,7 +137,7 @@ model LoginAttempt {
   ip          String   @db.VarChar(128)
 }
 
-model ToggleSetting {
+model BooleanSetting {
   listConfigId String  @id @db.Uuid
   name         String  @db.VarChar(128)
   value        Boolean
@@ -159,9 +159,9 @@ model TextSetting {
 }
 
 model Setting {
-  listConfigId   String          @id @db.Uuid
-  toggleSettings ToggleSetting[]
+  listConfigId   String           @id @db.Uuid
+  toggleSettings BooleanSetting[]
   numberSettings NumberSetting[]
   textSettings   TextSetting[]
-  listConfig     ListConfig      @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+  listConfig     ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 }

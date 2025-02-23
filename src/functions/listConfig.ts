@@ -52,6 +52,7 @@ export async function listConfig(
             create: {
               includeAll: true,
               includeUntagged: true,
+              includeAllTagging: true,
               time: { create: { type: ListFilterTimeType.ALL_TIME } },
             },
           },

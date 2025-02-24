@@ -138,27 +138,28 @@ model LoginAttempt {
 }
 
 model BooleanSetting {
-  listConfigId String  @id @db.Uuid
-  name         String  @db.VarChar(128)
-  value        Boolean
-  setting      Setting @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+  settingId String  @id @db.Uuid
+  name      String  @db.VarChar(128)
+  value     Boolean
+  setting   Setting @relation(fields: [settingId], references: [id], onDelete: Cascade)
 }
 
 model NumberSetting {
-  listConfigId String  @id @db.Uuid
-  name         String  @db.VarChar(128)
-  value        Int
-  setting      Setting @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+  settingId String  @id @db.Uuid
+  name      String  @db.VarChar(128)
+  value     Int
+  setting   Setting @relation(fields: [settingId], references: [id], onDelete: Cascade)
 }
 
 model TextSetting {
-  listConfigId String  @id @db.Uuid
-  name         String  @db.VarChar(128)
-  value        String  @db.VarChar(255)
-  setting      Setting @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+  settingId String  @id @db.Uuid
+  name      String  @db.VarChar(128)
+  value     String  @db.VarChar(255)
+  setting   Setting @relation(fields: [settingId], references: [id], onDelete: Cascade)
 }
 
 model Setting {
+  id              String           @unique @db.Uuid
   listConfigId    String           @id @db.Uuid
   booleanSettings BooleanSetting[]
   numberSettings  NumberSetting[]

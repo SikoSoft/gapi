@@ -52,18 +52,6 @@ export class IdentityManager {
     return user;
   }
 
-  static createOtt(userId: string) {
-    /*
-    await prisma.ott.create({
-      userId,
-      oneTimeToken,
-      authToken,
-    });
-    */
-  }
-
-  static exchangeOtt() {}
-
   static generateRandomToken(length = 64): string {
     return Crypto.randomBytes(length)
       .toString("base64url")

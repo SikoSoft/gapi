@@ -24,6 +24,12 @@ function getStart(request: HttpRequest): number {
     : 0;
 }
 
+function getPerPage(request: HttpRequest): number {
+  return request.query.has("perPage")
+    ? parseInt(request.query.get("perPage") || "")
+    : perPage;
+}
+
 function getFilter(request: HttpRequest): ListFilter {
   if (request.query.has("filter")) {
     return JSON.parse(request.query.get("filter")) as ListFilter;
@@ -76,6 +82,7 @@ export async function action(
       return jsonReply({ action });
     case "GET":
       const start = getStart(request);
+      const perPage = getPerPage(request);
       const filter = getFilter(request);
       const sort = getSort(request);
       const context = getContext(request);

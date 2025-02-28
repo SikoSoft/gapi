@@ -1,7 +1,9 @@
 import { List } from "api-spec/models";
 import { prisma } from "..";
-import { PrismaListConfig, PrismaListFilter } from "../models/ListConfig";
-import { ListContextType, ListFilterType } from "api-spec/models/List";
+import { PrismaListConfig } from "../models/ListConfig";
+import { ListFilterType } from "api-spec/models/List";
+import { Settings } from "api-spec/models/Setting";
+import { Setting } from "./Setting";
 
 export class ListConfig {
   static async delete(userId: string, listConfigId: string): Promise<boolean> {
@@ -147,6 +149,13 @@ export class ListConfig {
             },
           },
           sort: true,
+          setting: {
+            include: {
+              numberSettings: true,
+              textSettings: true,
+              booleanSettings: true,
+            },
+          },
         },
       });
 
@@ -157,7 +166,6 @@ export class ListConfig {
   }
 
   static async getByUser(userId: string): Promise<List.ListConfig[]> {
-    console.log("getByUser");
     try {
       const listConfigs = await prisma.listConfig.findMany({
         where: { userId },
@@ -170,6 +178,13 @@ export class ListConfig {
             },
           },
           sort: true,
+          setting: {
+            include: {
+              numberSettings: true,
+              textSettings: true,
+              booleanSettings: true,
+            },
+          },
         },
         orderBy: { name: "asc" },
       });
@@ -182,7 +197,7 @@ export class ListConfig {
         ListConfig.mapDataToSpec(listConfig)
       );
     } catch (error) {
-      console.error(`Failed to retrieve listConfigs for user ${userId}`);
+      console.error(`Failed to retrieve listConfigs for user ${userId}`, error);
       return [];
     }
   }
@@ -265,12 +280,17 @@ export class ListConfig {
     };
   }
 
+  static mapSettingDataToSpec(data: PrismaListConfig["setting"]): Settings {
+    return Setting.mapDataToSpec(data);
+  }
+
   static mapDataToSpec(data: PrismaListConfig): List.ListConfig {
     return {
       id: data.id,
       name: data.name,
       filter: ListConfig.mapFilterDataToSpec(data.filter),
       sort: ListConfig.mapSortDataToSpec(data.sort),
+      setting: ListConfig.mapSettingDataToSpec(data.setting),
     };
   }
 }

@@ -94,3 +94,5 @@ appsettings.json
 local.settings.json
 
 .DS_Store
+asset-manager.md
+collections.json

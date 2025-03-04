@@ -18,7 +18,7 @@ export class ListConfig {
 
   static async update(
     userId: string,
-    listConfig: List.ListConfig
+    listConfig: Omit<List.ListConfig, "setting">
   ): Promise<List.ListConfig> {
     await prisma.listConfig.update({
       data: {

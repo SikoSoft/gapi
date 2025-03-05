@@ -72,14 +72,14 @@ export async function action(
     case "POST":
       body = (await request.json()) as ActionBodyPayload;
       action = await Action.create(userId, body);
-      return jsonReply({ action });
+      return jsonReply({ ...action });
     case "PUT":
       body = (await request.json()) as ActionBodyPayload;
       action = await Action.update(userId, parseInt(request.params.id), body);
-      return jsonReply({ action });
+      return jsonReply({ ...action });
     case "DELETE":
       action = await Action.delete(userId, parseInt(request.params.id));
-      return jsonReply({ action });
+      return jsonReply({ ...action });
     case "GET":
       const start = getStart(request);
       const perPage = getPerPage(request);

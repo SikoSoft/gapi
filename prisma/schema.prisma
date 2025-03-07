@@ -16,7 +16,6 @@ datasource db {
 
 model Action {
   id         Int         @id @default(autoincrement())
-  type       String      @db.VarChar(64)
   desc       String      @db.VarChar(255)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt

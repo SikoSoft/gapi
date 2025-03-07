@@ -3,7 +3,6 @@ import { ListContext, ListFilter, ListSort } from "api-spec/models/List";
 
 export interface ActionBodyPayload {
   desc: string;
-  type: string;
   occurredAt?: string;
   timeZone: string;
   tags: string[];

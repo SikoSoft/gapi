@@ -113,7 +113,6 @@ export class Action {
   static async create(userId: string, data: ActionBodyPayload) {
     const action = await prisma.action.create({
       data: {
-        type: data.type,
         desc: data.desc,
         userId,
       },
@@ -135,7 +134,6 @@ export class Action {
     );
     const action = await prisma.action.update({
       data: {
-        type: data.type,
         desc: data.desc,
         occurredAt,
       },

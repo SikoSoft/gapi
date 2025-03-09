@@ -22,6 +22,7 @@ model Action {
   occurredAt DateTime    @default(now())
   userId     String?     @db.Uuid
   tags       ActionTag[]
+  properties Property[]
 }
 
 model ActionTag {
@@ -164,4 +165,18 @@ model Setting {
   numberSettings  NumberSetting[]
   textSettings    TextSetting[]
   listConfig      ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+}
+
+model Property {
+  id             Int            @id @default(autoincrement())
+  actionId       Int
+  action         Action         @relation(fields: [actionId], references: [id])
+  dateProperties DateProperty[]
+}
+
+model DateProperty {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  date       DateTime
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 }

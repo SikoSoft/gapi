@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import Crypto from "crypto";
 import * as argon2 from "argon2";
 import { prisma } from "..";
-import { Session, User } from "../models/Identity";
+import { PrismaSession, User } from "../models/Identity";
 
 export interface UserPayload {
   username: string;
@@ -110,12 +110,13 @@ export class IdentityManager {
 
   static async getSessionByAuthToken(
     authToken: string
-  ): Promise<Session | null> {
+  ): Promise<PrismaSession | null> {
     let session = null;
 
     try {
       session = await prisma.session.findUnique({
         where: { authToken, active: true, expiresAt: { gt: new Date() } },
+        include: { user: { include: { roles: { include: { role: true } } } } },
       });
     } catch (error) {
       console.error(
@@ -138,5 +139,12 @@ export class IdentityManager {
 
   static async saveLoginAttempt(userId: string, ip: string): Promise<void> {
     await prisma.loginAttempt.create({ data: { userId, ip } });
+  }
+
+  static async setRoles(userId: string, roles: string[]): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { roles: { set: [] } },
+    });
   }
 }

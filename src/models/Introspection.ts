@@ -3,6 +3,7 @@ export interface IntrospectionUser {
   user: {
     id: string;
     sessionId: string;
+    roles: string[];
   };
   expiresAt: Date;
 }

@@ -52,6 +52,7 @@ export const introspect = async (
         user: {
           id: session.userId,
           sessionId: authToken,
+          roles: session.user.roles.map((r) => r.role.label),
         },
         expiresAt: session.expiresAt,
       };

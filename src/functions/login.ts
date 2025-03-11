@@ -29,7 +29,7 @@ export async function login(
     console.log({ passwordIsValid });
     if (passwordIsValid) {
       const authToken = await IdentityManager.createSession(user.id);
-      return jsonReply({ authToken });
+      return jsonReply({ authToken, userId: user.id, username: user.username });
     }
 
     const ip = getIp(request);

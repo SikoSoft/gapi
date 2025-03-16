@@ -6,13 +6,7 @@ import {
 } from "@azure/functions";
 import { IdentityManager } from "../lib/IdentityManager";
 import { jsonReply } from "..";
-
-declare interface RequestBody {
-  username: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-}
+import { UserCreateBody } from "../models/Identity";
 
 export async function user(
   request: HttpRequest,
@@ -20,26 +14,32 @@ export async function user(
 ): Promise<HttpResponseInit> {
   context.log(`Http function processed request for url "${request.url}"`);
 
-  const body = (await request.json()) as RequestBody;
+  switch (request.method) {
+    case "POST":
+      const body = (await request.json()) as UserCreateBody;
+      const id = await IdentityManager.createUser(
+        body.username,
+        body.firstName,
+        body.lastName,
+        body.password
+      );
 
-  const id = await IdentityManager.createUser(
-    body.username,
-    body.firstName,
-    body.lastName,
-    body.password
-  );
+      if (!id) {
+        return {
+          status: 400,
+        };
+      }
 
-  if (!id) {
-    return {
-      status: 400,
-    };
+      return jsonReply({ id });
+    case "PUT":
+      break;
+    default:
+      return jsonReply({ error: "Method not allowed" }, 405);
   }
-
-  return jsonReply({ id });
 }
 
 app.http("user", {
-  methods: ["GET", "POST"],
+  methods: ["POST", "PUT"],
   authLevel: "anonymous",
   handler: user,
 });

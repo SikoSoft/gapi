@@ -32,5 +32,5 @@ app.http("introspect", {
   methods: ["GET"],
   authLevel: "anonymous",
   handler: user,
-  route: "introspect",
+  route: "user/introspect",
 });

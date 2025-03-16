@@ -28,9 +28,9 @@ export async function user(
   return jsonReply({ introspection });
 }
 
-app.http("user", {
+app.http("introspect", {
   methods: ["GET"],
   authLevel: "anonymous",
   handler: user,
-  route: "user/introspect",
+  route: "introspect",
 });

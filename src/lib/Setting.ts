@@ -15,10 +15,23 @@ import {
 export type SettingConfigPart = Partial<SettingConfig>;
 
 export class Setting {
-  static async getByListConfigId(listConfigId: string) {
-    return await prisma.setting.findFirst({
+  static async getByListConfigId(
+    listConfigId: string
+  ): Promise<Result<PrismaSetting, Error>> {
+    const res = await prisma.setting.findFirst({
       where: { listConfigId },
+      include: {
+        numberSettings: true,
+        textSettings: true,
+        booleanSettings: true,
+      },
     });
+
+    if (!res) {
+      return err(new Error("Setting not found"));
+    }
+
+    return ok(res);
   }
 
   static async update(

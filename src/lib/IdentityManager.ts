@@ -1,3 +1,4 @@
+import { err, ok, Result } from "neverthrow";
 import { v4 as uuidv4 } from "uuid";
 import Crypto from "crypto";
 import * as argon2 from "argon2";
@@ -137,8 +138,43 @@ export class IdentityManager {
     return result;
   }
 
-  static async saveLoginAttempt(userId: string, ip: string): Promise<void> {
-    await prisma.loginAttempt.create({ data: { userId, ip } });
+  static async saveLoginAttempt(
+    userId: string,
+    ip: string
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.loginAttempt.create({
+        data: { ...(userId ? { userId } : {}), ip },
+      });
+      return ok(null);
+    } catch (error) {
+      console.error("Something went wrong saving login attempt", error);
+      return err(error);
+    }
+  }
+
+  static async getLoginAttempts(
+    userId: string,
+    ip: string,
+    seconds: number
+  ): Promise<Result<number, Error>> {
+    try {
+      const attempts = await prisma.loginAttempt.count({
+        where: {
+          AND: [
+            { OR: [{ userId }, { ip }] },
+            {
+              attemptedAt: {
+                gte: new Date(Date.now() - seconds * 1000),
+              },
+            },
+          ],
+        },
+      });
+      return ok(attempts);
+    } catch (error) {
+      return err(error);
+    }
   }
 
   static async setRoles(userId: string, roles: string[]): Promise<void> {

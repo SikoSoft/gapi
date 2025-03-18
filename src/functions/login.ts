@@ -4,7 +4,7 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { forbiddenReply, getIp, jsonReply } from "..";
+import { getIp, jsonReply } from "..";
 import { IdentityManager } from "../lib/IdentityManager";
 
 declare interface RequestBody {
@@ -19,24 +19,45 @@ export async function login(
   const body = (await request.json()) as RequestBody;
 
   const user = await IdentityManager.getUserByUserName(body.username);
+  const ip = getIp(request);
 
   if (user) {
-    console.log({ user });
     const passwordIsValid = await IdentityManager.verifyPassword(
       user.id,
       body.password
     );
-    console.log({ passwordIsValid });
-    if (passwordIsValid) {
-      const authToken = await IdentityManager.createSession(user.id);
-      return jsonReply({ authToken, userId: user.id, username: user.username });
+
+    if (!passwordIsValid) {
+      await IdentityManager.saveLoginAttempt(user.id, ip);
+
+      return {
+        status: 401,
+      };
     }
 
-    const ip = getIp(request);
+    const numFailedAttemptsRes = await IdentityManager.getLoginAttempts(
+      user.id,
+      ip,
+      60
+    );
+    if (numFailedAttemptsRes.isErr()) {
+      return {
+        status: 500,
+      };
+    }
 
-    await IdentityManager.saveLoginAttempt(user.id, ip);
+    if (numFailedAttemptsRes.value >= 3) {
+      await IdentityManager.saveLoginAttempt(user.id, ip);
+      return {
+        status: 401,
+      };
+    }
+
+    const authToken = await IdentityManager.createSession(user.id);
+    return jsonReply({ authToken, userId: user.id, username: user.username });
   }
 
+  await IdentityManager.saveLoginAttempt("", ip);
   return {
     status: 401,
   };

@@ -136,7 +136,7 @@ model Session {
 
 model LoginAttempt {
   id          Int      @id @default(autoincrement())
-  userId      String   @db.Uuid
+  userId      String?  @db.Uuid
   attemptedAt DateTime @updatedAt
   ip          String   @db.VarChar(128)
 }

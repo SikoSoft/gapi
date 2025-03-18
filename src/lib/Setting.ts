@@ -1,3 +1,4 @@
+import { Result, ok, err } from "neverthrow";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "..";
 import { PrismaSetting, SettingDataName } from "../models/Setting";
@@ -20,7 +21,14 @@ export class Setting {
     });
   }
 
-  static async update(listConfigId: string, setting: SettingSpec) {
+  static async update(
+    listConfigId: string,
+    setting: SettingSpec
+  ): Promise<Result<boolean, Error>> {
+    if (!settingsConfig[setting.name]) {
+      return err(new Error("Setting not found"));
+    }
+
     const settingControlType = settingsConfig[setting.name].control.type;
     const settingType = Setting.getDataTypeFromControlType(settingControlType);
 
@@ -42,10 +50,13 @@ export class Setting {
         return await Setting.updateTextSetting(settingRecord.id, setting);
     }
 
-    return await Setting.getByListConfigId(settingRecord.id);
+    return err(new Error("Setting type not supported"));
   }
 
-  static async updateTextSetting(settingId: string, setting: SettingSpec) {
+  static async updateTextSetting(
+    settingId: string,
+    setting: SettingSpec
+  ): Promise<Result<boolean, Error>> {
     const settingControlType = settingsConfig[setting.name].control.type;
 
     if (
@@ -56,20 +67,29 @@ export class Setting {
     }
 
     const value = setting.value as SettingTypeConfig[typeof settingControlType];
-    return await prisma.textSetting.upsert({
-      where: { settingId, name: setting.name },
-      create: {
-        settingId,
-        name: setting.name,
-        value,
-      },
-      update: {
-        value,
-      },
-    });
+
+    try {
+      await prisma.textSetting.upsert({
+        where: { settingId, name: setting.name },
+        create: {
+          settingId,
+          name: setting.name,
+          value,
+        },
+        update: {
+          value,
+        },
+      });
+      return ok(true);
+    } catch (error) {
+      return err(error);
+    }
   }
 
-  static async updateNumberSetting(settingId: string, setting: SettingSpec) {
+  static async updateNumberSetting(
+    settingId: string,
+    setting: SettingSpec
+  ): Promise<Result<boolean, Error>> {
     const settingControlType = settingsConfig[setting.name].control.type;
 
     if (settingControlType !== ControlType.NUMBER) {
@@ -77,17 +97,23 @@ export class Setting {
     }
 
     const value = setting.value as SettingTypeConfig[typeof settingControlType];
-    return await prisma.numberSetting.upsert({
-      where: { settingId, name: setting.name },
-      create: {
-        settingId,
-        name: setting.name,
-        value,
-      },
-      update: {
-        value,
-      },
-    });
+
+    try {
+      await prisma.numberSetting.upsert({
+        where: { settingId, name: setting.name },
+        create: {
+          settingId,
+          name: setting.name,
+          value,
+        },
+        update: {
+          value,
+        },
+      });
+      return ok(true);
+    } catch (error) {
+      return err(error);
+    }
   }
 
   static getDataTypeFromControlType(controlType: string): SettingDataName {

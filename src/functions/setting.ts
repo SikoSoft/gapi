@@ -18,8 +18,15 @@ export async function setting(
   }
 
   const settingBody = (await request.json()) as SettingSpec;
+  console.log("settingBody", settingBody);
 
-  Setting.update(request.params.listConfigId, settingBody);
+  const result = await Setting.update(request.params.listConfigId, settingBody);
+
+  if (result.isErr()) {
+    return {
+      status: 400,
+    };
+  }
 
   return {
     status: 204,

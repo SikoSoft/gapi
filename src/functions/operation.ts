@@ -7,6 +7,7 @@ import {
 import { forbiddenReply, introspect, jsonReply, prisma } from "..";
 import { BulkOperation, OperationType } from "api-spec/models/Operation";
 import { Tagging } from "../lib/Tagging";
+import { Action } from "../lib/Action";
 
 export type RequestBody = BulkOperation;
 
@@ -25,28 +26,50 @@ export async function operation(
   switch (body.operation.type) {
     case OperationType.DELETE:
       for (const actionId of body.actions) {
-        await Tagging.deleteAllActionTags(actionId);
-        await prisma.action.delete({ where: { id: actionId, userId } });
+        if ((await Tagging.deleteAllActionTags(actionId)).isErr()) {
+          return { status: 500 };
+        }
+        if ((await Action.delete(userId, actionId)).isErr()) {
+          return { status: 500 };
+        }
       }
       break;
     case OperationType.ADD_TAGS:
-      console.log("add tags");
       for (const actionId of body.actions) {
-        console.log("add tags", actionId);
-        await Tagging.saveTags(body.operation.tags);
-        await Tagging.addActionTags(actionId, body.operation.tags);
+        if ((await Tagging.saveTags(body.operation.tags)).isErr()) {
+          return { status: 500 };
+        }
+        if (
+          (await Tagging.addActionTags(actionId, body.operation.tags)).isErr()
+        ) {
+          return { status: 500 };
+        }
       }
       break;
     case OperationType.REMOVE_TAGS:
       for (const actionId of body.actions) {
-        await Tagging.deleteActionTags(actionId, body.operation.tags);
+        if (
+          (
+            await Tagging.deleteActionTags(actionId, body.operation.tags)
+          ).isErr()
+        ) {
+          return { status: 500 };
+        }
       }
       break;
     case OperationType.REPLACE_TAGS:
       for (const actionId of body.actions) {
-        await Tagging.deleteAllActionTags(actionId);
-        await Tagging.saveTags(body.operation.tags);
-        await Tagging.addActionTags(actionId, body.operation.tags);
+        if ((await Tagging.deleteAllActionTags(actionId)).isErr()) {
+          return { status: 500 };
+        }
+        if ((await Tagging.saveTags(body.operation.tags)).isErr()) {
+          return { status: 500 };
+        }
+        if (
+          (await Tagging.addActionTags(actionId, body.operation.tags)).isErr()
+        ) {
+          return { status: 500 };
+        }
       }
       break;
   }

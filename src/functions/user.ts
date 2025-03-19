@@ -17,20 +17,20 @@ export async function user(
   switch (request.method) {
     case "POST":
       const body = (await request.json()) as UserCreateBody;
-      const id = await IdentityManager.createUser(
+      const res = await IdentityManager.createUser(
         body.username,
         body.firstName,
         body.lastName,
         body.password
       );
 
-      if (!id) {
+      if (res.isErr()) {
         return {
           status: 400,
         };
       }
 
-      return jsonReply({ id });
+      return jsonReply({ id: res.value });
     case "PUT":
       break;
     default:

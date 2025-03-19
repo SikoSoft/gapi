@@ -18,10 +18,17 @@ export async function login(
 ): Promise<HttpResponseInit> {
   const body = (await request.json()) as RequestBody;
 
-  const user = await IdentityManager.getUserByUserName(body.username);
+  const userRes = await IdentityManager.getUserByUserName(body.username);
+  if (userRes.isErr()) {
+    return {
+      status: 500,
+    };
+  }
+
   const ip = getIp(request);
 
-  if (user) {
+  if (userRes) {
+    const user = userRes.value;
     const passwordIsValid = await IdentityManager.verifyPassword(
       user.id,
       body.password

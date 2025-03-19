@@ -15,7 +15,7 @@ export class IdentityManager {
     firstName: string,
     lastName: string,
     password: string
-  ) {
+  ): Promise<Result<string, Error>> {
     let userId = "";
 
     try {
@@ -32,25 +32,35 @@ export class IdentityManager {
       });
       userId = user.id;
     } catch (error) {
-      console.error("Something went wrong trying to create user", error);
+      return err(error);
     }
 
-    return userId;
+    return ok(userId);
   }
 
-  static async getUserById(id: string): Promise<User> {
-    const user = await prisma.user.findFirst({ where: { id } });
-    return user;
+  static async getUserById(id: string): Promise<Result<User, Error>> {
+    try {
+      const user = await prisma.user.findFirst({ where: { id } });
+      return ok(user);
+    } catch (error) {
+      return err(error);
+    }
   }
 
-  static async getUserByUserName(username: string): Promise<User | null> {
-    const user = await prisma.user.findFirst({
-      where: {
-        username: { equals: username, mode: "insensitive" },
-      },
-    });
+  static async getUserByUserName(
+    username: string
+  ): Promise<Result<User | null, Error>> {
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          username: { equals: username, mode: "insensitive" },
+        },
+      });
 
-    return user;
+      return ok(user);
+    } catch (error) {
+      return err(error);
+    }
   }
 
   static generateRandomToken(length = 64): string {
@@ -75,13 +85,16 @@ export class IdentityManager {
   static async verifyPassword(
     userId: string,
     password: string
-  ): Promise<boolean> {
+  ): Promise<Result<boolean, Error>> {
     let success = false;
 
     try {
-      const user = await IdentityManager.getUserById(userId);
+      const userRes = await IdentityManager.getUserById(userId);
+      if (userRes.isErr()) {
+        return err(userRes.error);
+      }
 
-      success = await argon2.verify(user.password, password);
+      success = await argon2.verify(userRes.value.password, password);
     } catch (error) {
       console.error(
         "Something went wrong when trying to verify the password",
@@ -89,7 +102,7 @@ export class IdentityManager {
       );
     }
 
-    return success;
+    return ok(success);
   }
 
   static async createSession(userId: string): Promise<string> {

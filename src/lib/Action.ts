@@ -296,4 +296,27 @@ export class Action {
         return quantity * 86400000;
     }
   }
+
+  static async getSuggestions(
+    userId: string,
+    desc: string
+  ): Promise<Result<string[], Error>> {
+    try {
+      const actions = await prisma.action.findMany({
+        distinct: ["desc"],
+        take: 10,
+        where: {
+          desc: { startsWith: desc, mode: "insensitive" },
+          userId,
+        },
+        orderBy: { desc: "asc" },
+      });
+      const suggestions = [
+        ...new Set(actions.map((row) => row.desc.toLowerCase().trim())),
+      ];
+      return ok(suggestions);
+    } catch (error) {
+      return err(error);
+    }
+  }
 }

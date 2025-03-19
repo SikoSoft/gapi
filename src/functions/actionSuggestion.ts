@@ -4,7 +4,8 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { forbiddenReply, introspect, prisma } from "..";
+import { forbiddenReply, introspect, jsonReply, prisma } from "..";
+import { Action } from "../lib/Action";
 
 export async function actionSuggestion(
   request: HttpRequest,
@@ -16,27 +17,20 @@ export async function actionSuggestion(
     return forbiddenReply();
   }
 
-  const userId = introspection.user.id;
+  const suggestionsRes = await Action.getSuggestions(
+    introspection.user.id,
+    request.params.query
+  );
 
-  console.log("query", request.params.query);
-  const actions = await prisma.action.findMany({
-    distinct: ["desc"],
-    take: 10,
-    where: {
-      desc: { startsWith: request.params.query, mode: "insensitive" },
-      userId,
-    },
-    orderBy: { desc: "asc" },
+  if (suggestionsRes.isErr()) {
+    return {
+      status: 500,
+    };
+  }
+
+  return jsonReply({
+    suggestions: suggestionsRes.value,
   });
-  const suggestions = [
-    ...new Set(actions.map((row) => row.desc.toLowerCase().trim())),
-  ];
-
-  const reply = {
-    suggestions,
-  };
-
-  return { body: JSON.stringify(reply) };
 }
 
 app.http("actionSuggestion", {

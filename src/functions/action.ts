@@ -1,3 +1,4 @@
+import { Result } from "neverthrow";
 import {
   app,
   HttpRequest,
@@ -67,26 +68,45 @@ export async function action(
 
   let body: ActionBodyPayload;
 
-  let action: PrismaAction;
+  let actionRes: Result<PrismaAction, Error>;
   switch (request.method) {
     case "POST":
       body = (await request.json()) as ActionBodyPayload;
-      action = await Action.create(userId, body);
-      return jsonReply({ ...action });
+      actionRes = await Action.create(userId, body);
+      if (actionRes.isErr()) {
+        return {
+          status: 500,
+        };
+      }
+      return jsonReply({ ...actionRes.value });
     case "PUT":
       body = (await request.json()) as ActionBodyPayload;
-      action = await Action.update(userId, parseInt(request.params.id), body);
-      return jsonReply({ ...action });
+      actionRes = await Action.update(
+        userId,
+        parseInt(request.params.id),
+        body
+      );
+      if (actionRes.isErr()) {
+        return {
+          status: 500,
+        };
+      }
+      return jsonReply({ ...actionRes.value });
     case "DELETE":
-      action = await Action.delete(userId, parseInt(request.params.id));
-      return jsonReply({ ...action });
+      actionRes = await Action.delete(userId, parseInt(request.params.id));
+      if (actionRes.isErr()) {
+        return {
+          status: 500,
+        };
+      }
+      return jsonReply({ ...actionRes.value });
     case "GET":
       const start = getStart(request);
       const perPage = getPerPage(request);
       const filter = getFilter(request);
       const sort = getSort(request);
       const context = getContext(request);
-      const actionList = await Action.getList({
+      const actionListRes = await Action.getList({
         userId,
         filter,
         context,
@@ -94,7 +114,12 @@ export async function action(
         start,
         perPage,
       });
-      return jsonReply(actionList);
+      if (actionListRes.isErr()) {
+        return {
+          status: 500,
+        };
+      }
+      return jsonReply(actionListRes.value);
   }
 }
 

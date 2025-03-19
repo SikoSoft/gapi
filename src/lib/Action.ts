@@ -1,3 +1,4 @@
+import { Result, err, ok } from "neverthrow";
 import { Prisma, Action as PrismaAction } from "@prisma/client";
 import {
   ListContext,
@@ -110,40 +111,51 @@ export class Action {
     });
   }
 
-  static async create(userId: string, data: ActionBodyPayload) {
-    const action = await prisma.action.create({
-      data: {
-        desc: data.desc,
-        userId,
-      },
-    });
-    Tagging.syncActionTags(action.id, data.tags);
-    return action;
+  static async create(
+    userId: string,
+    data: ActionBodyPayload
+  ): Promise<Result<PrismaAction, Error>> {
+    try {
+      const action = await prisma.action.create({
+        data: {
+          desc: data.desc,
+          userId,
+        },
+      });
+      Tagging.syncActionTags(action.id, data.tags);
+      return ok(action);
+    } catch (error) {
+      return err(error);
+    }
   }
 
   static async update(
     userId: string,
     id: number,
     data: ActionBodyPayload
-  ): Promise<PrismaAction> {
+  ): Promise<Result<PrismaAction, Error>> {
     const timeZone = parseInt(data.timeZone);
     const serverTimeZone = new Date().getTimezoneOffset();
     const timeZoneDiff = serverTimeZone - timeZone;
     const occurredAt = new Date(
       new Date(data.occurredAt).getTime() - timeZoneDiff * 60000
     );
-    const action = await prisma.action.update({
-      data: {
-        desc: data.desc,
-        occurredAt,
-      },
-      where: {
-        id,
-        userId,
-      },
-    });
-    Tagging.syncActionTags(action.id, data.tags);
-    return action;
+    try {
+      const action = await prisma.action.update({
+        data: {
+          desc: data.desc,
+          occurredAt,
+        },
+        where: {
+          id,
+          userId,
+        },
+      });
+      Tagging.syncActionTags(action.id, data.tags);
+      return ok(action);
+    } catch (error) {
+      return err(error);
+    }
   }
 
   static async getList({
@@ -153,55 +165,73 @@ export class Action {
     sort,
     start,
     perPage,
-  }: ActionListParams): Promise<ActionList> {
+  }: ActionListParams): Promise<Result<ActionList, Error>> {
     const where = Action.getFilteredConditions(userId, filter);
 
-    const actions = (
-      await prisma.action.findMany({
-        skip: start,
-        take: perPage,
-        where,
-        orderBy: {
-          [sort.property]: sort.direction,
-        },
-        include: {
-          tags: true,
-        },
-      })
-    ).map((action) => ({
-      ...action,
-      tags: action.tags.map((tag) => tag.label),
-    }));
+    let actions: PrismaAction[];
 
-    const contextActions = await Action.getContextActions(
-      context,
-      actions,
-      sort
-    );
+    try {
+      actions = (
+        await prisma.action.findMany({
+          skip: start,
+          take: perPage,
+          where,
+          orderBy: {
+            [sort.property]: sort.direction,
+          },
+          include: {
+            tags: true,
+          },
+        })
+      ).map((action) => ({
+        ...action,
+        tags: action.tags.map((tag) => tag.label),
+      }));
 
-    const total = await prisma.action.count({ where });
+      const contextActionsRes = await Action.getContextActions(
+        context,
+        actions,
+        sort
+      );
 
-    return {
-      actions,
-      context: contextActions,
-      total,
-    };
+      if (contextActionsRes.isErr()) {
+        return err(contextActionsRes.error);
+      }
+
+      const total = await prisma.action.count({ where });
+
+      return ok({
+        actions,
+        context: contextActionsRes.value,
+        total,
+      });
+    } catch (error) {
+      return err(error);
+    }
   }
 
-  static async delete(userId: string, id: number): Promise<PrismaAction> {
-    return await prisma.action.delete({
-      where: {
-        userId,
-        id,
-      },
-    });
+  static async delete(
+    userId: string,
+    id: number
+  ): Promise<Result<PrismaAction, Error>> {
+    try {
+      const action = await prisma.action.delete({
+        where: {
+          userId,
+          id,
+        },
+      });
+      return ok(action);
+    } catch (error) {
+      return err(error);
+    }
   }
 
   static async getContextActions(
     listContext: ListContext,
     actions: PrismaAction[],
     sort: ListSort
-  ): Promise<ContextActions> {
+  ): Promise<Result<ContextActions, Error>> {
     let contextActions: ContextActions = {};
 
     if (listContext) {
@@ -226,26 +256,31 @@ export class Action {
               )
           );
         }
-        const actionContext = await prisma.action.findMany({
-          where: {
-            AND: [
-              { occurredAt: { gte: startTime } },
-              { occurredAt: { lte: endTime } },
-            ],
-          },
-          orderBy: {
-            [sort.property]: sort.direction,
-          },
-          include: {
-            tags: true,
-          },
-        });
 
-        contextActions[actions[i].id] = actionContext;
+        try {
+          const actionContext = await prisma.action.findMany({
+            where: {
+              AND: [
+                { occurredAt: { gte: startTime } },
+                { occurredAt: { lte: endTime } },
+              ],
+            },
+            orderBy: {
+              [sort.property]: sort.direction,
+            },
+            include: {
+              tags: true,
+            },
+          });
+
+          contextActions[actions[i].id] = actionContext;
+        } catch (error) {
+          return err(error);
+        }
       }
     }
 
-    return contextActions;
+    return ok(contextActions);
   }
 
   static secondsFromQuantityUnits(

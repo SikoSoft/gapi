@@ -19,13 +19,19 @@ export async function tagSuggestion(
   context.log(`Http function processed request for url "${request.url}"`);
 
   console.log("query", request.params.query);
-  const suggestions = await Tagging.getTagsFromDesc(
+  const suggestionsRes = await Tagging.getTagsFromDesc(
     userId,
     request.params.query
   );
 
+  if (suggestionsRes.isErr()) {
+    return {
+      status: 500,
+    };
+  }
+
   const reply = {
-    suggestions,
+    suggestions: suggestionsRes.value,
   };
 
   return { body: JSON.stringify(reply) };

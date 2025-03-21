@@ -1,4 +1,4 @@
-import { ActionList } from "./Action";
+import { ActionBodyPayload, ActionList } from "./Action";
 
 export enum HttpMethod {
   GET = "GET",
@@ -26,6 +26,10 @@ export interface EndpointConfig {
   [EndpointName.ACTION]: {
     [HttpMethod.GET]: {
       responseBody: ActionList;
+    };
+    [HttpMethod.POST]: {
+      requestBody: ActionBodyPayload;
+      responseBody: any;
     };
   };
 }

@@ -1,4 +1,4 @@
-import { Action as PrismaAction } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { ListContext, ListFilter, ListSort } from "api-spec/models/List";
 
 export interface ActionBodyPayload {
@@ -20,7 +20,20 @@ export interface ActionListParams {
 }
 
 export interface ActionList {
-  actions: PrismaAction[];
+  actions: ActionItem[];
   context: ContextActions;
   total: number;
 }
+
+const prismaAction = Prisma.validator<Prisma.ActionFindUniqueArgs>()({
+  where: { id: 1, userId: "" },
+  include: {
+    tags: true,
+  },
+});
+
+export type PrismaAction = Prisma.ActionGetPayload<typeof prismaAction>;
+
+export type ActionItem = Omit<PrismaAction, "tags"> & {
+  tags: string[];
+};

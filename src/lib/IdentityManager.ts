@@ -142,13 +142,19 @@ export class IdentityManager {
     return session;
   }
 
-  static async revokeAuthToken(authToken: string): Promise<{ userId: string }> {
-    const result = await prisma.session.update({
-      data: { active: false },
-      where: { authToken },
-    });
+  static async revokeAuthToken(
+    authToken: string
+  ): Promise<Result<{ userId: string }, Error>> {
+    try {
+      const result = await prisma.session.update({
+        data: { active: false },
+        where: { authToken },
+      });
 
-    return result;
+      return ok(result);
+    } catch (error) {
+      return err(error);
+    }
   }
 
   static async saveLoginAttempt(

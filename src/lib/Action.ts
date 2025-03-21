@@ -1,5 +1,5 @@
 import { Result, err, ok } from "neverthrow";
-import { Prisma, Action as PrismaAction } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import {
   ListContext,
   ListContextType,
@@ -11,10 +11,12 @@ import {
 import { prisma } from "..";
 import { Tagging } from "./Tagging";
 import {
+  PrismaAction,
   ActionBodyPayload,
   ActionList,
   ActionListParams,
   ContextActions,
+  ActionItem,
 } from "../models/Action";
 
 export class Action {
@@ -121,6 +123,9 @@ export class Action {
           desc: data.desc,
           userId,
         },
+        include: {
+          tags: true,
+        },
       });
       Tagging.syncActionTags(action.id, data.tags);
       return ok(action);
@@ -150,6 +155,9 @@ export class Action {
           id,
           userId,
         },
+        include: {
+          tags: true,
+        },
       });
       Tagging.syncActionTags(action.id, data.tags);
       return ok(action);
@@ -168,7 +176,7 @@ export class Action {
   }: ActionListParams): Promise<Result<ActionList, Error>> {
     const where = Action.getFilteredConditions(userId, filter);
 
-    let actions: PrismaAction[];
+    let actions: ActionItem[];
 
     try {
       actions = (
@@ -220,6 +228,9 @@ export class Action {
           userId,
           id,
         },
+        include: {
+          tags: true,
+        },
       });
       return ok(action);
     } catch (error) {
@@ -229,7 +240,7 @@ export class Action {
 
   static async getContextActions(
     listContext: ListContext,
-    actions: PrismaAction[],
+    actions: ActionItem[],
     sort: ListSort
   ): Promise<Result<ContextActions, Error>> {
     let contextActions: ContextActions = {};

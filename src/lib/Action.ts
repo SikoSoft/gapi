@@ -116,7 +116,7 @@ export class Action {
   static async create(
     userId: string,
     data: ActionBodyPayload
-  ): Promise<Result<PrismaAction, Error>> {
+  ): Promise<Result<ActionItem, Error>> {
     try {
       const action = await prisma.action.create({
         data: {
@@ -128,7 +128,7 @@ export class Action {
         },
       });
       Tagging.syncActionTags(action.id, data.tags);
-      return ok(action);
+      return ok(Action.toSpec(action));
     } catch (error) {
       return err(error);
     }
@@ -138,7 +138,7 @@ export class Action {
     userId: string,
     id: number,
     data: ActionBodyPayload
-  ): Promise<Result<PrismaAction, Error>> {
+  ): Promise<Result<ActionItem, Error>> {
     const timeZone = parseInt(data.timeZone);
     const serverTimeZone = new Date().getTimezoneOffset();
     const timeZoneDiff = serverTimeZone - timeZone;
@@ -160,10 +160,17 @@ export class Action {
         },
       });
       Tagging.syncActionTags(action.id, data.tags);
-      return ok(action);
+      return ok(Action.toSpec(action));
     } catch (error) {
       return err(error);
     }
+  }
+
+  static toSpec(action: PrismaAction): ActionItem {
+    return {
+      ...action,
+      tags: action.tags.map((tag) => tag.label),
+    };
   }
 
   static async getList({
@@ -191,10 +198,7 @@ export class Action {
             tags: true,
           },
         })
-      ).map((action) => ({
-        ...action,
-        tags: action.tags.map((tag) => tag.label),
-      }));
+      ).map((action) => Action.toSpec(action));
 
       const contextActionsRes = await Action.getContextActions(
         context,
@@ -221,7 +225,7 @@ export class Action {
   static async delete(
     userId: string,
     id: number
-  ): Promise<Result<PrismaAction, Error>> {
+  ): Promise<Result<ActionItem, Error>> {
     try {
       const action = await prisma.action.delete({
         where: {
@@ -232,7 +236,7 @@ export class Action {
           tags: true,
         },
       });
-      return ok(action);
+      return ok(Action.toSpec(action));
     } catch (error) {
       return err(error);
     }

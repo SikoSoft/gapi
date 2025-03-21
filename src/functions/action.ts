@@ -14,8 +14,8 @@ import {
 } from "..";
 import { ListFilter, ListSort, ListContext } from "api-spec/models/List";
 import { Action } from "../lib/Action";
-import { Action as PrismaAction } from "@prisma/client";
-import { ActionBodyPayload } from "../models/Action";
+//import { Action as PrismaAction } from "@prisma/client";
+import { ActionBodyPayload, PrismaAction, ActionItem } from "../models/Action";
 
 const perPage = 25;
 
@@ -68,7 +68,7 @@ export async function action(
 
   let body: ActionBodyPayload;
 
-  let actionRes: Result<PrismaAction, Error>;
+  let actionRes: Result<ActionItem, Error>;
   switch (request.method) {
     case "POST":
       body = (await request.json()) as ActionBodyPayload;

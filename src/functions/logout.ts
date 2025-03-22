@@ -13,7 +13,7 @@ export async function logout(
   const authToken = request.headers.get("authorization")!;
 
   const result = await IdentityManager.revokeAuthToken(authToken);
-  if (result) {
+  if (result.isOk()) {
     return {
       status: 202,
     };

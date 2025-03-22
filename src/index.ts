@@ -1,3 +1,4 @@
+import { Result, err, ok } from "neverthrow";
 import {
   HttpRequest,
   HttpResponseInit,
@@ -44,7 +45,15 @@ export const introspect = async (
   if (request.headers.has("authorization")) {
     const authToken = request.headers.get("authorization")!;
 
-    const session = await IdentityManager.getSessionByAuthToken(authToken);
+    const sessionRes = await IdentityManager.getSessionByAuthToken(authToken);
+
+    if (sessionRes.isErr()) {
+      return {
+        isLoggedIn: false,
+      };
+    }
+
+    const session = sessionRes.value;
 
     if (session) {
       return {

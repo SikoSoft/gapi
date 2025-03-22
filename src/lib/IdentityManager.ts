@@ -124,7 +124,7 @@ export class IdentityManager {
 
   static async getSessionByAuthToken(
     authToken: string
-  ): Promise<PrismaSession | null> {
+  ): Promise<Result<PrismaSession | null, Error>> {
     let session = null;
 
     try {
@@ -133,13 +133,10 @@ export class IdentityManager {
         include: { user: { include: { roles: { include: { role: true } } } } },
       });
     } catch (error) {
-      console.error(
-        "Something went wrong looking up session by authToken",
-        error
-      );
+      return err(error);
     }
 
-    return session;
+    return ok(session);
   }
 
   static async revokeAuthToken(

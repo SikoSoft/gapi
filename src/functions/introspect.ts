@@ -21,6 +21,7 @@ export async function user(
   context.log(`Http function processed request for url "${request.url}"`);
 
   const introspection = await introspect(request);
+
   if (!introspection.isLoggedIn) {
     return forbiddenReply();
   }

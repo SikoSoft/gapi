@@ -27,14 +27,21 @@ export async function login(
 
   const ip = getIp(request);
 
-  if (userRes) {
-    const user = userRes.value;
-    const passwordIsValid = await IdentityManager.verifyPassword(
+  const user = userRes.value;
+
+  if (user) {
+    const passwordIsValidRes = await IdentityManager.verifyPassword(
       user.id,
       body.password
     );
 
-    if (!passwordIsValid) {
+    if (passwordIsValidRes.isErr()) {
+      return {
+        status: 500,
+      };
+    }
+
+    if (!passwordIsValidRes.value) {
       await IdentityManager.saveLoginAttempt(user.id, ip);
 
       return {

@@ -156,10 +156,12 @@ model NumberSetting {
 }
 
 model TextSetting {
-  settingId String  @id @db.Uuid
+  settingId String  @db.Uuid
   name      String  @db.VarChar(128)
   value     String  @db.VarChar(255)
   setting   Setting @relation(fields: [settingId], references: [id], onDelete: Cascade)
+
+  @@id([settingId, name])
 }
 
 model Setting {

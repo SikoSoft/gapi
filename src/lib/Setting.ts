@@ -114,7 +114,7 @@ export class Setting {
 
     try {
       await prisma.numberSetting.upsert({
-        where: { settingId, name: setting.name },
+        where: { numberSettingId: { settingId, name: setting.name } },
         create: {
           settingId,
           name: setting.name,

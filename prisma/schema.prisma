@@ -161,7 +161,7 @@ model TextSetting {
   value     String  @db.VarChar(255)
   setting   Setting @relation(fields: [settingId], references: [id], onDelete: Cascade)
 
-  @@id([settingId, name])
+  @@unique(name: "textSettingId", fields: [settingId, name])
 }
 
 model Setting {

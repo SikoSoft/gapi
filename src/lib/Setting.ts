@@ -83,7 +83,7 @@ export class Setting {
 
     try {
       await prisma.textSetting.upsert({
-        where: { settingId, name: setting.name },
+        where: { textSettingId: { settingId, name: setting.name } },
         create: {
           settingId,
           name: setting.name,
@@ -95,6 +95,7 @@ export class Setting {
       });
       return ok(true);
     } catch (error) {
+      console.log("Error updating text setting", error);
       return err(error);
     }
   }

@@ -142,17 +142,21 @@ model LoginAttempt {
 }
 
 model BooleanSetting {
-  settingId String  @id @db.Uuid
+  settingId String  @db.Uuid
   name      String  @db.VarChar(128)
   value     Boolean
   setting   Setting @relation(fields: [settingId], references: [id], onDelete: Cascade)
+
+  @@unique(name: "booleanSettingId", fields: [settingId, name])
 }
 
 model NumberSetting {
-  settingId String  @id @db.Uuid
+  settingId String  @db.Uuid
   name      String  @db.VarChar(128)
   value     Int
   setting   Setting @relation(fields: [settingId], references: [id], onDelete: Cascade)
+
+  @@unique(name: "numberSettingId", fields: [settingId, name])
 }
 
 model TextSetting {

@@ -32,3 +32,5 @@ For example, the endpoint:
 
 As Prisma is the backbone in which the database layer is built upon, consult their documentation which is a lot more thorough than anything I would be able to cover here:
 https://www.prisma.io/docs/orm/prisma-migrate/getting-started
+
+## Deploy

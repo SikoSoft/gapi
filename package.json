@@ -7,6 +7,7 @@
     "clean": "rimraf dist",
     "build": "tsup",
     "build:production": "npm run prestart && npm prune --production",
+    "dev": "npm run start",
     "watch": "tsup --watch",
     "prestart": "npm run clean && npm run build && func extensions install",
     "start:host": "func start --port 9999",

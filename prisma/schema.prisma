@@ -22,6 +22,16 @@ model Action {
   occurredAt DateTime    @default(now())
   userId     String?     @db.Uuid
   tags       ActionTag[]
+}
+
+model Entity {
+  id         Int         @id @default(autoincrement())
+  desc       String      @db.VarChar(255)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  occurredAt DateTime    @default(now())
+  userId     String?     @db.Uuid
+  tags       EntityTag[]
   properties Property[]
 }
 
@@ -34,9 +44,19 @@ model ActionTag {
   @@id([actionId, label])
 }
 
+model EntityTag {
+  entityId Int    @default(0)
+  label    String @db.VarChar(128)
+  entity   Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [label], references: [label], onDelete: Cascade)
+
+  @@id([entityId, label])
+}
+
 model Tag {
   label     String      @unique @db.VarChar(128)
   actionTag ActionTag[]
+  entityTag EntityTag[]
 }
 
 model Leaderboard {
@@ -178,15 +198,23 @@ model Setting {
 }
 
 model Property {
-  id             Int            @id @default(autoincrement())
-  actionId       Int
-  action         Action         @relation(fields: [actionId], references: [id])
-  dateProperties DateProperty[]
+  id               Int              @id @default(autoincrement())
+  entityId         Int
+  entity           Entity           @relation(fields: [entityId], references: [id])
+  dateProperties   DateProperty[]
+  stringProperties StringProperty[]
 }
 
 model DateProperty {
   id         Int      @id @default(autoincrement())
   propertyId Int
   date       DateTime
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model StringProperty {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  string     String   @db.VarChar(255)
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 }

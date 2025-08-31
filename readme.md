@@ -33,4 +33,12 @@ For example, the endpoint:
 As Prisma is the backbone in which the database layer is built upon, consult their documentation which is a lot more thorough than anything I would be able to cover here:
 https://www.prisma.io/docs/orm/prisma-migrate/getting-started
 
+### Data model changes
+
+Every time a model (in schema.prisma) is changed, Prisma needs a new migration. Each migration should have a name. Assuming we want to call a new migration "added-user-field". we would run the following command:
+
+```
+npx prisma migration dev --name "added-user-field"
+```
+
 ## Deploy

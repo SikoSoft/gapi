@@ -29,7 +29,6 @@ model Entity {
   desc       String      @db.VarChar(255)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
-  occurredAt DateTime    @default(now())
   userId     String?     @db.Uuid
   tags       EntityTag[]
   properties Property[]

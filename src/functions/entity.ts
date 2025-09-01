@@ -13,9 +13,8 @@ import {
   jsonReply,
 } from "..";
 import { ListFilter, ListSort, ListContext } from "api-spec/models/List";
-import { Action } from "../lib/Action";
-//import { Action as PrismaAction } from "@prisma/client";
-import { ActionBodyPayload, PrismaAction, ActionItem } from "../models/Action";
+import { EntityBodyPayload, EntityItem } from "../models/Entity";
+import { Entity } from "../lib/Entity";
 
 const perPage = 25;
 
@@ -57,7 +56,7 @@ function getContext(request: HttpRequest): ListContext | null {
 
 export async function entity(
   request: HttpRequest,
-  context: InvocationContext
+  _: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
   if (!introspection.isLoggedIn) {
@@ -66,47 +65,47 @@ export async function entity(
 
   const userId = introspection.user.id;
 
-  let body: ActionBodyPayload;
+  let body: EntityBodyPayload;
 
-  let actionRes: Result<ActionItem, Error>;
+  let entityRes: Result<EntityItem, Error>;
   switch (request.method) {
     case "POST":
-      body = (await request.json()) as ActionBodyPayload;
-      actionRes = await Action.create(userId, body);
-      if (actionRes.isErr()) {
+      body = (await request.json()) as EntityBodyPayload;
+      entityRes = await Entity.create(userId, body);
+      if (entityRes.isErr()) {
         return {
           status: 500,
         };
       }
-      return jsonReply({ ...actionRes.value });
+      return jsonReply({ ...entityRes.value });
     case "PUT":
-      body = (await request.json()) as ActionBodyPayload;
-      actionRes = await Action.update(
+      body = (await request.json()) as EntityBodyPayload;
+      entityRes = await Entity.update(
         userId,
         parseInt(request.params.id),
         body
       );
-      if (actionRes.isErr()) {
+      if (entityRes.isErr()) {
         return {
           status: 500,
         };
       }
-      return jsonReply({ ...actionRes.value });
+      return jsonReply({ ...entityRes.value });
     case "DELETE":
-      actionRes = await Action.delete(userId, parseInt(request.params.id));
-      if (actionRes.isErr()) {
+      entityRes = await Entity.delete(userId, parseInt(request.params.id));
+      if (entityRes.isErr()) {
         return {
           status: 500,
         };
       }
-      return jsonReply({ ...actionRes.value });
+      return jsonReply({ ...entityRes.value });
     case "GET":
       const start = getStart(request);
       const perPage = getPerPage(request);
       const filter = getFilter(request);
       const sort = getSort(request);
       const context = getContext(request);
-      const actionListRes = await Action.getList({
+      const entityListRes = await Entity.getList({
         userId,
         filter,
         context,
@@ -114,12 +113,12 @@ export async function entity(
         start,
         perPage,
       });
-      if (actionListRes.isErr()) {
+      if (entityListRes.isErr()) {
         return {
           status: 500,
         };
       }
-      return jsonReply(actionListRes.value);
+      return jsonReply(entityListRes.value);
   }
 }
 

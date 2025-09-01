@@ -14,8 +14,7 @@ import {
 } from "..";
 import { ListFilter, ListSort, ListContext } from "api-spec/models/List";
 import { Action } from "../lib/Action";
-//import { Action as PrismaAction } from "@prisma/client";
-import { ActionBodyPayload, PrismaAction, ActionItem } from "../models/Action";
+import { ActionBodyPayload, ActionItem } from "../models/Action";
 
 const perPage = 25;
 
@@ -57,7 +56,7 @@ function getContext(request: HttpRequest): ListContext | null {
 
 export async function action(
   request: HttpRequest,
-  context: InvocationContext
+  _: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
   if (!introspection.isLoggedIn) {

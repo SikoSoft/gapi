@@ -47,10 +47,11 @@ model PropertyConfig {
 }
 
 model EntityConfig {
-  id         Int              @id @default(autoincrement())
-  name       String           @db.VarChar(128)
-  properties PropertyConfig[]
-  userId     String?          @db.Uuid
+  id          Int              @id @default(autoincrement())
+  name        String           @db.VarChar(128)
+  description String?          @db.VarChar(255)
+  properties  PropertyConfig[]
+  userId      String?          @db.Uuid
 
   @@unique([id, name])
 }

@@ -24,6 +24,18 @@ export interface EntityList {
   total: number;
 }
 
+const prismaEntityConfig =
+  Prisma.validator<Prisma.EntityConfigFindUniqueArgs>()({
+    where: { id: 1, userId: "" },
+    include: {
+      properties: true,
+    },
+  });
+
+export type PrismaEntityConfig = Prisma.EntityConfigGetPayload<
+  typeof prismaEntityConfig
+>;
+
 const prismaEntity = Prisma.validator<Prisma.EntityFindUniqueArgs>()({
   where: { id: 1, userId: "" },
   include: {

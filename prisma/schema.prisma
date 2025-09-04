@@ -49,6 +49,7 @@ model EntityConfig {
   id         String           @id @db.Uuid
   name       String           @db.VarChar(128)
   properties PropertyConfig[]
+  userId     String?          @db.Uuid
 
   @@unique([id, name])
 }

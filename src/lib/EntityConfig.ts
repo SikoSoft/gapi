@@ -24,6 +24,7 @@ export class EntityConfig {
       data: {
         id: entityConfig.id,
         name: entityConfig.name,
+        description: entityConfig.description,
       },
       where: {
         id: entityConfig.id,
@@ -79,6 +80,7 @@ export class EntityConfig {
     return {
       id: data.id,
       name: data.name,
+      description: data.description,
       properties: data.properties.map((property) =>
         EntityConfig.mapPropertyDataToSpec(property)
       ),

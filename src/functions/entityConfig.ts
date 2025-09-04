@@ -13,6 +13,7 @@ import { EntityConfig } from "../lib/EntityConfig";
 export interface CreateBody {
   id: number;
   name: string;
+  description: string;
   userId: string;
 }
 

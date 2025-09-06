@@ -42,6 +42,8 @@ model PropertyConfig {
   repeat         Int          @default(0)
   allowed        Int          @default(0)
   required       Int          @default(0)
+  prefix         String       @db.VarChar(128)
+  suffix         String       @db.VarChar(128)
   entityConfigId Int          @default(0)
   entityConfig   EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
 }

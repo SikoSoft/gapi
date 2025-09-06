@@ -43,11 +43,31 @@ export class EntityConfig {
     userId: string,
     entityConfig: EntityConfigUpdateBody
   ): Promise<Entity.EntityConfig> {
+    const propertyConfigs = entityConfig.properties.map((p) => {
+      const { entityConfigId, ...propertyConfig } = p;
+      return propertyConfig;
+    });
+    const newProperties = propertyConfigs.filter((prop) => !prop.id);
+    const updatedProperties = propertyConfigs.filter((prop) => !!prop.id);
+
     await prisma.entityConfig.update({
       data: {
         id: entityConfig.id,
         name: entityConfig.name,
         description: entityConfig.description,
+        properties: {
+          update: updatedProperties.map((p) => {
+            const { id, ...prop } = p;
+            return {
+              where: { id },
+              data: { ...prop },
+            };
+          }),
+          create: newProperties.map((p) => {
+            const { id, ...prop } = p;
+            return prop;
+          }),
+        },
       },
       where: {
         id: entityConfig.id,
@@ -97,6 +117,20 @@ export class EntityConfig {
       );
       return [];
     }
+  }
+
+  static async syncProperties(
+    userId: string,
+    entityConfig: Entity.EntityConfig
+  ): Promise<void> {
+    await prisma.entityConfig.update({
+      where: { id: entityConfig.id, userId },
+      data: {
+        properties: {
+          create: entityConfig.properties,
+        },
+      },
+    });
   }
 
   static mapDataToSpec(data: PrismaEntityConfig): Entity.EntityConfig {

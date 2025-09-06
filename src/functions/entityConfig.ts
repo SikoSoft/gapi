@@ -1,25 +1,16 @@
-import { v4 as uuidv4 } from "uuid";
 import {
   app,
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { forbiddenReply, introspect, jsonReply, prisma } from "..";
-import { Entity } from "api-spec/models";
+import { forbiddenReply, introspect, jsonReply } from "..";
 
 import { EntityConfig } from "../lib/EntityConfig";
-
-export interface CreateBody {
-  id: number;
-  name: string;
-  description: string;
-  userId: string;
-}
-
-export interface UpdateBody extends CreateBody {
-  properties: Entity.EntityPropertyConfig[];
-}
+import {
+  EntityConfigCreateBody,
+  EntityConfigUpdateBody,
+} from "../models/Entity";
 
 export async function listConfig(
   request: HttpRequest,
@@ -36,17 +27,15 @@ export async function listConfig(
       const entityConfigs = await EntityConfig.getByUser(userId);
       return jsonReply({ entityConfigs });
     case "POST":
-      const createBody = (await request.json()) as CreateBody;
-      //const id = uuidv4();
-      const entityConfig = await prisma.entityConfig.create({
-        data: {
-          name: createBody.name,
-          userId,
-        },
+      const createBody = (await request.json()) as EntityConfigCreateBody;
+      const entityConfig = await EntityConfig.create(userId, {
+        name: createBody.name,
+        description: createBody.description,
+        properties: createBody.properties,
       });
       return jsonReply({ ...entityConfig });
     case "PUT":
-      const updateBody = (await request.json()) as UpdateBody;
+      const updateBody = (await request.json()) as EntityConfigUpdateBody;
       await EntityConfig.update(userId, updateBody);
       return jsonReply({ id: updateBody.id });
     case "DELETE":

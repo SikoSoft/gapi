@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { ListContext, ListFilter, ListSort } from "api-spec/models/List";
+import { Entity } from "api-spec/models";
 
 export interface EntityBodyPayload {
   desc: string;
@@ -48,3 +49,7 @@ export type PrismaEntity = Prisma.EntityGetPayload<typeof prismaEntity>;
 export type EntityItem = Omit<PrismaEntity, "tags"> & {
   tags: string[];
 };
+
+export type EntityConfigCreateBody = Omit<Entity.EntityConfig, "id">;
+
+export type EntityConfigUpdateBody = Entity.EntityConfig;

@@ -1,8 +1,31 @@
 import { prisma } from "..";
 import { Entity } from "api-spec/models";
-import { PrismaEntityConfig } from "../models/Entity";
+import {
+  EntityConfigCreateBody,
+  EntityConfigUpdateBody,
+  PrismaEntityConfig,
+} from "../models/Entity";
 
 export class EntityConfig {
+  static async create(
+    userId: string,
+    entityConfig: EntityConfigCreateBody
+  ): Promise<Entity.EntityConfig> {
+    const createdEntityConfig = await prisma.entityConfig.create({
+      data: {
+        ...entityConfig,
+        userId,
+        properties: {
+          create: entityConfig.properties,
+        },
+      },
+      include: {
+        properties: true,
+      },
+    });
+    return EntityConfig.mapDataToSpec(createdEntityConfig);
+  }
+
   static async delete(
     userId: string,
     entityConfigId: number
@@ -18,7 +41,7 @@ export class EntityConfig {
 
   static async update(
     userId: string,
-    entityConfig: Entity.EntityConfig
+    entityConfig: EntityConfigUpdateBody
   ): Promise<Entity.EntityConfig> {
     await prisma.entityConfig.update({
       data: {

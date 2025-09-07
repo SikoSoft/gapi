@@ -11,8 +11,9 @@ import {
   EntityConfigCreateBody,
   EntityConfigUpdateBody,
 } from "../models/Entity";
+import { PropertyConfig } from "../lib/PropertyConfig";
 
-export async function listConfig(
+export async function propertyConfig(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
@@ -24,21 +25,11 @@ export async function listConfig(
 
   switch (request.method) {
     case "GET":
-      const entityConfigs = await EntityConfig.getByUser(userId);
-      return jsonReply({ entityConfigs });
+      return jsonReply({});
     case "POST":
-      const createBody = (await request.json()) as EntityConfigCreateBody;
-      const entityConfig = await EntityConfig.create(userId, {
-        userId,
-        name: createBody.name,
-        description: createBody.description,
-        properties: createBody.properties,
-      });
-      return jsonReply({ ...entityConfig });
+      return jsonReply({});
     case "PUT":
-      const updateBody = (await request.json()) as EntityConfigUpdateBody;
-      await EntityConfig.update(userId, updateBody);
-      return jsonReply({ id: updateBody.id });
+      return jsonReply({});
     case "DELETE":
       let id: number;
       if (!request.params.id) {
@@ -47,7 +38,7 @@ export async function listConfig(
         };
       }
       id = parseInt(request.params.id);
-      const status = await EntityConfig.delete(userId, id);
+      const status = await PropertyConfig.delete(userId, id);
       if (status) {
         return {
           status: 204,
@@ -59,9 +50,9 @@ export async function listConfig(
   }
 }
 
-app.http("entityConfig", {
+app.http("propertyConfig", {
   methods: ["GET", "POST", "PUT", "DELETE"],
   authLevel: "anonymous",
-  handler: listConfig,
-  route: "entityConfig/{id?}",
+  handler: propertyConfig,
+  route: "propertyConfig/{id?}",
 });

@@ -16,7 +16,10 @@ export class EntityConfig {
         ...entityConfig,
         userId,
         properties: {
-          create: entityConfig.properties,
+          create: entityConfig.properties.map((property) => ({
+            ...property,
+            userId,
+          })),
         },
       },
       include: {
@@ -45,7 +48,8 @@ export class EntityConfig {
   ): Promise<Entity.EntityConfig> {
     const propertyConfigs = entityConfig.properties.map((p) => {
       const { entityConfigId, ...propertyConfig } = p;
-      return propertyConfig;
+
+      return { ...propertyConfig, userId };
     });
     const newProperties = propertyConfigs.filter((prop) => !prop.id);
     const updatedProperties = propertyConfigs.filter((prop) => !!prop.id);
@@ -136,6 +140,7 @@ export class EntityConfig {
   static mapDataToSpec(data: PrismaEntityConfig): Entity.EntityConfig {
     return {
       id: data.id,
+      userId: data.userId,
       name: data.name,
       description: data.description,
       properties: data.properties.map((property) =>
@@ -150,6 +155,7 @@ export class EntityConfig {
     return {
       entityConfigId: data.entityConfigId,
       id: data.id,
+      userId: data.userId,
       name: data.name,
       dataType: data.dataType as Entity.DataType,
       renderType: data.renderType as Entity.RenderType,

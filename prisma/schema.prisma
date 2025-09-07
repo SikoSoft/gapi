@@ -44,6 +44,7 @@ model PropertyConfig {
   required       Int          @default(0)
   prefix         String       @db.VarChar(128)
   suffix         String       @db.VarChar(128)
+  userId         String?      @db.Uuid
   entityConfigId Int          @default(0)
   entityConfig   EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
 }

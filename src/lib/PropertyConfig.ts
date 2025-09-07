@@ -10,12 +10,14 @@ import {
 export class PropertyConfig {
   static async create(
     userId: string,
+    entityConfigId: number,
     propertyConfig: PropertyConfigCreateBody
   ): Promise<Entity.EntityPropertyConfig> {
     const createdPropertyConfig = await prisma.propertyConfig.create({
       data: {
         ...propertyConfig,
         userId,
+        entityConfigId,
       },
     });
     return PropertyConfig.mapDataToSpec(createdPropertyConfig);
@@ -24,10 +26,11 @@ export class PropertyConfig {
   static async update(
     userId: string,
     id: number,
+    entityConfigId: number,
     propertyConfig: PropertyConfigUpdateBody
   ): Promise<Entity.EntityPropertyConfig | null> {
     const updatedPropertyConfig = await prisma.propertyConfig.update({
-      where: { userId, id },
+      where: { userId, id, entityConfigId },
       data: propertyConfig,
     });
     return PropertyConfig.mapDataToSpec(updatedPropertyConfig);

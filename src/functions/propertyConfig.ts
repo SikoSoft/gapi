@@ -36,12 +36,20 @@ export async function propertyConfig(
 
       entityConfigId = parseInt(request.params.entityConfigId);
       const createBody = (await request.json()) as PropertyConfigCreateBody;
-      const created = await PropertyConfig.create(
+      const createdRes = await PropertyConfig.create(
         userId,
         entityConfigId,
         createBody
       );
-      return jsonReply(created);
+
+      if (createdRes.isErr()) {
+        return {
+          status: 500,
+          body: createdRes.error.message,
+        };
+      }
+
+      return jsonReply(createdRes.value);
     case "PUT":
       if (!request.params.entityConfigId || !request.params.id) {
         return {
@@ -52,13 +60,21 @@ export async function propertyConfig(
       entityConfigId = parseInt(request.params.entityConfigId);
       id = parseInt(request.params.id);
       const updateBody = (await request.json()) as PropertyConfigUpdateBody;
-      const updated = await PropertyConfig.update(
+      const updatedRes = await PropertyConfig.update(
         userId,
         entityConfigId,
         id,
         updateBody
       );
-      return jsonReply(updated);
+
+      if (updatedRes.isErr()) {
+        return {
+          status: 500,
+          body: updatedRes.error.message,
+        };
+      }
+
+      return jsonReply(updatedRes.value);
     case "DELETE":
       if (!request.params.id) {
         return {
@@ -67,8 +83,8 @@ export async function propertyConfig(
       }
 
       id = parseInt(request.params.id);
-      const status = await PropertyConfig.delete(userId, id);
-      if (status) {
+      const deleteRes = await PropertyConfig.delete(userId, id);
+      if (deleteRes.isOk() && deleteRes.value) {
         return {
           status: 204,
         };

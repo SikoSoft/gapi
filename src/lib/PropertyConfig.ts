@@ -1,3 +1,4 @@
+import { Result, err, ok } from "neverthrow";
 import { prisma } from "..";
 import { Entity } from "api-spec/models";
 import { PrismaEntityConfig } from "../models/Entity";
@@ -12,15 +13,21 @@ export class PropertyConfig {
     userId: string,
     entityConfigId: number,
     propertyConfig: PropertyConfigCreateBody
-  ): Promise<Entity.EntityPropertyConfig> {
-    const createdPropertyConfig = await prisma.propertyConfig.create({
-      data: {
-        ...propertyConfig,
-        userId,
-        entityConfigId,
-      },
-    });
-    return PropertyConfig.mapDataToSpec(createdPropertyConfig);
+  ): Promise<Result<Entity.EntityPropertyConfig, Error>> {
+    try {
+      const createdPropertyConfig = await prisma.propertyConfig.create({
+        data: {
+          ...propertyConfig,
+          userId,
+          entityConfigId,
+        },
+      });
+      return ok(PropertyConfig.mapDataToSpec(createdPropertyConfig));
+    } catch (error) {
+      return err(
+        new Error("Failed to create property config", { cause: error })
+      );
+    }
   }
 
   static async update(
@@ -28,25 +35,34 @@ export class PropertyConfig {
     entityConfigId: number,
     id: number,
     propertyConfig: PropertyConfigUpdateBody
-  ): Promise<Entity.EntityPropertyConfig | null> {
-    const updatedPropertyConfig = await prisma.propertyConfig.update({
-      where: { userId, id, entityConfigId },
-      data: propertyConfig,
-    });
-    return PropertyConfig.mapDataToSpec(updatedPropertyConfig);
+  ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
+    try {
+      const updatedPropertyConfig = await prisma.propertyConfig.update({
+        where: { userId, id, entityConfigId },
+        data: propertyConfig,
+      });
+      return ok(PropertyConfig.mapDataToSpec(updatedPropertyConfig));
+    } catch (error) {
+      return err(
+        new Error("Failed to update property config", { cause: error })
+      );
+    }
   }
 
   static async delete(
     userId: string,
     propertyConfigId: number
-  ): Promise<boolean> {
-    const result = await prisma.propertyConfig.delete({
-      where: { userId, id: propertyConfigId },
-    });
-    if (result) {
-      return true;
+  ): Promise<Result<boolean, Error>> {
+    try {
+      await prisma.propertyConfig.delete({
+        where: { userId, id: propertyConfigId },
+      });
+      return ok(true);
+    } catch (error) {
+      return err(
+        new Error("Failed to delete property config", { cause: error })
+      );
     }
-    return false;
   }
 
   static mapDataToSpec(

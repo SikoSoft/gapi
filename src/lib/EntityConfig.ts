@@ -1,3 +1,4 @@
+import { Result, err, ok } from "neverthrow";
 import { prisma } from "..";
 import { Entity } from "api-spec/models";
 import {
@@ -10,79 +11,92 @@ export class EntityConfig {
   static async create(
     userId: string,
     entityConfig: EntityConfigCreateBody
-  ): Promise<Entity.EntityConfig> {
-    const createdEntityConfig = await prisma.entityConfig.create({
-      data: {
-        ...entityConfig,
-        userId,
-        properties: {
-          create: entityConfig.properties.map((property) => ({
-            ...property,
-            userId,
-          })),
+  ): Promise<Result<Entity.EntityConfig, Error>> {
+    try {
+      const createdEntityConfig = await prisma.entityConfig.create({
+        data: {
+          ...entityConfig,
+          userId,
+          properties: {
+            create: entityConfig.properties.map((property) => ({
+              ...property,
+              userId,
+            })),
+          },
         },
-      },
-      include: {
-        properties: true,
-      },
-    });
-    return EntityConfig.mapDataToSpec(createdEntityConfig);
+        include: {
+          properties: true,
+        },
+      });
+      return ok(EntityConfig.mapDataToSpec(createdEntityConfig));
+    } catch (error) {
+      return err(new Error("Failed to create entityConfig", { cause: error }));
+    }
   }
 
   static async delete(
     userId: string,
     entityConfigId: number
-  ): Promise<boolean> {
-    const result = await prisma.entityConfig.delete({
-      where: { userId, id: entityConfigId },
-    });
-    if (result) {
-      return true;
+  ): Promise<Result<boolean, Error>> {
+    try {
+      await prisma.entityConfig.delete({
+        where: { userId, id: entityConfigId },
+      });
+      return ok(true);
+    } catch (error) {
+      return err(new Error("Failed to delete entityConfig", { cause: error }));
     }
-    return false;
   }
 
   static async update(
     userId: string,
     entityConfig: EntityConfigUpdateBody
-  ): Promise<Entity.EntityConfig> {
-    const propertyConfigs = entityConfig.properties.map((p) => {
-      const { entityConfigId, ...propertyConfig } = p;
+  ): Promise<Result<Entity.EntityConfig, Error>> {
+    try {
+      const propertyConfigs = entityConfig.properties.map((p) => {
+        const { entityConfigId, ...propertyConfig } = p;
 
-      return { ...propertyConfig, userId };
-    });
-    const newProperties = propertyConfigs.filter((prop) => !prop.id);
-    const updatedProperties = propertyConfigs.filter((prop) => !!prop.id);
+        return { ...propertyConfig, userId };
+      });
+      const newProperties = propertyConfigs.filter((prop) => !prop.id);
+      const updatedProperties = propertyConfigs.filter((prop) => !!prop.id);
 
-    await prisma.entityConfig.update({
-      data: {
-        id: entityConfig.id,
-        name: entityConfig.name,
-        description: entityConfig.description,
-        properties: {
-          update: updatedProperties.map((p) => {
-            const { id, ...prop } = p;
-            return {
-              where: { id },
-              data: { ...prop },
-            };
-          }),
-          create: newProperties.map((p) => {
-            const { id, ...prop } = p;
-            return prop;
-          }),
+      const updatedEntityConfig = await prisma.entityConfig.update({
+        data: {
+          id: entityConfig.id,
+          name: entityConfig.name,
+          description: entityConfig.description,
+          properties: {
+            update: updatedProperties.map((p) => {
+              const { id, ...prop } = p;
+              return {
+                where: { id },
+                data: { ...prop },
+              };
+            }),
+            create: newProperties.map((p) => {
+              const { id, ...prop } = p;
+              return prop;
+            }),
+          },
         },
-      },
-      where: {
-        id: entityConfig.id,
-        userId,
-      },
-    });
-
-    return await EntityConfig.getById(entityConfig.id);
+        where: {
+          id: entityConfig.id,
+          userId,
+        },
+        include: {
+          properties: true,
+        },
+      });
+      return ok(EntityConfig.mapDataToSpec(updatedEntityConfig));
+    } catch (error) {
+      return err(new Error("Failed to update entityConfig", { cause: error }));
+    }
   }
 
-  static async getById(id: number): Promise<Entity.EntityConfig> {
+  static async getById(
+    id: number
+  ): Promise<Result<Entity.EntityConfig, Error>> {
     try {
       const entityConfig = await prisma.entityConfig.findFirstOrThrow({
         where: { id },
@@ -91,13 +105,15 @@ export class EntityConfig {
         },
       });
 
-      return EntityConfig.mapDataToSpec(entityConfig);
+      return ok(EntityConfig.mapDataToSpec(entityConfig));
     } catch (error) {
-      console.error(`Failed to get entityConfig by id ${id}`, error);
+      return err(new Error("Failed to get entityConfig", { cause: error }));
     }
   }
 
-  static async getByUser(userId: string): Promise<EntityConfig[]> {
+  static async getByUser(
+    userId: string
+  ): Promise<Result<Entity.EntityConfig[], Error>> {
     try {
       const entityConfigs = await prisma.entityConfig.findMany({
         where: { userId },
@@ -108,33 +124,44 @@ export class EntityConfig {
       });
 
       if (!entityConfigs) {
-        return [];
+        return ok([]);
       }
 
-      return entityConfigs.map((entityConfig) =>
-        EntityConfig.mapDataToSpec(entityConfig)
+      return ok(
+        entityConfigs.map((entityConfig) =>
+          EntityConfig.mapDataToSpec(entityConfig)
+        )
       );
     } catch (error) {
       console.error(
         `Failed to retrieve entityConfigs for user ${userId}`,
         error
       );
-      return [];
+      return err(
+        new Error("Failed to retrieve entityConfigs", { cause: error })
+      );
     }
   }
 
   static async syncProperties(
     userId: string,
     entityConfig: Entity.EntityConfig
-  ): Promise<void> {
-    await prisma.entityConfig.update({
-      where: { id: entityConfig.id, userId },
-      data: {
-        properties: {
-          create: entityConfig.properties,
+  ): Promise<Result<void, Error>> {
+    try {
+      await prisma.entityConfig.update({
+        where: { id: entityConfig.id, userId },
+        data: {
+          properties: {
+            create: entityConfig.properties,
+          },
         },
-      },
-    });
+      });
+      return ok(undefined);
+    } catch (error) {
+      return err(
+        new Error("Failed to sync entityConfig properties", { cause: error })
+      );
+    }
   }
 
   static mapDataToSpec(data: PrismaEntityConfig): Entity.EntityConfig {

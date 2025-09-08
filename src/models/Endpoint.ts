@@ -1,4 +1,6 @@
-import { ActionBodyPayload, ActionList } from "./Action";
+import { EntityConfig } from "../lib/EntityConfig";
+import { ActionBodyPayload, ActionItem, ActionList } from "./Action";
+import { EntityConfigCreateBody, EntityConfigUpdateBody } from "./Entity";
 
 export enum HttpMethod {
   GET = "GET",
@@ -10,12 +12,14 @@ export enum HttpMethod {
 export enum EndpointName {
   ACTION = "action",
   ACTION_SUGGESTION = "actionSuggestion",
+  ENTITY_CONFIG = "entityConfig",
   INTROSPECT = "introspect",
   LEADERBOARD = "leaderboard",
   LIST_CONFIG = "listConfig",
   LOGIN = "login",
   LOGOUT = "logout",
   OPERATION = "operation",
+  PROPERTY_CONFIG = "propertyConfig",
   SETTING = "setting",
   TAG = "tag",
   TAG_SUGGESTION = "tagSuggestion",
@@ -29,7 +33,30 @@ export interface EndpointConfig {
     };
     [HttpMethod.POST]: {
       requestBody: ActionBodyPayload;
-      responseBody: any;
+      responseBody: ActionItem;
+    };
+    [HttpMethod.PUT]: {
+      requestBody: ActionBodyPayload;
+      responseBody: ActionItem;
+    };
+    [HttpMethod.DELETE]: {
+      responseBody: null;
+    };
+  };
+  [EndpointName.ENTITY_CONFIG]: {
+    [HttpMethod.GET]: {
+      responseBody: EntityConfig;
+    };
+    [HttpMethod.POST]: {
+      requestBody: EntityConfigCreateBody;
+      responseBody: EntityConfig;
+    };
+    [HttpMethod.PUT]: {
+      requestBody: EntityConfigUpdateBody;
+      responseBody: EntityConfig;
+    };
+    [HttpMethod.DELETE]: {
+      responseBody: null;
     };
   };
 }

@@ -20,8 +20,8 @@ export const defaultUser = "f00300fd-dd74-4e17-8624-b67295cfa053";
 
 export const prisma = new PrismaClient();
 
-export const jsonReply = (
-  object: Object = {},
+export const jsonReply = <T>(
+  object: T = {} as T,
   status: number = 200
 ): HttpResponseInit => {
   return {

@@ -8,9 +8,11 @@ import { forbiddenReply, introspect, jsonReply } from "..";
 
 import { PropertyConfig } from "../lib/PropertyConfig";
 import {
+  PrismaPropertyConfig,
   PropertyConfigCreateBody,
   PropertyConfigUpdateBody,
 } from "../models/PropertyConfig";
+import { EntityConfig, EntityPropertyConfig } from "api-spec/models/Entity";
 
 export async function propertyConfig(
   request: HttpRequest,
@@ -49,7 +51,7 @@ export async function propertyConfig(
         };
       }
 
-      return jsonReply(createdRes.value);
+      return jsonReply<EntityPropertyConfig>(createdRes.value);
     case "PUT":
       if (!request.params.entityConfigId || !request.params.id) {
         return {

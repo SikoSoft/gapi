@@ -11,6 +11,8 @@ import {
   EntityConfigCreateBody,
   EntityConfigUpdateBody,
 } from "../models/Entity";
+import { HttpMethod } from "../models/Endpoint";
+import { Entity } from "api-spec/models";
 
 export async function listConfig(
   request: HttpRequest,
@@ -23,10 +25,16 @@ export async function listConfig(
   const userId = introspection.user.id;
 
   switch (request.method) {
-    case "GET":
-      const entityConfigs = await EntityConfig.getByUser(userId);
-      return jsonReply({ entityConfigs });
-    case "POST":
+    case HttpMethod.GET:
+      const entityConfigsRes = await EntityConfig.getByUser(userId);
+      if (entityConfigsRes.isErr()) {
+        return { status: 500 };
+      }
+
+      return jsonReply<{ entityConfigs: Entity.EntityConfig[] }>({
+        entityConfigs: entityConfigsRes.value,
+      });
+    case HttpMethod.POST:
       const createBody = (await request.json()) as EntityConfigCreateBody;
       const entityConfig = await EntityConfig.create(userId, {
         userId,
@@ -35,11 +43,11 @@ export async function listConfig(
         properties: createBody.properties,
       });
       return jsonReply({ ...entityConfig });
-    case "PUT":
+    case HttpMethod.PUT:
       const updateBody = (await request.json()) as EntityConfigUpdateBody;
       await EntityConfig.update(userId, updateBody);
       return jsonReply({ id: updateBody.id });
-    case "DELETE":
+    case HttpMethod.DELETE:
       let id: number;
       if (!request.params.id) {
         return {

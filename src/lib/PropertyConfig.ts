@@ -1,7 +1,6 @@
 import { Result, err, ok } from "neverthrow";
 import { prisma } from "..";
 import { Entity } from "api-spec/models";
-import { PrismaEntityConfig } from "../models/Entity";
 import {
   PrismaPropertyConfig,
   PropertyConfigCreateBody,

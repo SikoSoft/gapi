@@ -162,8 +162,8 @@ export class EntityConfig {
       required: data.required,
       repeat: data.repeat,
       allowed: data.allowed,
-      prefix: "",
-      suffix: "",
+      prefix: data.prefix,
+      suffix: data.suffix,
     };
   }
 }

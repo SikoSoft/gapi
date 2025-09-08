@@ -25,8 +25,8 @@ export class PropertyConfig {
 
   static async update(
     userId: string,
-    id: number,
     entityConfigId: number,
+    id: number,
     propertyConfig: PropertyConfigUpdateBody
   ): Promise<Entity.EntityPropertyConfig | null> {
     const updatedPropertyConfig = await prisma.propertyConfig.update({

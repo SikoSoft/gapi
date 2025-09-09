@@ -1,3 +1,4 @@
+import { Entity } from "api-spec/models";
 import { EntityConfig } from "../lib/EntityConfig";
 import { ActionBodyPayload, ActionItem, ActionList } from "./Action";
 import { EntityConfigCreateBody, EntityConfigUpdateBody } from "./Entity";
@@ -45,7 +46,7 @@ export interface EndpointConfig {
   };
   [EndpointName.ENTITY_CONFIG]: {
     [HttpMethod.GET]: {
-      responseBody: EntityConfig;
+      responseBody: { entityConfigs: Entity.EntityConfig[] };
     };
     [HttpMethod.POST]: {
       requestBody: EntityConfigCreateBody;

@@ -11,7 +11,7 @@ import {
   EntityConfigCreateBody,
   EntityConfigUpdateBody,
 } from "../models/Entity";
-import { HttpMethod } from "../models/Endpoint";
+import { EndpointConfig, EndpointName, HttpMethod } from "../models/Endpoint";
 import { Entity } from "api-spec/models";
 
 export async function listConfig(
@@ -31,7 +31,9 @@ export async function listConfig(
         return { status: 500 };
       }
 
-      return jsonReply<{ entityConfigs: Entity.EntityConfig[] }>({
+      return jsonReply<
+        EndpointConfig[EndpointName.ENTITY_CONFIG][HttpMethod.GET]["responseBody"]
+      >({
         entityConfigs: entityConfigsRes.value,
       });
     case HttpMethod.POST:

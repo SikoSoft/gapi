@@ -1,142 +1,248 @@
+import { Result, err, ok } from "neverthrow";
+import { v4 as uuidv4 } from "uuid";
 import { List } from "api-spec/models";
 import { prisma } from "..";
 import { PrismaListConfig } from "../models/ListConfig";
-import { ListFilterType } from "api-spec/models/List";
+import {
+  ListFilterTimeType,
+  ListFilterType,
+  ListSortDirection,
+  ListSortProperty,
+} from "api-spec/models/List";
 import { Settings } from "api-spec/models/Setting";
 import { Setting } from "./Setting";
+import { setting } from "../functions/setting";
 
 export class ListConfig {
-  static async delete(userId: string, listConfigId: string): Promise<boolean> {
-    const result = await prisma.listConfig.delete({
-      where: { userId, id: listConfigId },
-    });
-    if (result) {
-      return true;
+  static async create(
+    userId: string,
+    name: string
+  ): Promise<Result<List.ListConfig, Error>> {
+    try {
+      const id = uuidv4();
+      const created = await prisma.listConfig.create({
+        data: {
+          id,
+          name,
+          userId,
+          filter: {
+            create: {
+              includeAll: true,
+              includeUntagged: true,
+              includeAllTagging: true,
+              time: { create: { type: ListFilterTimeType.ALL_TIME } },
+            },
+          },
+          sort: {
+            create: {
+              property: ListSortProperty.CREATED_AT,
+              direction: ListSortDirection.DESC,
+            },
+          },
+        },
+        include: {
+          filter: {
+            include: {
+              time: true,
+              text: true,
+              tagging: true,
+            },
+          },
+          sort: true,
+          setting: {
+            include: {
+              numberSettings: true,
+              textSettings: true,
+              booleanSettings: true,
+            },
+          },
+        },
+      });
+
+      return ok(ListConfig.mapDataToSpec(created));
+    } catch (error) {
+      return err(new Error("Failed to create listConfig", { cause: error }));
     }
-    return false;
+  }
+
+  static async delete(
+    userId: string,
+    listConfigId: string
+  ): Promise<Result<boolean, Error>> {
+    try {
+      await prisma.listConfig.delete({
+        where: { userId, id: listConfigId },
+      });
+      return ok(true);
+    } catch (error) {
+      return err(new Error("Failed to delete listConfig", { cause: error }));
+    }
   }
 
   static async update(
     userId: string,
     listConfig: Omit<List.ListConfig, "setting">
-  ): Promise<List.ListConfig> {
-    await prisma.listConfig.update({
-      data: {
-        id: listConfig.id,
-        name: listConfig.name,
-      },
-      where: {
-        id: listConfig.id,
-        userId,
-      },
-    });
+  ): Promise<Result<List.ListConfig, Error>> {
+    try {
+      await prisma.listConfig.update({
+        data: {
+          id: listConfig.id,
+          name: listConfig.name,
+        },
+        where: {
+          id: listConfig.id,
+          userId,
+        },
+      });
 
-    await ListConfig.updateSort(listConfig.id, listConfig.sort);
-    await ListConfig.updateTags(listConfig.id, listConfig.filter.tagging);
-    await ListConfig.updateTime(listConfig.id, listConfig.filter.time);
-    await ListConfig.updateText(listConfig.id, listConfig.filter.text);
-    await ListConfig.updateFilter(listConfig.id, listConfig.filter);
-    return await ListConfig.getById(listConfig.id);
+      await ListConfig.updateSort(listConfig.id, listConfig.sort);
+      await ListConfig.updateTags(listConfig.id, listConfig.filter.tagging);
+      await ListConfig.updateTime(listConfig.id, listConfig.filter.time);
+      await ListConfig.updateText(listConfig.id, listConfig.filter.text);
+      await ListConfig.updateFilter(listConfig.id, listConfig.filter);
+      const updatedRes = await ListConfig.getById(listConfig.id);
+      if (updatedRes.isErr()) {
+        return err(
+          new Error("Failed to update listConfig", { cause: updatedRes.error })
+        );
+      }
+      return ok(updatedRes.value);
+    } catch (error) {
+      return err(new Error("Failed to update listConfig", { cause: error }));
+    }
   }
 
   static async updateSort(
     listConfigId: string,
     sort: List.ListSort
-  ): Promise<void> {
-    await prisma.listSort.update({
-      where: {
-        listConfigId,
-      },
-      data: {
-        ...sort,
-      },
-    });
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.listSort.update({
+        where: {
+          listConfigId,
+        },
+        data: {
+          ...sort,
+        },
+      });
+    } catch (error) {
+      return err(
+        new Error("Failed to update listConfig sort", { cause: error })
+      );
+    }
   }
 
   static async updateTags(
     listConfigId: string,
     tagging: List.TaggingContext
-  ): Promise<void> {
-    await prisma.listFilterTag.deleteMany({ where: { listConfigId } });
-    await prisma.listFilterTag.createMany({
-      data: [
-        ...tagging[ListFilterType.CONTAINS_ALL_OF].map((tag) => ({
-          listConfigId,
-          type: ListFilterType.CONTAINS_ALL_OF,
-          tag,
-        })),
-        ...tagging[ListFilterType.CONTAINS_ONE_OF].map((tag) => ({
-          listConfigId,
-          type: ListFilterType.CONTAINS_ONE_OF,
-          tag,
-        })),
-      ],
-    });
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.listFilterTag.deleteMany({ where: { listConfigId } });
+      await prisma.listFilterTag.createMany({
+        data: [
+          ...tagging[ListFilterType.CONTAINS_ALL_OF].map((tag) => ({
+            listConfigId,
+            type: ListFilterType.CONTAINS_ALL_OF,
+            tag,
+          })),
+          ...tagging[ListFilterType.CONTAINS_ONE_OF].map((tag) => ({
+            listConfigId,
+            type: ListFilterType.CONTAINS_ONE_OF,
+            tag,
+          })),
+        ],
+      });
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to update listConfig tags", { cause: error })
+      );
+    }
   }
 
   static async updateText(
     listConfigId: string,
     text: List.TextContext[]
-  ): Promise<void> {
-    await prisma.listFilterText.deleteMany({ where: { listConfigId } });
-    await prisma.listFilterText.createMany({
-      data: text.map((textRule) => ({
-        ...textRule,
-        listConfigId,
-      })),
-    });
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.listFilterText.deleteMany({ where: { listConfigId } });
+      await prisma.listFilterText.createMany({
+        data: text.map((textRule) => ({
+          ...textRule,
+          listConfigId,
+        })),
+      });
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to update listConfig text", { cause: error })
+      );
+    }
   }
 
   static async updateTime(
     listConfigId: string,
     time: List.TimeContext
-  ): Promise<void> {
-    switch (time.type) {
-      case List.ListFilterTimeType.ALL_TIME:
-        time = time as List.AllTimeContext;
-        await prisma.listFilterTime.update({
-          where: { listConfigId },
-          data: {
-            type: time.type,
-          },
-        });
-      case List.ListFilterTimeType.EXACT_DATE:
-        time = time as List.ExactDateContext;
-        await prisma.listFilterTime.update({
-          where: { listConfigId },
-          data: {
-            type: time.type,
-            date1: time.date,
-          },
-        });
-      case List.ListFilterTimeType.RANGE:
-        time = time as List.RangeContext;
-        await prisma.listFilterTime.update({
-          where: { listConfigId },
-          data: {
-            type: time.type,
-            date1: time.start,
-            date2: time.end,
-          },
-        });
+  ): Promise<Result<null, Error>> {
+    try {
+      switch (time.type) {
+        case List.ListFilterTimeType.ALL_TIME:
+          time = time as List.AllTimeContext;
+          await prisma.listFilterTime.update({
+            where: { listConfigId },
+            data: {
+              type: time.type,
+            },
+          });
+        case List.ListFilterTimeType.EXACT_DATE:
+          time = time as List.ExactDateContext;
+          await prisma.listFilterTime.update({
+            where: { listConfigId },
+            data: {
+              type: time.type,
+              date1: time.date,
+            },
+          });
+        case List.ListFilterTimeType.RANGE:
+          time = time as List.RangeContext;
+          await prisma.listFilterTime.update({
+            where: { listConfigId },
+            data: {
+              type: time.type,
+              date1: time.start,
+              date2: time.end,
+            },
+          });
+      }
+
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to update listConfig time", { cause: error })
+      );
     }
   }
 
   static async updateFilter(
     listConfigId: string,
     filter: List.ListFilter
-  ): Promise<void> {
-    await prisma.listFilter.update({
-      where: { listConfigId },
-      data: {
-        includeAll: filter.includeAll,
-        includeUntagged: filter.includeUntagged,
-        includeAllTagging: filter.includeAllTagging,
-      },
-    });
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.listFilter.update({
+        where: { listConfigId },
+        data: {
+          includeAll: filter.includeAll,
+          includeUntagged: filter.includeUntagged,
+          includeAllTagging: filter.includeAllTagging,
+        },
+      });
+      return ok(null);
+    } catch (error) {
+      return err(new Error("Failed to update list filter", { cause: error }));
+    }
   }
 
-  static async getById(id: string): Promise<List.ListConfig> {
+  static async getById(id: string): Promise<Result<List.ListConfig, Error>> {
     try {
       const listConfig = await prisma.listConfig.findFirstOrThrow({
         where: { id },
@@ -159,13 +265,15 @@ export class ListConfig {
         },
       });
 
-      return ListConfig.mapDataToSpec(listConfig);
+      return ok(ListConfig.mapDataToSpec(listConfig));
     } catch (error) {
-      console.error(`Failed to get listConfig by id ${id}`, error);
+      return err(new Error("Failed to get listConfig", { cause: error }));
     }
   }
 
-  static async getByUser(userId: string): Promise<List.ListConfig[]> {
+  static async getByUser(
+    userId: string
+  ): Promise<Result<List.ListConfig[], Error>> {
     try {
       const listConfigs = await prisma.listConfig.findMany({
         where: { userId },
@@ -190,15 +298,14 @@ export class ListConfig {
       });
 
       if (!listConfigs) {
-        return [];
+        return ok([]);
       }
 
-      return listConfigs.map((listConfig) =>
-        ListConfig.mapDataToSpec(listConfig)
+      return ok(
+        listConfigs.map((listConfig) => ListConfig.mapDataToSpec(listConfig))
       );
     } catch (error) {
-      console.error(`Failed to retrieve listConfigs for user ${userId}`, error);
-      return [];
+      return err(new Error("Failed to retrieve listConfigs", { cause: error }));
     }
   }
 

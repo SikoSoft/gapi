@@ -18,6 +18,7 @@ import {
   ContextEntities,
   EntityItem,
 } from "../models/Entity";
+import { EntityConfig } from "api-spec/models/Entity";
 
 export class Entity {
   static getFilteredConditions(userId: string, filter: ListFilter) {
@@ -42,18 +43,6 @@ export class Entity {
       ...(!filter.includeAll
         ? {
             AND: [
-              {
-                ...(filter.text.length === 0
-                  ? { desc: { not: "" } }
-                  : {
-                      AND: filter.text.map((textFilter) => ({
-                        desc: {
-                          [textFilter.type]: textFilter.subStr,
-                          mode: "insensitive",
-                        },
-                      })),
-                    }),
-              },
               {
                 ...(filter.time.type === ListFilterTimeType.ALL_TIME
                   ? { createdAt: { lte: new Date() } }
@@ -120,7 +109,6 @@ export class Entity {
     try {
       const entity = await prisma.entity.create({
         data: {
-          desc: data.desc,
           userId,
         },
         include: {
@@ -141,22 +129,29 @@ export class Entity {
   ): Promise<Result<EntityItem, Error>> {
     const timeZone = parseInt(data.timeZone);
     const serverTimeZone = new Date().getTimezoneOffset();
-    const timeZoneDiff = serverTimeZone - timeZone;
 
     try {
-      const entity = await prisma.entity.update({
-        data: {
-          desc: data.desc,
-        },
-        where: {
-          id,
-          userId,
-        },
-        include: {
-          tags: true,
-        },
+      Tagging.syncEntityTags(id, data.tags);
+      const entityRes = await Entity.getEntity(id);
+      if (entityRes.isErr()) {
+        return err(entityRes.error);
+      }
+
+      return ok(entityRes.value);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  static async getEntity(id: number): Promise<Result<EntityItem, Error>> {
+    try {
+      const entity = await prisma.entity.findUnique({
+        where: { id },
+        include: { tags: true },
       });
-      Tagging.syncEntityTags(entity.id, data.tags);
+      if (!entity) {
+        return err(new Error("Entity not found"));
+      }
       return ok(Entity.toSpec(entity));
     } catch (error) {
       return err(error);
@@ -315,17 +310,12 @@ export class Entity {
   ): Promise<Result<string[], Error>> {
     try {
       const entities = await prisma.entity.findMany({
-        distinct: ["desc"],
         take: 10,
         where: {
-          desc: { startsWith: desc, mode: "insensitive" },
           userId,
         },
-        orderBy: { desc: "asc" },
       });
-      const suggestions = [
-        ...new Set(entities.map((row) => row.desc.toLowerCase().trim())),
-      ];
+      const suggestions = entities.map((e) => String(e.id));
       return ok(suggestions);
     } catch (error) {
       return err(error);

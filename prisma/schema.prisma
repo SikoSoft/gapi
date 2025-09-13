@@ -24,6 +24,47 @@ model Action {
   tags       ActionTag[]
 }
 
+model BooleanPropertyValue {
+  id         Int     @id @default(autoincrement())
+  propertyId Int
+  value      Boolean
+
+  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model ImagePropertyValue {
+  id         Int    @id @default(autoincrement())
+  propertyId Int
+  url        String
+  altText    String
+
+  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model IntPropertyValue {
+  id         Int @id @default(autoincrement())
+  propertyId Int
+  value      Int
+
+  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model LongTextPropertyValue {
+  id         Int    @id @default(autoincrement())
+  propertyId Int
+  value      String
+
+  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model ShortTextPropertyValue {
+  id         Int    @id @default(autoincrement())
+  propertyId Int
+  value      String
+
+  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
 model Entity {
   id         Int         @id @default(autoincrement())
   createdAt  DateTime    @default(now())
@@ -46,6 +87,12 @@ model PropertyConfig {
   userId         String?      @db.Uuid
   entityConfigId Int          @default(0)
   entityConfig   EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
+
+  booleanValues   BooleanPropertyValue[]
+  imageValues     ImagePropertyValue[]
+  intValues       IntPropertyValue[]
+  longTextValues  LongTextPropertyValue[]
+  shortTextValues ShortTextPropertyValue[]
 }
 
 model EntityConfig {

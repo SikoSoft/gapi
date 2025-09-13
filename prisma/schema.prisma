@@ -31,6 +31,7 @@ model BooleanPropertyValue {
 
   propertyConfig             PropertyConfig                     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigBooleanDefaultValue?
+  entityPropertyValue        EntityBooleanProperty?
 }
 
 model ImagePropertyValue {
@@ -41,6 +42,7 @@ model ImagePropertyValue {
 
   propertyConfig             PropertyConfig                   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigImageDefaultValue?
+  entityPropertyValue        EntityImageProperty?
 }
 
 model IntPropertyValue {
@@ -50,6 +52,7 @@ model IntPropertyValue {
 
   propertyConfig             PropertyConfig                 @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigIntDefaultValue?
+  entityPropertyValue        EntityIntProperty?
 }
 
 model LongTextPropertyValue {
@@ -59,6 +62,7 @@ model LongTextPropertyValue {
 
   propertyConfig             PropertyConfig                      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigLongTextDefaultValue?
+  entityPropertyValue        EntityLongTextProperty?
 }
 
 model ShortTextPropertyValue {
@@ -68,6 +72,7 @@ model ShortTextPropertyValue {
 
   propertyConfig             PropertyConfig                       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigShortTextDefaultValue?
+  entityPropertyValue        EntityShortTextProperty?
 }
 
 model PropertyConfigBooleanDefaultValue {
@@ -110,13 +115,62 @@ model PropertyConfigShortTextDefaultValue {
   shortTextValue ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
+model EntityBooleanProperty {
+  id              Int @id @default(autoincrement())
+  entityId        Int
+  propertyValueId Int @unique
+
+  entity   Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  property BooleanPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model EntityImageProperty {
+  id              Int @id @default(autoincrement())
+  entityId        Int
+  propertyValueId Int @unique
+
+  entity   Entity             @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  property ImagePropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model EntityIntProperty {
+  id              Int @id @default(autoincrement())
+  entityId        Int
+  propertyValueId Int @unique
+
+  entity   Entity           @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  property IntPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model EntityLongTextProperty {
+  id              Int @id @default(autoincrement())
+  entityId        Int
+  propertyValueId Int @unique
+
+  entity   Entity                @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  property LongTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model EntityShortTextProperty {
+  id              Int @id @default(autoincrement())
+  entityId        Int
+  propertyValueId Int @unique
+
+  entity   Entity                 @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  property ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
 model Entity {
-  id         Int         @id @default(autoincrement())
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  userId     String?     @db.Uuid
-  tags       EntityTag[]
-  properties Property[]
+  id                  Int                       @id @default(autoincrement())
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  userId              String?                   @db.Uuid
+  tags                EntityTag[]
+  booleanProperties   EntityBooleanProperty[]
+  imageProperties     EntityImageProperty[]
+  intProperties       EntityIntProperty[]
+  longTextProperties  EntityLongTextProperty[]
+  shortTextProperties EntityShortTextProperty[]
 }
 
 model PropertyConfig {
@@ -320,7 +374,7 @@ model Setting {
 model Property {
   id               Int              @id @default(autoincrement())
   entityId         Int
-  entity           Entity           @relation(fields: [entityId], references: [id])
+  // entity           Entity           @relation(fields: [entityId], references: [id])
   dateProperties   DateProperty[]
   stringProperties StringProperty[]
 }

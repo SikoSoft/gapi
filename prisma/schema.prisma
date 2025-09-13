@@ -29,7 +29,8 @@ model BooleanPropertyValue {
   propertyId Int
   value      Boolean
 
-  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfig             PropertyConfig                     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfigDefaultValue PropertyConfigBooleanDefaultValue?
 }
 
 model ImagePropertyValue {
@@ -38,7 +39,8 @@ model ImagePropertyValue {
   url        String
   altText    String
 
-  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfig             PropertyConfig                   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfigDefaultValue PropertyConfigImageDefaultValue?
 }
 
 model IntPropertyValue {
@@ -46,7 +48,8 @@ model IntPropertyValue {
   propertyId Int
   value      Int
 
-  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfig             PropertyConfig                 @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfigDefaultValue PropertyConfigIntDefaultValue?
 }
 
 model LongTextPropertyValue {
@@ -54,7 +57,8 @@ model LongTextPropertyValue {
   propertyId Int
   value      String
 
-  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfig             PropertyConfig                      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfigDefaultValue PropertyConfigLongTextDefaultValue?
 }
 
 model ShortTextPropertyValue {
@@ -62,7 +66,48 @@ model ShortTextPropertyValue {
   propertyId Int
   value      String
 
-  propertyConfig PropertyConfig @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfig             PropertyConfig                       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyConfigDefaultValue PropertyConfigShortTextDefaultValue?
+}
+
+model PropertyConfigBooleanDefaultValue {
+  propertyValueId  Int @unique
+  propertyConfigId Int @unique
+
+  propertyConfig PropertyConfig       @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+  booleanValue   BooleanPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model PropertyConfigImageDefaultValue {
+  propertyValueId  Int @unique
+  propertyConfigId Int @unique
+
+  propertyConfig PropertyConfig     @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+  imageValue     ImagePropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model PropertyConfigIntDefaultValue {
+  propertyValueId  Int @unique
+  propertyConfigId Int @unique
+
+  propertyConfig PropertyConfig   @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+  intValue       IntPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model PropertyConfigLongTextDefaultValue {
+  propertyValueId  Int @unique
+  propertyConfigId Int @unique
+
+  propertyConfig PropertyConfig        @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+  longTextValue  LongTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model PropertyConfigShortTextDefaultValue {
+  propertyValueId  Int @unique
+  propertyConfigId Int @unique
+
+  propertyConfig PropertyConfig         @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+  shortTextValue ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
 model Entity {
@@ -88,11 +133,16 @@ model PropertyConfig {
   entityConfigId Int          @default(0)
   entityConfig   EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
 
-  booleanValues   BooleanPropertyValue[]
-  imageValues     ImagePropertyValue[]
-  intValues       IntPropertyValue[]
-  longTextValues  LongTextPropertyValue[]
-  shortTextValues ShortTextPropertyValue[]
+  booleanValues         BooleanPropertyValue[]
+  imageValues           ImagePropertyValue[]
+  intValues             IntPropertyValue[]
+  longTextValues        LongTextPropertyValue[]
+  shortTextValues       ShortTextPropertyValue[]
+  defaultLongTextValue  PropertyConfigLongTextDefaultValue?
+  defaultShortTextValue PropertyConfigShortTextDefaultValue?
+  defaultIntValue       PropertyConfigIntDefaultValue?
+  defaultImageValue     PropertyConfigImageDefaultValue?
+  defaultBooleanValue   PropertyConfigBooleanDefaultValue?
 }
 
 model EntityConfig {

@@ -45,6 +45,8 @@ export async function propertyConfig(
       );
 
       if (createdRes.isErr()) {
+        context.error(createdRes.error);
+
         return {
           status: 500,
           body: createdRes.error.message,
@@ -70,6 +72,8 @@ export async function propertyConfig(
       );
 
       if (updatedRes.isErr()) {
+        context.error(updatedRes.error);
+
         return {
           status: 500,
           body: updatedRes.error.message,

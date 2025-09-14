@@ -4,7 +4,7 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { forbiddenReply, introspect, jsonReply } from "..";
+import { forbiddenReply, introspect } from "..";
 import { Setting } from "../lib/Setting";
 import { Setting as SettingSpec } from "api-spec/models/Setting";
 
@@ -23,7 +23,8 @@ export async function setting(
   const result = await Setting.update(request.params.listConfigId, settingBody);
 
   if (result.isErr()) {
-    context.log(JSON.stringify(result.error));
+    context.error(result.error);
+
     return {
       status: 400,
     };

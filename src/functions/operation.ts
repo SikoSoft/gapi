@@ -22,52 +22,80 @@ export async function operation(
   const userId = introspection.user.id;
   const body = (await request.json()) as RequestBody;
 
-  console.log("operation", body);
   switch (body.operation.type) {
     case OperationType.DELETE:
       for (const actionId of body.actions) {
-        if ((await Tagging.deleteAllActionTags(actionId)).isErr()) {
+        const deleteAllTagsRes = await Tagging.deleteAllActionTags(actionId);
+        if (deleteAllTagsRes.isErr()) {
+          context.error(deleteAllTagsRes.error);
+
           return { status: 500 };
         }
-        if ((await Action.delete(userId, actionId)).isErr()) {
+
+        const deleteRes = await Action.delete(userId, actionId);
+        if (deleteRes.isErr()) {
+          context.error(deleteRes.error);
+
           return { status: 500 };
         }
       }
       break;
     case OperationType.ADD_TAGS:
       for (const actionId of body.actions) {
-        if ((await Tagging.saveTags(body.operation.tags)).isErr()) {
+        const saveTagsRes = await Tagging.saveTags(body.operation.tags);
+        if (saveTagsRes.isErr()) {
+          context.error(saveTagsRes.error);
+
           return { status: 500 };
         }
-        if (
-          (await Tagging.addActionTags(actionId, body.operation.tags)).isErr()
-        ) {
+
+        const addActionTagsRes = await Tagging.addActionTags(
+          actionId,
+          body.operation.tags
+        );
+        if (addActionTagsRes.isErr()) {
+          context.error(addActionTagsRes.error);
+
           return { status: 500 };
         }
       }
       break;
     case OperationType.REMOVE_TAGS:
       for (const actionId of body.actions) {
-        if (
-          (
-            await Tagging.deleteActionTags(actionId, body.operation.tags)
-          ).isErr()
-        ) {
+        const deleteActionTagsRes = await Tagging.deleteActionTags(
+          actionId,
+          body.operation.tags
+        );
+        if (deleteActionTagsRes.isErr()) {
+          context.error(deleteActionTagsRes.error);
+
           return { status: 500 };
         }
       }
       break;
     case OperationType.REPLACE_TAGS:
       for (const actionId of body.actions) {
-        if ((await Tagging.deleteAllActionTags(actionId)).isErr()) {
+        const deleteAllTagsRes = await Tagging.deleteAllActionTags(actionId);
+        if (deleteAllTagsRes.isErr()) {
+          context.error(deleteAllTagsRes.error);
+
           return { status: 500 };
         }
-        if ((await Tagging.saveTags(body.operation.tags)).isErr()) {
+
+        const saveTagsRes = await Tagging.saveTags(body.operation.tags);
+        if (saveTagsRes.isErr()) {
+          context.error(saveTagsRes.error);
+
           return { status: 500 };
         }
-        if (
-          (await Tagging.addActionTags(actionId, body.operation.tags)).isErr()
-        ) {
+
+        const addActionTagsRes = await Tagging.addActionTags(
+          actionId,
+          body.operation.tags
+        );
+        if (addActionTagsRes.isErr()) {
+          context.error(addActionTagsRes.error);
+
           return { status: 500 };
         }
       }

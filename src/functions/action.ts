@@ -56,7 +56,7 @@ function getContext(request: HttpRequest): ListContext | null {
 
 export async function action(
   request: HttpRequest,
-  _: InvocationContext
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
   if (!introspection.isLoggedIn) {
@@ -72,7 +72,10 @@ export async function action(
     case "POST":
       body = (await request.json()) as ActionBodyPayload;
       actionRes = await Action.create(userId, body);
+
       if (actionRes.isErr()) {
+        context.error(actionRes.error);
+
         return {
           status: 500,
         };
@@ -85,7 +88,10 @@ export async function action(
         parseInt(request.params.id),
         body
       );
+
       if (actionRes.isErr()) {
+        context.error(actionRes.error);
+
         return {
           status: 500,
         };
@@ -93,7 +99,10 @@ export async function action(
       return jsonReply({ ...actionRes.value });
     case "DELETE":
       actionRes = await Action.delete(userId, parseInt(request.params.id));
+
       if (actionRes.isErr()) {
+        context.error(actionRes.error);
+
         return {
           status: 500,
         };
@@ -104,16 +113,19 @@ export async function action(
       const perPage = getPerPage(request);
       const filter = getFilter(request);
       const sort = getSort(request);
-      const context = getContext(request);
+      const listContext = getContext(request);
       const actionListRes = await Action.getList({
         userId,
         filter,
-        context,
+        context: listContext,
         sort,
         start,
         perPage,
       });
+
       if (actionListRes.isErr()) {
+        context.error(actionListRes.error);
+
         return {
           status: 500,
         };

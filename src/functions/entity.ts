@@ -56,7 +56,7 @@ function getContext(request: HttpRequest): ListContext | null {
 
 export async function entity(
   request: HttpRequest,
-  _: InvocationContext
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
   if (!introspection.isLoggedIn) {
@@ -72,7 +72,10 @@ export async function entity(
     case "POST":
       body = (await request.json()) as EntityBodyPayload;
       entityRes = await Entity.create(userId, body);
+
       if (entityRes.isErr()) {
+        context.error(entityRes.error);
+
         return {
           status: 500,
         };
@@ -85,7 +88,10 @@ export async function entity(
         parseInt(request.params.id),
         body
       );
+
       if (entityRes.isErr()) {
+        context.error(entityRes.error);
+
         return {
           status: 500,
         };
@@ -93,7 +99,10 @@ export async function entity(
       return jsonReply({ ...entityRes.value });
     case "DELETE":
       entityRes = await Entity.delete(userId, parseInt(request.params.id));
+
       if (entityRes.isErr()) {
+        context.error(entityRes.error);
+
         return {
           status: 500,
         };
@@ -104,16 +113,19 @@ export async function entity(
       const perPage = getPerPage(request);
       const filter = getFilter(request);
       const sort = getSort(request);
-      const context = getContext(request);
+      const listContext = getContext(request);
       const entityListRes = await Entity.getList({
         userId,
         filter,
-        context,
+        context: listContext,
         sort,
         start,
         perPage,
       });
+
       if (entityListRes.isErr()) {
+        context.error(entityListRes.error);
+
         return {
           status: 500,
         };

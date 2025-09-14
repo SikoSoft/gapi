@@ -4,14 +4,8 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { forbiddenReply, introspect, jsonReply, prisma } from "..";
-import {
-  ListSortDirection,
-  ListSortProperty,
-  ListFilter,
-  ListSort,
-  ListFilterTimeType,
-} from "api-spec/models/List";
+import { forbiddenReply, introspect, jsonReply } from "..";
+import { ListFilter, ListSort } from "api-spec/models/List";
 import { ListConfig } from "../lib/ListConfig";
 import { List } from "api-spec/models";
 import { HttpMethod } from "../models/Endpoint";
@@ -54,6 +48,8 @@ export async function listConfig(
         createBody.name
       );
       if (createRes.isErr()) {
+        context.error(createRes.error);
+
         return { status: 400 };
       }
 
@@ -62,14 +58,22 @@ export async function listConfig(
       const updateBody = (await request.json()) as UpdateBody;
       const updateRes = await ListConfig.update(userId, updateBody);
       if (updateRes.isErr()) {
+        context.error(updateRes.error);
+
         return { status: 400 };
       }
 
       return jsonReply<List.ListConfig>({ ...updateRes.value });
     case HttpMethod.DELETE:
       const deleteRes = await ListConfig.delete(userId, request.params.id);
-      if (deleteRes.isErr() || !deleteRes.value) {
+      if (deleteRes.isErr()) {
+        context.error(deleteRes.error);
+
         return { status: 400 };
+      }
+
+      if (!deleteRes.value) {
+        return { status: 404 };
       }
 
       return {

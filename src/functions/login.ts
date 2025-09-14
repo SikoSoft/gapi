@@ -20,6 +20,8 @@ export async function login(
 
   const userRes = await IdentityManager.getUserByUserName(body.username);
   if (userRes.isErr()) {
+    context.error(userRes.error);
+
     return {
       status: 500,
     };
@@ -36,6 +38,8 @@ export async function login(
     );
 
     if (passwordIsValidRes.isErr()) {
+      context.error(passwordIsValidRes.error);
+
       return {
         status: 500,
       };
@@ -55,6 +59,8 @@ export async function login(
       60
     );
     if (numFailedAttemptsRes.isErr()) {
+      context.error(numFailedAttemptsRes.error);
+
       return {
         status: 500,
       };

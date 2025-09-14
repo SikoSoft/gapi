@@ -23,6 +23,8 @@ export async function actionSuggestion(
   );
 
   if (suggestionsRes.isErr()) {
+    context.error(suggestionsRes.error);
+
     return {
       status: 500,
     };

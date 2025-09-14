@@ -18,13 +18,14 @@ export async function tagSuggestion(
   const userId = introspection.user.id;
   context.log(`Http function processed request for url "${request.url}"`);
 
-  console.log("query", request.params.query);
   const suggestionsRes = await Tagging.getTagsFromActionDesc(
     userId,
     request.params.query
   );
 
   if (suggestionsRes.isErr()) {
+    context.error(suggestionsRes.error);
+
     return {
       status: 500,
     };

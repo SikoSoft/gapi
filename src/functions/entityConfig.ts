@@ -12,7 +12,6 @@ import {
   EntityConfigUpdateBody,
 } from "../models/Entity";
 import { EndpointConfig, EndpointName, HttpMethod } from "../models/Endpoint";
-import { Entity } from "api-spec/models";
 
 export async function listConfig(
   request: HttpRequest,

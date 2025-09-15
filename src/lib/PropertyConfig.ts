@@ -6,6 +6,7 @@ import {
   PropertyConfigCreateBody,
   PropertyConfigUpdateBody,
 } from "../models/PropertyConfig";
+import { CommonEntityPropertyConfig, DataType } from "api-spec/models/Entity";
 
 export class PropertyConfig {
   static async create(
@@ -67,12 +68,11 @@ export class PropertyConfig {
   static mapDataToSpec(
     data: PrismaPropertyConfig
   ): Entity.EntityPropertyConfig {
-    return {
+    const commonConfig: CommonEntityPropertyConfig = {
       entityConfigId: data.entityConfigId,
       id: data.id,
       userId: data.userId,
       name: data.name,
-      dataType: data.dataType as Entity.DataType,
       renderType: data.renderType as Entity.RenderType,
       required: data.required,
       repeat: data.repeat,
@@ -80,5 +80,38 @@ export class PropertyConfig {
       prefix: data.prefix,
       suffix: data.suffix,
     };
+
+    switch (data.dataType) {
+      case DataType.BOOLEAN:
+        return {
+          ...commonConfig,
+          dataType: DataType.BOOLEAN,
+          defaultValue: false,
+        };
+      case DataType.INT:
+        return {
+          ...commonConfig,
+          dataType: DataType.INT,
+          defaultValue: 0,
+        };
+      case DataType.IMAGE:
+        return {
+          ...commonConfig,
+          dataType: DataType.IMAGE,
+          defaultValue: null,
+        };
+      case DataType.LONG_TEXT:
+        return {
+          ...commonConfig,
+          dataType: DataType.LONG_TEXT,
+          defaultValue: "",
+        };
+      case DataType.SHORT_TEXT:
+        return {
+          ...commonConfig,
+          dataType: DataType.SHORT_TEXT,
+          defaultValue: "",
+        };
+    }
   }
 }

@@ -6,6 +6,9 @@ import {
   EntityConfigUpdateBody,
   PrismaEntityConfig,
 } from "../models/Entity";
+import { CommonEntityPropertyConfig, DataType } from "api-spec/models/Entity";
+import { PrismaPropertyConfig } from "../models/PropertyConfig";
+import { PropertyConfig } from "./PropertyConfig";
 
 export class EntityConfig {
   static async create(
@@ -68,14 +71,14 @@ export class EntityConfig {
           description: entityConfig.description,
           properties: {
             update: updatedProperties.map((p) => {
-              const { id, ...prop } = p;
+              const { id, defaultValue, ...prop } = p;
               return {
                 where: { id },
                 data: { ...prop },
               };
             }),
             create: newProperties.map((p) => {
-              const { id, ...prop } = p;
+              const { id, defaultValue, ...prop } = p;
               return prop;
             }),
           },
@@ -177,20 +180,8 @@ export class EntityConfig {
   }
 
   static mapPropertyDataToSpec(
-    data: PrismaEntityConfig["properties"][number]
+    data: PrismaPropertyConfig
   ): Entity.EntityPropertyConfig {
-    return {
-      entityConfigId: data.entityConfigId,
-      id: data.id,
-      userId: data.userId,
-      name: data.name,
-      dataType: data.dataType as Entity.DataType,
-      renderType: data.renderType as Entity.RenderType,
-      required: data.required,
-      repeat: data.repeat,
-      allowed: data.allowed,
-      prefix: data.prefix,
-      suffix: data.suffix,
-    };
+    return PropertyConfig.mapDataToSpec(data);
   }
 }

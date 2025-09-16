@@ -37,9 +37,15 @@ export class PropertyConfig {
     propertyConfig: PropertyConfigUpdateBody
   ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
     try {
+      const { defaultValue, ...data } = propertyConfig;
+
+      console.log({ userId, id, entityConfigId, data, defaultValue });
       const updatedPropertyConfig = await prisma.propertyConfig.update({
         where: { userId, id, entityConfigId },
-        data: propertyConfig,
+        data: {
+          ...data,
+          // defaultValue: defaultValue ? JSON.stringify(defaultValue) : null,
+        },
       });
       return ok(PropertyConfig.mapDataToSpec(updatedPropertyConfig));
     } catch (error) {

@@ -1,3 +1,4 @@
+import * as z from "zod";
 import {
   app,
   HttpRequest,
@@ -10,6 +11,7 @@ import { PropertyConfig } from "../lib/PropertyConfig";
 import {
   PrismaPropertyConfig,
   PropertyConfigCreateBody,
+  propertyConfigCreateSchema,
   PropertyConfigUpdateBody,
 } from "../models/PropertyConfig";
 import { EntityConfig, EntityPropertyConfig } from "api-spec/models/Entity";
@@ -64,11 +66,20 @@ export async function propertyConfig(
       entityConfigId = parseInt(request.params.entityConfigId);
       id = parseInt(request.params.id);
       const updateBody = (await request.json()) as PropertyConfigUpdateBody;
+
+      const validated = propertyConfigCreateSchema.safeParse(updateBody);
+      if (!validated.success) {
+        return {
+          status: 400,
+          body: JSON.stringify(z.treeifyError(validated.error)),
+        };
+      }
+
       const updatedRes = await PropertyConfig.update(
         userId,
         entityConfigId,
         id,
-        updateBody
+        validated.data as PropertyConfigUpdateBody
       );
 
       if (updatedRes.isErr()) {

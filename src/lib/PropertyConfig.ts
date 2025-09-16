@@ -120,4 +120,15 @@ export class PropertyConfig {
         };
     }
   }
+
+  static sanitizeBodyData(
+    data: PropertyConfigCreateBody | PropertyConfigUpdateBody
+  ): PropertyConfigCreateBody | PropertyConfigUpdateBody {
+    return {
+      ...data,
+      defaultValue: data.defaultValue
+        ? JSON.stringify(data.defaultValue)
+        : null,
+    };
+  }
 }

@@ -10,6 +10,7 @@ import { PropertyConfig } from "../lib/PropertyConfig";
 import {
   PropertyConfigCreateBody,
   PropertyConfigUpdateBody,
+  propertyConfigUpdateSchema,
 } from "../models/PropertyConfig";
 import { EntityPropertyConfig } from "api-spec/models/Entity";
 
@@ -64,11 +65,19 @@ export async function propertyConfig(
       id = parseInt(request.params.id);
       const updateBody = (await request.json()) as PropertyConfigUpdateBody;
 
+      const validation = propertyConfigUpdateSchema.decode(updateBody);
+      if (validation._tag === "Left") {
+        return {
+          status: 400,
+          body: JSON.stringify(validation.left),
+        };
+      }
+
       const updatedRes = await PropertyConfig.update(
         userId,
         entityConfigId,
         id,
-        updateBody
+        validation.right
       );
 
       if (updatedRes.isErr()) {

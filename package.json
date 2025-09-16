@@ -32,6 +32,7 @@
     "@prisma/client": "5.13.0",
     "api-spec": "github:SikoSoft/api-spec#1.25.1",
     "argon2": "^0.41.1",
+    "io-ts": "^2.2.22",
     "neverthrow": "^8.2.0",
     "uuid": "^9.0.1",
     "zod": "^4.1.8"

@@ -121,7 +121,9 @@ export class EntityConfig {
       const entityConfigs = await prisma.entityConfig.findMany({
         where: { userId },
         include: {
-          properties: true,
+          properties: {
+            orderBy: { id: "asc" },
+          },
         },
         orderBy: { name: "asc" },
       });

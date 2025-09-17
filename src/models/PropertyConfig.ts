@@ -13,6 +13,22 @@ export type PrismaPropertyConfig = Prisma.PropertyConfigGetPayload<
   typeof prismaPropertyConfig
 >;
 
+const prismaFullPropertyConfig =
+  Prisma.validator<Prisma.PropertyConfigFindUniqueArgs>()({
+    where: { id: 1 },
+    include: {
+      defaultBooleanValue: true,
+      defaultIntValue: true,
+      defaultImageValue: true,
+      defaultLongTextValue: true,
+      defaultShortTextValue: true,
+    },
+  });
+
+export type PrismaFullPropertyConfig = Prisma.PropertyConfigGetPayload<
+  typeof prismaFullPropertyConfig
+>;
+
 export type PropertyConfigCreateBody = Omit<
   Entity.EntityPropertyConfig,
   "id" | "userId" | "entityConfigId"

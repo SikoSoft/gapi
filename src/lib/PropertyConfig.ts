@@ -191,7 +191,7 @@ export class PropertyConfig {
 
       const booleanValue = await prisma.booleanPropertyValue.create({
         data: {
-          propertyId: propertyConfig.id,
+          //propertyId: propertyConfig.id,
           value,
         },
       });
@@ -232,7 +232,7 @@ export class PropertyConfig {
 
       const intValue = await prisma.intPropertyValue.create({
         data: {
-          propertyId: propertyConfig.id,
+          //propertyId: propertyConfig.id,
           value,
         },
       });
@@ -273,7 +273,7 @@ export class PropertyConfig {
 
       const imageValue = await prisma.imagePropertyValue.create({
         data: {
-          propertyId: propertyConfig.id,
+          //propertyId: propertyConfig.id,
           url: value.src,
           altText: value.alt,
         },
@@ -315,7 +315,7 @@ export class PropertyConfig {
 
       const shortTextValue = await prisma.shortTextPropertyValue.create({
         data: {
-          propertyId: propertyConfig.id,
+          //propertyId: propertyConfig.id,
           value,
         },
       });
@@ -356,7 +356,7 @@ export class PropertyConfig {
 
       const longTextValue = await prisma.longTextPropertyValue.create({
         data: {
-          propertyId: propertyConfig.id,
+          //propertyId: propertyConfig.id,
           value,
         },
       });

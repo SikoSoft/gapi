@@ -25,52 +25,52 @@ model Action {
 }
 
 model BooleanPropertyValue {
-  id         Int     @id @default(autoincrement())
-  propertyId Int
-  value      Boolean
+  id    Int     @id @default(autoincrement())
+  //propertyId Int
+  value Boolean
 
-  propertyConfig             PropertyConfig                     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  //propertyConfig             PropertyConfig                     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigBooleanDefaultValue?
   entityPropertyValue        EntityBooleanProperty?
 }
 
 model ImagePropertyValue {
-  id         Int    @id @default(autoincrement())
-  propertyId Int
-  url        String
-  altText    String
+  id      Int    @id @default(autoincrement())
+  //propertyId Int
+  url     String
+  altText String
 
-  propertyConfig             PropertyConfig                   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  //propertyConfig             PropertyConfig                   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigImageDefaultValue?
   entityPropertyValue        EntityImageProperty?
 }
 
 model IntPropertyValue {
-  id         Int @id @default(autoincrement())
-  propertyId Int
-  value      Int
+  id    Int @id @default(autoincrement())
+  //propertyId Int
+  value Int
 
-  propertyConfig             PropertyConfig                 @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  //propertyConfig             PropertyConfig                 @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigIntDefaultValue?
   entityPropertyValue        EntityIntProperty?
 }
 
 model LongTextPropertyValue {
-  id         Int    @id @default(autoincrement())
-  propertyId Int
-  value      String
+  id    Int    @id @default(autoincrement())
+  //propertyId Int
+  value String
 
-  propertyConfig             PropertyConfig                      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  //propertyConfig             PropertyConfig                      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigLongTextDefaultValue?
   entityPropertyValue        EntityLongTextProperty?
 }
 
 model ShortTextPropertyValue {
-  id         Int    @id @default(autoincrement())
-  propertyId Int
-  value      String
+  id    Int    @id @default(autoincrement())
+  //propertyId Int
+  value String
 
-  propertyConfig             PropertyConfig                       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  //propertyConfig             PropertyConfig                       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyConfigDefaultValue PropertyConfigShortTextDefaultValue?
   entityPropertyValue        EntityShortTextProperty?
 }
@@ -187,11 +187,11 @@ model PropertyConfig {
   entityConfigId Int          @default(0)
   entityConfig   EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
 
-  booleanValues         BooleanPropertyValue[]
-  imageValues           ImagePropertyValue[]
-  intValues             IntPropertyValue[]
-  longTextValues        LongTextPropertyValue[]
-  shortTextValues       ShortTextPropertyValue[]
+  //booleanValues         BooleanPropertyValue[]
+  //imageValues           ImagePropertyValue[]
+  //intValues             IntPropertyValue[]
+  //longTextValues        LongTextPropertyValue[]
+  //shortTextValues       ShortTextPropertyValue[]
   defaultLongTextValue  PropertyConfigLongTextDefaultValue?
   defaultShortTextValue PropertyConfigShortTextDefaultValue?
   defaultIntValue       PropertyConfigIntDefaultValue?

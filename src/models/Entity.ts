@@ -29,7 +29,35 @@ const prismaEntityConfig =
   Prisma.validator<Prisma.EntityConfigFindUniqueArgs>()({
     where: { id: 1, userId: "" },
     include: {
-      properties: true,
+      properties: {
+        include: {
+          defaultBooleanValue: {
+            include: {
+              booleanValue: true,
+            },
+          },
+          defaultIntValue: {
+            include: {
+              intValue: true,
+            },
+          },
+          defaultImageValue: {
+            include: {
+              imageValue: true,
+            },
+          },
+          defaultLongTextValue: {
+            include: {
+              longTextValue: true,
+            },
+          },
+          defaultShortTextValue: {
+            include: {
+              shortTextValue: true,
+            },
+          },
+        },
+      },
     },
   });
 

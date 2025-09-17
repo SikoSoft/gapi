@@ -6,7 +6,33 @@ import { RenderType } from "api-spec/models/Entity";
 const prismaPropertyConfig =
   Prisma.validator<Prisma.PropertyConfigFindUniqueArgs>()({
     where: { id: 1, userId: "" },
-    include: {},
+    include: {
+      defaultBooleanValue: {
+        include: {
+          booleanValue: true,
+        },
+      },
+      defaultIntValue: {
+        include: {
+          intValue: true,
+        },
+      },
+      defaultImageValue: {
+        include: {
+          imageValue: true,
+        },
+      },
+      defaultLongTextValue: {
+        include: {
+          longTextValue: true,
+        },
+      },
+      defaultShortTextValue: {
+        include: {
+          shortTextValue: true,
+        },
+      },
+    },
   });
 
 export type PrismaPropertyConfig = Prisma.PropertyConfigGetPayload<

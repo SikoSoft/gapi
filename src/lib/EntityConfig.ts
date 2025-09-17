@@ -28,7 +28,35 @@ export class EntityConfig {
           },
         },
         include: {
-          properties: true,
+          properties: {
+            include: {
+              defaultBooleanValue: {
+                include: {
+                  booleanValue: true,
+                },
+              },
+              defaultIntValue: {
+                include: {
+                  intValue: true,
+                },
+              },
+              defaultImageValue: {
+                include: {
+                  imageValue: true,
+                },
+              },
+              defaultLongTextValue: {
+                include: {
+                  longTextValue: true,
+                },
+              },
+              defaultShortTextValue: {
+                include: {
+                  shortTextValue: true,
+                },
+              },
+            },
+          },
         },
       });
       return ok(EntityConfig.mapDataToSpec(createdEntityConfig));
@@ -88,7 +116,35 @@ export class EntityConfig {
           userId,
         },
         include: {
-          properties: true,
+          properties: {
+            include: {
+              defaultBooleanValue: {
+                include: {
+                  booleanValue: true,
+                },
+              },
+              defaultIntValue: {
+                include: {
+                  intValue: true,
+                },
+              },
+              defaultImageValue: {
+                include: {
+                  imageValue: true,
+                },
+              },
+              defaultLongTextValue: {
+                include: {
+                  longTextValue: true,
+                },
+              },
+              defaultShortTextValue: {
+                include: {
+                  shortTextValue: true,
+                },
+              },
+            },
+          },
         },
       });
       return ok(EntityConfig.mapDataToSpec(updatedEntityConfig));
@@ -104,7 +160,35 @@ export class EntityConfig {
       const entityConfig = await prisma.entityConfig.findFirstOrThrow({
         where: { id },
         include: {
-          properties: true,
+          properties: {
+            include: {
+              defaultBooleanValue: {
+                include: {
+                  booleanValue: true,
+                },
+              },
+              defaultIntValue: {
+                include: {
+                  intValue: true,
+                },
+              },
+              defaultImageValue: {
+                include: {
+                  imageValue: true,
+                },
+              },
+              defaultLongTextValue: {
+                include: {
+                  longTextValue: true,
+                },
+              },
+              defaultShortTextValue: {
+                include: {
+                  shortTextValue: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -122,6 +206,33 @@ export class EntityConfig {
         where: { userId },
         include: {
           properties: {
+            include: {
+              defaultBooleanValue: {
+                include: {
+                  booleanValue: true,
+                },
+              },
+              defaultIntValue: {
+                include: {
+                  intValue: true,
+                },
+              },
+              defaultImageValue: {
+                include: {
+                  imageValue: true,
+                },
+              },
+              defaultLongTextValue: {
+                include: {
+                  longTextValue: true,
+                },
+              },
+              defaultShortTextValue: {
+                include: {
+                  shortTextValue: true,
+                },
+              },
+            },
             orderBy: { id: "asc" },
           },
         },

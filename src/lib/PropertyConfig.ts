@@ -2,7 +2,6 @@ import { Result, err, ok } from "neverthrow";
 import { prisma } from "..";
 import { Entity } from "api-spec/models";
 import {
-  PrismaFullPropertyConfig,
   PrismaPropertyConfig,
   PropertyConfigCreateBody,
   PropertyConfigUpdateBody,
@@ -30,6 +29,33 @@ export class PropertyConfig {
           userId,
           entityConfigId,
         },
+        include: {
+          defaultBooleanValue: {
+            include: {
+              booleanValue: true,
+            },
+          },
+          defaultIntValue: {
+            include: {
+              intValue: true,
+            },
+          },
+          defaultImageValue: {
+            include: {
+              imageValue: true,
+            },
+          },
+          defaultLongTextValue: {
+            include: {
+              longTextValue: true,
+            },
+          },
+          defaultShortTextValue: {
+            include: {
+              shortTextValue: true,
+            },
+          },
+        },
       });
       return ok(PropertyConfig.mapDataToSpec(createdPropertyConfig));
     } catch (error) {
@@ -45,6 +71,12 @@ export class PropertyConfig {
     id: number,
     propertyConfig: PropertyConfigUpdateBody
   ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
+    console.log("Updating property config:", {
+      userId,
+      entityConfigId,
+      id,
+      propertyConfig,
+    });
     try {
       const { defaultValue, ...data } = propertyConfig;
 
@@ -53,9 +85,39 @@ export class PropertyConfig {
         data: {
           ...data,
         },
+        include: {
+          defaultBooleanValue: {
+            include: {
+              booleanValue: true,
+            },
+          },
+          defaultIntValue: {
+            include: {
+              intValue: true,
+            },
+          },
+          defaultImageValue: {
+            include: {
+              imageValue: true,
+            },
+          },
+          defaultLongTextValue: {
+            include: {
+              longTextValue: true,
+            },
+          },
+          defaultShortTextValue: {
+            include: {
+              shortTextValue: true,
+            },
+          },
+        },
       });
       const mappedConfig = PropertyConfig.mapDataToSpec(updatedPropertyConfig);
-      PropertyConfig.syncDefaultValue(mappedConfig);
+      PropertyConfig.syncDefaultValue({
+        ...mappedConfig,
+        defaultValue,
+      } as Entity.EntityPropertyConfig);
       return ok(mappedConfig);
     } catch (error) {
       return err(
@@ -83,6 +145,7 @@ export class PropertyConfig {
   static async syncDefaultValue(
     propertyConfig: Entity.EntityPropertyConfig
   ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
+    console.log("Syncing default value for property config:", propertyConfig);
     try {
       switch (propertyConfig.dataType) {
         case DataType.BOOLEAN:
@@ -316,6 +379,7 @@ export class PropertyConfig {
   static mapDataToSpec(
     data: PrismaPropertyConfig
   ): Entity.EntityPropertyConfig {
+    console.log("Mapping data to spec:", data);
     const commonConfig: CommonEntityPropertyConfig = {
       entityConfigId: data.entityConfigId,
       id: data.id,
@@ -334,43 +398,36 @@ export class PropertyConfig {
         return {
           ...commonConfig,
           dataType: DataType.BOOLEAN,
-          defaultValue: false,
+          defaultValue: data?.defaultBooleanValue?.booleanValue?.value || false,
         };
       case DataType.INT:
         return {
           ...commonConfig,
           dataType: DataType.INT,
-          defaultValue: 0,
+          defaultValue: data?.defaultIntValue?.intValue?.value || 0,
         };
       case DataType.IMAGE:
         return {
           ...commonConfig,
           dataType: DataType.IMAGE,
-          defaultValue: null,
+          defaultValue: {
+            src: data?.defaultImageValue?.imageValue?.url || "",
+            alt: data?.defaultImageValue?.imageValue?.altText || "",
+          },
         };
       case DataType.LONG_TEXT:
         return {
           ...commonConfig,
           dataType: DataType.LONG_TEXT,
-          defaultValue: "",
+          defaultValue: data?.defaultLongTextValue?.longTextValue?.value || "",
         };
       case DataType.SHORT_TEXT:
         return {
           ...commonConfig,
           dataType: DataType.SHORT_TEXT,
-          defaultValue: "",
+          defaultValue:
+            data?.defaultShortTextValue?.shortTextValue?.value || "",
         };
     }
-  }
-
-  static sanitizeBodyData(
-    data: PropertyConfigCreateBody | PropertyConfigUpdateBody
-  ): PropertyConfigCreateBody | PropertyConfigUpdateBody {
-    return {
-      ...data,
-      defaultValue: data.defaultValue
-        ? JSON.stringify(data.defaultValue)
-        : null,
-    };
   }
 }

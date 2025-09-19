@@ -173,6 +173,17 @@ model Entity {
   shortTextProperties EntityShortTextProperty[]
 }
 
+model EntityPropertyOrder {
+  entityConfigId   Int
+  propertyConfigId Int @unique
+  order            Int @default(0)
+
+  entityConfig   EntityConfig   @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
+  propertyConfig PropertyConfig @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([entityConfigId, propertyConfigId])
+}
+
 model PropertyConfig {
   id             Int          @id @default(autoincrement())
   name           String       @db.VarChar(128)
@@ -197,6 +208,10 @@ model PropertyConfig {
   defaultIntValue       PropertyConfigIntDefaultValue?
   defaultImageValue     PropertyConfigImageDefaultValue?
   defaultBooleanValue   PropertyConfigBooleanDefaultValue?
+
+  entityPropertyOrder EntityPropertyOrder?
+
+  @@unique([entityConfigId, id])
 }
 
 model EntityConfig {
@@ -205,6 +220,8 @@ model EntityConfig {
   description String?          @db.VarChar(255)
   properties  PropertyConfig[]
   userId      String?          @db.Uuid
+
+  entityPropertyOrders EntityPropertyOrder[]
 
   @@unique([id, name])
 }

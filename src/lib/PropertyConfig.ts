@@ -15,6 +15,7 @@ import {
   LongTextDataValue,
   ShortTextDataValue,
 } from "api-spec/models/Entity";
+import { resolve } from "path/win32";
 
 export class PropertyConfig {
   static async create(
@@ -372,6 +373,30 @@ export class PropertyConfig {
         new Error("Failed to update property config default long text value", {
           cause: error,
         })
+      );
+    }
+  }
+
+  static async updateOrder(
+    entityConfigId: number,
+    propertyConfigId: number,
+    newOrder: number
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.entityPropertyOrder.upsert({
+        where: { propertyConfigId, entityConfigId },
+        update: { order: newOrder },
+        create: {
+          entityConfigId,
+          propertyConfigId,
+          order: newOrder,
+        },
+      });
+
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to update property config order", { cause: error })
       );
     }
   }

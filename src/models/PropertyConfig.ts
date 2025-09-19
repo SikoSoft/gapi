@@ -141,3 +141,11 @@ export const propertyConfigUpdateSchema = propertyConfigCreateSchema;
 export type PropertyConfigUpdateBodyType = t.TypeOf<
   typeof propertyConfigUpdateSchema
 >;
+
+export const propertyConfigUpdateOrderSchema = t.array(
+  t.type({ id: t.number, order: t.number })
+);
+
+export type PropertyConfigUpdateOrderBody = t.TypeOf<
+  typeof propertyConfigUpdateOrderSchema
+>;

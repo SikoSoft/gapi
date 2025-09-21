@@ -23,10 +23,12 @@ export class PropertyConfig {
     entityConfigId: number,
     propertyConfig: PropertyConfigCreateBody
   ): Promise<Result<Entity.EntityPropertyConfig, Error>> {
+    const { defaultValue, ...data } = propertyConfig;
+
     try {
       const createdPropertyConfig = await prisma.propertyConfig.create({
         data: {
-          ...propertyConfig,
+          ...data,
           userId,
           entityConfigId,
         },

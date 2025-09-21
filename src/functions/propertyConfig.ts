@@ -9,10 +9,12 @@ import { forbiddenReply, introspect, jsonReply } from "..";
 import { PropertyConfig } from "../lib/PropertyConfig";
 import {
   PropertyConfigCreateBody,
+  propertyConfigCreateSchema,
   PropertyConfigUpdateBody,
   propertyConfigUpdateSchema,
 } from "../models/PropertyConfig";
 import { EntityPropertyConfig } from "api-spec/models/Entity";
+import { Validation } from "io-ts";
 
 export async function propertyConfig(
   request: HttpRequest,
@@ -25,6 +27,7 @@ export async function propertyConfig(
   const userId = introspection.user.id;
   let entityConfigId: number;
   let id: number;
+  let validation: Validation<PropertyConfigCreateBody>;
 
   switch (request.method) {
     case "GET":
@@ -37,7 +40,17 @@ export async function propertyConfig(
       }
 
       entityConfigId = parseInt(request.params.entityConfigId);
+      id = parseInt(request.params.id);
       const createBody = (await request.json()) as PropertyConfigCreateBody;
+
+      validation = propertyConfigCreateSchema.decode(createBody);
+      if (validation._tag === "Left") {
+        return {
+          status: 400,
+          body: JSON.stringify(validation.left),
+        };
+      }
+
       const createdRes = await PropertyConfig.create(
         userId,
         entityConfigId,
@@ -65,7 +78,7 @@ export async function propertyConfig(
       id = parseInt(request.params.id);
       const updateBody = (await request.json()) as PropertyConfigUpdateBody;
 
-      const validation = propertyConfigUpdateSchema.decode(updateBody);
+      validation = propertyConfigUpdateSchema.decode(updateBody);
       if (validation._tag === "Left") {
         return {
           status: 400,

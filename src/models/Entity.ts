@@ -3,6 +3,7 @@ import { ListContext, ListFilter, ListSort } from "api-spec/models/List";
 import { Entity } from "api-spec/models";
 
 export interface EntityBodyPayload {
+  entityConfigId: number;
   desc: string;
   timeZone: string;
   tags: string[];
@@ -21,7 +22,7 @@ export interface EntityListParams {
 }
 
 export interface EntityList {
-  entities: EntityItem[];
+  entities: Entity.Entity[];
   context: ContextEntities;
   total: number;
 }

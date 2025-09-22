@@ -24,6 +24,7 @@ import {
   EntityProperty,
   ImageDataValue,
 } from "api-spec/models/Entity";
+import { Entity as EntitySpec } from "api-spec/models";
 
 export class Entity {
   static getFilteredConditions(userId: string, filter: ListFilter) {
@@ -110,11 +111,12 @@ export class Entity {
   static async create(
     userId: string,
     data: EntityBodyPayload
-  ): Promise<Result<EntityItem, Error>> {
+  ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
       const entity = await prisma.entity.create({
         data: {
           userId,
+          entityConfigId: data.entityConfigId,
         },
         include: {
           tags: true,
@@ -137,7 +139,7 @@ export class Entity {
     userId: string,
     id: number,
     data: EntityBodyPayload
-  ): Promise<Result<EntityItem, Error>> {
+  ): Promise<Result<EntitySpec.Entity, Error>> {
     const timeZone = parseInt(data.timeZone);
     const serverTimeZone = new Date().getTimezoneOffset();
 
@@ -154,7 +156,9 @@ export class Entity {
     }
   }
 
-  static async getEntity(id: number): Promise<Result<EntityItem, Error>> {
+  static async getEntity(
+    id: number
+  ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
       const entity = await prisma.entity.findUnique({
         where: { id },
@@ -176,10 +180,17 @@ export class Entity {
     }
   }
 
-  static toSpec(entity: PrismaEntity): EntityItem {
+  static toSpec(entity: PrismaEntity): EntitySpec.Entity {
     console.log("Entity to spec:", entity);
+
+    const properties: EntitySpec.EntityProperty[] = [];
+
     return {
-      ...entity,
+      id: entity.id,
+      type: entity.entityConfigId,
+      createdAt: entity.createdAt.toISOString(),
+      updatedAt: entity.updatedAt.toISOString(),
+      properties,
       tags: entity.tags.map((tag) => tag.label),
     };
   }
@@ -194,7 +205,7 @@ export class Entity {
   }: EntityListParams): Promise<Result<EntityList, Error>> {
     const where = Entity.getFilteredConditions(userId, filter);
 
-    let entities: EntityItem[];
+    let entities: EntitySpec.Entity[];
 
     try {
       entities = (
@@ -241,7 +252,7 @@ export class Entity {
   static async delete(
     userId: string,
     id: number
-  ): Promise<Result<EntityItem, Error>> {
+  ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
       const entity = await prisma.entity.delete({
         where: {
@@ -265,7 +276,7 @@ export class Entity {
 
   static async getContextEntities(
     listContext: ListContext,
-    entities: EntityItem[],
+    entities: EntitySpec.Entity[],
     sort: ListSort
   ): Promise<Result<ContextEntities, Error>> {
     let contextEntities: ContextEntities = {};
@@ -274,7 +285,7 @@ export class Entity {
       for (let i = 0; i < entities.length; i++) {
         let startTime: Date, endTime: Date;
         if (listContext.type === ListContextType.BEFORE) {
-          endTime = new Date(entities[i].createdAt.getTime() - 1);
+          endTime = new Date(new Date(entities[i].createdAt).getTime() - 1);
           startTime = new Date(
             endTime.getTime() -
               Entity.secondsFromQuantityUnits(
@@ -283,7 +294,7 @@ export class Entity {
               )
           );
         } else if (listContext.type === ListContextType.AFTER) {
-          startTime = new Date(entities[i].createdAt.getTime() + 1);
+          startTime = new Date(new Date(entities[i].createdAt).getTime() + 1);
           endTime = new Date(
             startTime.getTime() +
               Entity.secondsFromQuantityUnits(

@@ -43,10 +43,7 @@ export async function listConfig(
       });
     case HttpMethod.POST:
       const createBody = (await request.json()) as CreateBody;
-      const createRes = await ListConfig.create(
-        createBody.userId,
-        createBody.name
-      );
+      const createRes = await ListConfig.create(userId, createBody.name);
       if (createRes.isErr()) {
         context.error(createRes.error);
 

@@ -6,6 +6,7 @@ export interface EntityBodyPayload {
   desc: string;
   timeZone: string;
   tags: string[];
+  properties: Entity.EntityProperty[];
 }
 
 export type ContextEntities = Record<number, PrismaEntity[]>;

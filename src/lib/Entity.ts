@@ -121,6 +121,7 @@ export class Entity {
         },
       });
       Tagging.syncEntityTags(entity.id, data.tags);
+      await Entity.syncEntityProperties(entity.id, userId, data.properties);
       return ok(Entity.toSpec(entity));
     } catch (error) {
       return err(error);
@@ -331,9 +332,9 @@ export class Entity {
     properties: EntityProperty[]
   ): Promise<Result<Record<number, DataType>, Error>> {
     try {
-      const propertyIds = properties.map((p) => p.id);
+      const propertyConfigIds = properties.map((p) => p.propertyConfigId);
       const propertyRows = await prisma.propertyConfig.findMany({
-        where: { id: { in: propertyIds } },
+        where: { id: { in: propertyConfigIds } },
       });
 
       const dataTypes: Record<number, DataType> = {};
@@ -352,12 +353,6 @@ export class Entity {
     userId: string,
     properties: EntityProperty[]
   ): Promise<Result<null, Error>> {
-    console.log("Syncing entity properties:", {
-      entityId,
-      userId,
-      properties,
-    });
-
     const dataTypesRes = await Entity.getDataTypesForProperties(properties);
     if (dataTypesRes.isErr()) {
       console.error(
@@ -372,7 +367,19 @@ export class Entity {
       switch (dataTypes[property.propertyConfigId]) {
         case DataType.BOOLEAN:
           await Entity.syncBooleanProperty(entityId, property);
-          return ok(null);
+          break;
+        case DataType.INT:
+          await Entity.syncIntProperty(entityId, property);
+          break;
+        case DataType.IMAGE:
+          await Entity.syncImageProperty(entityId, property);
+          break;
+        case DataType.SHORT_TEXT:
+          await Entity.syncShortTextProperty(entityId, property);
+          break;
+        case DataType.LONG_TEXT:
+          await Entity.syncLongTextProperty(entityId, property);
+          break;
         default:
           return err(
             new Error(
@@ -382,13 +389,14 @@ export class Entity {
       }
     }
 
-    return err(new Error("No properties to sync"));
+    return ok(null);
   }
 
   static async syncBooleanProperty(
     entityId: number,
     property: EntityProperty
   ): Promise<Result<null, Error>> {
+    console.log("Syncing boolean property:", { entityId, property });
     try {
       const value = property.value as boolean;
 

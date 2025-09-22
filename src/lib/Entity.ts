@@ -18,7 +18,12 @@ import {
   ContextEntities,
   EntityItem,
 } from "../models/Entity";
-import { EntityConfig } from "api-spec/models/Entity";
+import {
+  DataType,
+  EntityConfig,
+  EntityProperty,
+  ImageDataValue,
+} from "api-spec/models/Entity";
 
 export class Entity {
   static getFilteredConditions(userId: string, filter: ListFilter) {
@@ -318,6 +323,213 @@ export class Entity {
       const suggestions = entities.map((e) => String(e.id));
       return ok(suggestions);
     } catch (error) {
+      return err(error);
+    }
+  }
+
+  static async getDataTypesForProperties(
+    properties: EntityProperty[]
+  ): Promise<Result<Record<number, DataType>, Error>> {
+    try {
+      const propertyIds = properties.map((p) => p.id);
+      const propertyRows = await prisma.propertyConfig.findMany({
+        where: { id: { in: propertyIds } },
+      });
+
+      const dataTypes: Record<number, DataType> = {};
+      propertyRows.forEach((p) => {
+        dataTypes[p.id] = p.dataType as DataType;
+      });
+
+      return ok(dataTypes);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  static async syncEntityProperties(
+    entityId: number,
+    userId: string,
+    properties: EntityProperty[]
+  ): Promise<Result<null, Error>> {
+    console.log("Syncing entity properties:", {
+      entityId,
+      userId,
+      properties,
+    });
+
+    const dataTypesRes = await Entity.getDataTypesForProperties(properties);
+    if (dataTypesRes.isErr()) {
+      console.error(
+        "Error getting data types for properties:",
+        dataTypesRes.error
+      );
+      return;
+    }
+    const dataTypes = dataTypesRes.value;
+
+    for (const property of properties) {
+      switch (dataTypes[property.propertyConfigId]) {
+        case DataType.BOOLEAN:
+          await Entity.syncBooleanProperty(entityId, property);
+          return ok(null);
+        default:
+          return err(
+            new Error(
+              `Unsupported data type for propertyConfigId ${property.propertyConfigId}`
+            )
+          );
+      }
+    }
+
+    return err(new Error("No properties to sync"));
+  }
+
+  static async syncBooleanProperty(
+    entityId: number,
+    property: EntityProperty
+  ): Promise<Result<null, Error>> {
+    try {
+      const value = property.value as boolean;
+
+      if (!property.id) {
+        const booleanPropertyValue = await prisma.booleanPropertyValue.create({
+          data: {
+            value,
+          },
+        });
+
+        await prisma.entityBooleanProperty.create({
+          data: {
+            entityId,
+            propertyValueId: booleanPropertyValue.id,
+          },
+        });
+
+        return ok(null);
+      }
+    } catch (error) {
+      console.error("Error syncing boolean property:", error);
+      return err(error);
+    }
+  }
+
+  static async syncIntProperty(
+    entityId: number,
+    property: EntityProperty
+  ): Promise<Result<null, Error>> {
+    try {
+      const value = property.value as number;
+
+      if (!property.id) {
+        const intPropertyValue = await prisma.intPropertyValue.create({
+          data: {
+            value,
+          },
+        });
+
+        await prisma.entityIntProperty.create({
+          data: {
+            entityId,
+            propertyValueId: intPropertyValue.id,
+          },
+        });
+
+        return ok(null);
+      }
+    } catch (error) {
+      console.error("Error syncing int property:", error);
+      return err(error);
+    }
+  }
+
+  static async syncImageProperty(
+    entityId: number,
+    property: EntityProperty
+  ): Promise<Result<null, Error>> {
+    try {
+      const value = property.value as ImageDataValue;
+
+      if (!property.id) {
+        const imagePropertyValue = await prisma.imagePropertyValue.create({
+          data: {
+            url: value.src,
+            altText: value.alt,
+          },
+        });
+
+        await prisma.entityImageProperty.create({
+          data: {
+            entityId,
+            propertyValueId: imagePropertyValue.id,
+          },
+        });
+
+        return ok(null);
+      }
+    } catch (error) {
+      console.error("Error syncing image property:", error);
+      return err(error);
+    }
+  }
+
+  static async syncShortTextProperty(
+    entityId: number,
+    property: EntityProperty
+  ): Promise<Result<null, Error>> {
+    try {
+      const value = property.value as string;
+
+      if (!property.id) {
+        const shortTextPropertyValue =
+          await prisma.shortTextPropertyValue.create({
+            data: {
+              value,
+            },
+          });
+
+        await prisma.entityShortTextProperty.create({
+          data: {
+            entityId,
+            propertyValueId: shortTextPropertyValue.id,
+          },
+        });
+
+        return ok(null);
+      }
+    } catch (error) {
+      console.error("Error syncing boolean property:", error);
+      return err(error);
+    }
+  }
+
+  static async syncLongTextProperty(
+    entityId: number,
+    property: EntityProperty
+  ): Promise<Result<null, Error>> {
+    try {
+      const value = property.value as string;
+
+      if (!property.id) {
+        const longTextPropertyValue = await prisma.longTextPropertyValue.create(
+          {
+            data: {
+              value,
+            },
+          }
+        );
+
+        await prisma.entityLongTextProperty.create({
+          data: {
+            entityId,
+            propertyValueId: longTextPropertyValue.id,
+          },
+        });
+
+        return ok(null);
+      }
+    } catch (error) {
+      console.error("Error syncing long text property:", error);
       return err(error);
     }
   }

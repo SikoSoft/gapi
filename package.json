@@ -30,7 +30,7 @@
   "dependencies": {
     "@azure/functions": "^4.4.0",
     "@prisma/client": "5.13.0",
-    "api-spec": "github:SikoSoft/api-spec#1.25.1",
+    "api-spec": "github:SikoSoft/api-spec#1.26.0",
     "argon2": "^0.41.1",
     "io-ts": "^2.2.22",
     "neverthrow": "^8.2.0",

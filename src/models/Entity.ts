@@ -70,6 +70,11 @@ const prismaEntity = Prisma.validator<Prisma.EntityFindUniqueArgs>()({
   where: { id: 1, userId: "" },
   include: {
     tags: true,
+    booleanProperties: true,
+    intProperties: true,
+    imageProperties: true,
+    longTextProperties: true,
+    shortTextProperties: true,
   },
 });
 

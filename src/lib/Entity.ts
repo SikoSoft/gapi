@@ -118,6 +118,11 @@ export class Entity {
         },
         include: {
           tags: true,
+          booleanProperties: true,
+          intProperties: true,
+          imageProperties: true,
+          longTextProperties: true,
+          shortTextProperties: true,
         },
       });
       Tagging.syncEntityTags(entity.id, data.tags);
@@ -153,7 +158,14 @@ export class Entity {
     try {
       const entity = await prisma.entity.findUnique({
         where: { id },
-        include: { tags: true },
+        include: {
+          tags: true,
+          booleanProperties: true,
+          intProperties: true,
+          imageProperties: true,
+          longTextProperties: true,
+          shortTextProperties: true,
+        },
       });
       if (!entity) {
         return err(new Error("Entity not found"));
@@ -165,6 +177,7 @@ export class Entity {
   }
 
   static toSpec(entity: PrismaEntity): EntityItem {
+    console.log("Entity to spec:", entity);
     return {
       ...entity,
       tags: entity.tags.map((tag) => tag.label),
@@ -194,6 +207,11 @@ export class Entity {
           },
           include: {
             tags: true,
+            booleanProperties: true,
+            intProperties: true,
+            imageProperties: true,
+            longTextProperties: true,
+            shortTextProperties: true,
           },
         })
       ).map((entity) => Entity.toSpec(entity));
@@ -232,6 +250,11 @@ export class Entity {
         },
         include: {
           tags: true,
+          booleanProperties: true,
+          intProperties: true,
+          imageProperties: true,
+          longTextProperties: true,
+          shortTextProperties: true,
         },
       });
       return ok(Entity.toSpec(entity));
@@ -283,6 +306,11 @@ export class Entity {
             },
             include: {
               tags: true,
+              booleanProperties: true,
+              intProperties: true,
+              imageProperties: true,
+              longTextProperties: true,
+              shortTextProperties: true,
             },
           });
 

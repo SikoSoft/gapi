@@ -152,6 +152,7 @@ model EntityShortTextProperty {
 
 model Entity {
   id                  Int                       @id @default(autoincrement())
+  entityConfigId      Int
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
   userId              String?                   @db.Uuid
@@ -161,6 +162,8 @@ model Entity {
   intProperties       EntityIntProperty[]
   longTextProperties  EntityLongTextProperty[]
   shortTextProperties EntityShortTextProperty[]
+
+  entityConfig EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
 }
 
 model EntityPropertyOrder {
@@ -207,6 +210,7 @@ model EntityConfig {
   userId      String?          @db.Uuid
 
   entityPropertyOrders EntityPropertyOrder[]
+  entities             Entity[]
 
   @@unique([id, name])
 }

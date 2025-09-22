@@ -60,7 +60,12 @@ export class PropertyConfig {
           },
         },
       });
-      return ok(PropertyConfig.mapDataToSpec(createdPropertyConfig));
+      const mappedConfig = PropertyConfig.mapDataToSpec(createdPropertyConfig);
+      PropertyConfig.syncDefaultValue({
+        ...mappedConfig,
+        defaultValue,
+      } as Entity.EntityPropertyConfig);
+      return ok(mappedConfig);
     } catch (error) {
       return err(
         new Error("Failed to create property config", { cause: error })
@@ -217,6 +222,7 @@ export class PropertyConfig {
   static async syncIntDefaultValue(
     propertyConfig: Entity.EntityPropertyConfig
   ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
+    console.log("Syncing int default value:", propertyConfig);
     try {
       const value = propertyConfig.defaultValue as IntDataValue;
       const existingDefault =
@@ -406,7 +412,7 @@ export class PropertyConfig {
   static mapDataToSpec(
     data: PrismaPropertyConfig
   ): Entity.EntityPropertyConfig {
-    console.log("Mapping data to spec:", data);
+    //console.log("Mapping data to spec:", data);
     const commonConfig: CommonEntityPropertyConfig = {
       entityConfigId: data.entityConfigId,
       id: data.id,

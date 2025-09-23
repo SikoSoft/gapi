@@ -12,6 +12,7 @@ import {
   introspect,
   jsonReply,
 } from "..";
+import { Entity as EntitySpec } from "api-spec/models";
 import { ListFilter, ListSort, ListContext } from "api-spec/models/List";
 import { EntityBodyPayload, EntityItem } from "../models/Entity";
 import { Entity } from "../lib/Entity";
@@ -67,7 +68,7 @@ export async function entity(
 
   let body: EntityBodyPayload;
 
-  let entityRes: Result<EntityItem, Error>;
+  let entityRes: Result<EntitySpec.Entity, Error>;
   switch (request.method) {
     case "POST":
       body = (await request.json()) as EntityBodyPayload;

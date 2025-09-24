@@ -110,8 +110,8 @@ model EntityBooleanProperty {
   entityId        Int
   propertyValueId Int @unique
 
-  entity   Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  property BooleanPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity        Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue BooleanPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
 model EntityImageProperty {
@@ -119,8 +119,8 @@ model EntityImageProperty {
   entityId        Int
   propertyValueId Int @unique
 
-  entity   Entity             @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  property ImagePropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity        Entity             @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue ImagePropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
 model EntityIntProperty {
@@ -128,8 +128,8 @@ model EntityIntProperty {
   entityId        Int
   propertyValueId Int @unique
 
-  entity   Entity           @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  property IntPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity        Entity           @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue IntPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
 model EntityLongTextProperty {
@@ -137,8 +137,8 @@ model EntityLongTextProperty {
   entityId        Int
   propertyValueId Int @unique
 
-  entity   Entity                @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  property LongTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity        Entity                @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue LongTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
 model EntityShortTextProperty {
@@ -146,8 +146,8 @@ model EntityShortTextProperty {
   entityId        Int
   propertyValueId Int @unique
 
-  entity   Entity                 @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  property ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity        Entity                 @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
 model Entity {

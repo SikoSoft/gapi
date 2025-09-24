@@ -106,48 +106,58 @@ model PropertyConfigShortTextDefaultValue {
 }
 
 model EntityBooleanProperty {
-  id              Int @id @default(autoincrement())
-  entityId        Int
-  propertyValueId Int @unique
+  id               Int @id @default(autoincrement())
+  entityId         Int
+  propertyConfigId Int
+  propertyValueId  Int @unique
 
-  entity        Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  propertyValue BooleanPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity         Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue  BooleanPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  propertyConfig PropertyConfig       @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
 }
 
 model EntityImageProperty {
-  id              Int @id @default(autoincrement())
-  entityId        Int
-  propertyValueId Int @unique
+  id               Int @id @default(autoincrement())
+  entityId         Int
+  propertyConfigId Int
+  propertyValueId  Int @unique
 
-  entity        Entity             @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  propertyValue ImagePropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity         Entity             @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue  ImagePropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  propertyConfig PropertyConfig     @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
 }
 
 model EntityIntProperty {
-  id              Int @id @default(autoincrement())
-  entityId        Int
-  propertyValueId Int @unique
+  id               Int @id @default(autoincrement())
+  entityId         Int
+  propertyConfigId Int
+  propertyValueId  Int @unique
 
-  entity        Entity           @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  propertyValue IntPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity         Entity           @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue  IntPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  propertyConfig PropertyConfig   @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
 }
 
 model EntityLongTextProperty {
-  id              Int @id @default(autoincrement())
-  entityId        Int
-  propertyValueId Int @unique
+  id               Int @id @default(autoincrement())
+  entityId         Int
+  propertyConfigId Int
+  propertyValueId  Int @unique
 
-  entity        Entity                @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  propertyValue LongTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity         Entity                @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue  LongTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  propertyConfig PropertyConfig        @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
 }
 
 model EntityShortTextProperty {
-  id              Int @id @default(autoincrement())
-  entityId        Int
-  propertyValueId Int @unique
+  id               Int @id @default(autoincrement())
+  entityId         Int
+  propertyConfigId Int
+  propertyValueId  Int @unique
 
-  entity        Entity                 @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  propertyValue ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  entity         Entity                 @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue  ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  propertyConfig PropertyConfig         @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
 }
 
 model Entity {
@@ -198,6 +208,12 @@ model PropertyConfig {
   defaultBooleanValue   PropertyConfigBooleanDefaultValue?
 
   entityPropertyOrder EntityPropertyOrder?
+
+  entityBooleanProperties   EntityBooleanProperty[]
+  entityImageProperties     EntityImageProperty[]
+  entityIntProperties       EntityIntProperty[]
+  entityLongTextProperties  EntityLongTextProperty[]
+  entityShortTextProperties EntityShortTextProperty[]
 
   @@unique([entityConfigId, id])
 }

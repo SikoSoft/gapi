@@ -120,11 +120,21 @@ export class Entity {
         },
         include: {
           tags: true,
-          booleanProperties: true,
-          intProperties: true,
-          imageProperties: true,
-          longTextProperties: true,
-          shortTextProperties: true,
+          booleanProperties: {
+            include: { propertyValue: true },
+          },
+          intProperties: {
+            include: { propertyValue: true },
+          },
+          imageProperties: {
+            include: { propertyValue: true },
+          },
+          longTextProperties: {
+            include: { propertyValue: true },
+          },
+          shortTextProperties: {
+            include: { propertyValue: true },
+          },
         },
       });
       Tagging.syncEntityTags(entity.id, data.tags);
@@ -164,13 +174,34 @@ export class Entity {
         where: { id },
         include: {
           tags: true,
-          booleanProperties: true,
-          intProperties: true,
-          imageProperties: true,
-          longTextProperties: true,
-          shortTextProperties: true,
+          booleanProperties: {
+            include: {
+              propertyValue: true,
+            },
+          },
+          intProperties: {
+            include: {
+              propertyValue: true,
+            },
+          },
+          imageProperties: {
+            include: {
+              propertyValue: true,
+            },
+          },
+          longTextProperties: {
+            include: {
+              propertyValue: true,
+            },
+          },
+          shortTextProperties: {
+            include: {
+              propertyValue: true,
+            },
+          },
         },
       });
+
       if (!entity) {
         return err(new Error("Entity not found"));
       }
@@ -180,10 +211,108 @@ export class Entity {
     }
   }
 
+  static booleanPropertiesToSpec(
+    entity: PrismaEntity
+  ): EntitySpec.EntityProperty[] {
+    const properties: EntitySpec.EntityProperty[] = [];
+
+    if (entity.booleanProperties) {
+      entity.booleanProperties.forEach((prop) => {
+        properties.push({
+          id: prop.id,
+          propertyConfigId: prop.propertyConfigId,
+          value: prop.propertyValue ? prop.propertyValue.value : false,
+        });
+      });
+    }
+
+    return properties;
+  }
+
+  static intPropertiesToSpec(
+    entity: PrismaEntity
+  ): EntitySpec.EntityProperty[] {
+    const properties: EntitySpec.EntityProperty[] = [];
+
+    if (entity.intProperties) {
+      entity.intProperties.forEach((prop) => {
+        properties.push({
+          id: prop.id,
+          propertyConfigId: prop.propertyConfigId,
+          value: prop.propertyValue ? prop.propertyValue.value : 0,
+        });
+      });
+    }
+
+    return properties;
+  }
+
+  static imagePropertiesToSpec(
+    entity: PrismaEntity
+  ): EntitySpec.EntityProperty[] {
+    const properties: EntitySpec.EntityProperty[] = [];
+
+    if (entity.imageProperties) {
+      entity.imageProperties.forEach((prop) => {
+        properties.push({
+          id: prop.id,
+          propertyConfigId: prop.propertyConfigId,
+          value: prop.propertyValue
+            ? { src: prop.propertyValue.url, alt: prop.propertyValue.altText }
+            : { src: "", alt: "" },
+        });
+      });
+    }
+
+    return properties;
+  }
+
+  static shortTextPropertiesToSpec(
+    entity: PrismaEntity
+  ): EntitySpec.EntityProperty[] {
+    const properties: EntitySpec.EntityProperty[] = [];
+
+    if (entity.shortTextProperties) {
+      entity.shortTextProperties.forEach((prop) => {
+        properties.push({
+          id: prop.id,
+          propertyConfigId: prop.propertyConfigId,
+          value: prop.propertyValue ? prop.propertyValue.value : "",
+        });
+      });
+    }
+
+    return properties;
+  }
+
+  static longTextPropertiesToSpec(
+    entity: PrismaEntity
+  ): EntitySpec.EntityProperty[] {
+    const properties: EntitySpec.EntityProperty[] = [];
+
+    if (entity.longTextProperties) {
+      entity.longTextProperties.forEach((prop) => {
+        properties.push({
+          id: prop.id,
+          propertyConfigId: prop.propertyConfigId,
+          value: prop.propertyValue ? prop.propertyValue.value : null,
+        });
+      });
+    }
+
+    return properties;
+  }
+
   static toSpec(entity: PrismaEntity): EntitySpec.Entity {
     console.log("Entity to spec:", entity);
 
-    const properties: EntitySpec.EntityProperty[] = [];
+    const properties: EntitySpec.EntityProperty[] = [
+      ...Entity.booleanPropertiesToSpec(entity),
+      ...Entity.intPropertiesToSpec(entity),
+      ...Entity.imagePropertiesToSpec(entity),
+      ...Entity.longTextPropertiesToSpec(entity),
+      ...Entity.shortTextPropertiesToSpec(entity),
+    ];
 
     return {
       id: entity.id,
@@ -218,11 +347,21 @@ export class Entity {
           },
           include: {
             tags: true,
-            booleanProperties: true,
-            intProperties: true,
-            imageProperties: true,
-            longTextProperties: true,
-            shortTextProperties: true,
+            booleanProperties: {
+              include: { propertyValue: true },
+            },
+            intProperties: {
+              include: { propertyValue: true },
+            },
+            imageProperties: {
+              include: { propertyValue: true },
+            },
+            longTextProperties: {
+              include: { propertyValue: true },
+            },
+            shortTextProperties: {
+              include: { propertyValue: true },
+            },
           },
         })
       ).map((entity) => Entity.toSpec(entity));
@@ -261,11 +400,21 @@ export class Entity {
         },
         include: {
           tags: true,
-          booleanProperties: true,
-          intProperties: true,
-          imageProperties: true,
-          longTextProperties: true,
-          shortTextProperties: true,
+          booleanProperties: {
+            include: { propertyValue: true },
+          },
+          intProperties: {
+            include: { propertyValue: true },
+          },
+          imageProperties: {
+            include: { propertyValue: true },
+          },
+          longTextProperties: {
+            include: { propertyValue: true },
+          },
+          shortTextProperties: {
+            include: { propertyValue: true },
+          },
         },
       });
       return ok(Entity.toSpec(entity));
@@ -317,11 +466,21 @@ export class Entity {
             },
             include: {
               tags: true,
-              booleanProperties: true,
-              intProperties: true,
-              imageProperties: true,
-              longTextProperties: true,
-              shortTextProperties: true,
+              booleanProperties: {
+                include: { propertyValue: true },
+              },
+              intProperties: {
+                include: { propertyValue: true },
+              },
+              imageProperties: {
+                include: { propertyValue: true },
+              },
+              longTextProperties: {
+                include: { propertyValue: true },
+              },
+              shortTextProperties: {
+                include: { propertyValue: true },
+              },
             },
           });
 
@@ -449,6 +608,7 @@ export class Entity {
         await prisma.entityBooleanProperty.create({
           data: {
             entityId,
+            propertyConfigId: property.propertyConfigId,
             propertyValueId: booleanPropertyValue.id,
           },
         });
@@ -478,6 +638,7 @@ export class Entity {
         await prisma.entityIntProperty.create({
           data: {
             entityId,
+            propertyConfigId: property.propertyConfigId,
             propertyValueId: intPropertyValue.id,
           },
         });
@@ -508,6 +669,7 @@ export class Entity {
         await prisma.entityImageProperty.create({
           data: {
             entityId,
+            propertyConfigId: property.propertyConfigId,
             propertyValueId: imagePropertyValue.id,
           },
         });
@@ -538,6 +700,7 @@ export class Entity {
         await prisma.entityShortTextProperty.create({
           data: {
             entityId,
+            propertyConfigId: property.propertyConfigId,
             propertyValueId: shortTextPropertyValue.id,
           },
         });
@@ -569,6 +732,7 @@ export class Entity {
         await prisma.entityLongTextProperty.create({
           data: {
             entityId,
+            propertyConfigId: property.propertyConfigId,
             propertyValueId: longTextPropertyValue.id,
           },
         });

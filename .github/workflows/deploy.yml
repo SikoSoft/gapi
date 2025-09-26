@@ -32,6 +32,8 @@ jobs:
           popd
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          AZURE_STORAGE_URL: ${{ secrets.AZURE_STORAGE_URL }}
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1
         id: fa

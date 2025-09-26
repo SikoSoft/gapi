@@ -18,6 +18,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.12.7",
+    "@types/parse-multipart": "^1.0.2",
     "@types/uuid": "^9.0.8",
     "eslint-plugin-neverthrow": "^1.1.4",
     "npm-run-all": "^4.1.5",
@@ -29,11 +30,14 @@
   },
   "dependencies": {
     "@azure/functions": "^4.4.0",
+    "@azure/storage-blob": "^12.28.0",
     "@prisma/client": "5.13.0",
     "api-spec": "github:SikoSoft/api-spec#1.27.0",
     "argon2": "^0.41.1",
+    "into-stream": "^9.0.0",
     "io-ts": "^2.2.22",
     "neverthrow": "^8.2.0",
+    "parse-multipart": "^1.0.4",
     "uuid": "^9.0.1",
     "zod": "^4.1.8"
   }

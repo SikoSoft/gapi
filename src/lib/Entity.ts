@@ -138,7 +138,7 @@ export class Entity {
         },
       });
       Tagging.syncEntityTags(entity.id, data.tags);
-      await Entity.syncEntityProperties(entity.id, userId, data.properties);
+      await Entity.syncEntityProperties(entity.id, data.properties);
       return ok(Entity.toSpec(entity));
     } catch (error) {
       return err(error);
@@ -150,15 +150,13 @@ export class Entity {
     id: number,
     data: EntityBodyPayload
   ): Promise<Result<EntitySpec.Entity, Error>> {
-    const timeZone = parseInt(data.timeZone);
-    const serverTimeZone = new Date().getTimezoneOffset();
-
     try {
       Tagging.syncEntityTags(id, data.tags);
       const entityRes = await Entity.getEntity(id);
       if (entityRes.isErr()) {
         return err(entityRes.error);
       }
+      await Entity.syncEntityProperties(id, data.properties);
 
       return ok(entityRes.value);
     } catch (error) {
@@ -219,7 +217,7 @@ export class Entity {
     if (entity.booleanProperties) {
       entity.booleanProperties.forEach((prop) => {
         properties.push({
-          id: prop.id,
+          id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue ? prop.propertyValue.value : false,
         });
@@ -237,7 +235,7 @@ export class Entity {
     if (entity.intProperties) {
       entity.intProperties.forEach((prop) => {
         properties.push({
-          id: prop.id,
+          id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue ? prop.propertyValue.value : 0,
         });
@@ -253,9 +251,14 @@ export class Entity {
     const properties: EntitySpec.EntityProperty[] = [];
 
     if (entity.imageProperties) {
+      console.log(
+        "Mapping image properties:",
+        JSON.stringify(entity.imageProperties, null, 2)
+      );
+
       entity.imageProperties.forEach((prop) => {
         properties.push({
-          id: prop.id,
+          id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue
             ? { src: prop.propertyValue.url, alt: prop.propertyValue.altText }
@@ -275,7 +278,7 @@ export class Entity {
     if (entity.shortTextProperties) {
       entity.shortTextProperties.forEach((prop) => {
         properties.push({
-          id: prop.id,
+          id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue ? prop.propertyValue.value : "",
         });
@@ -293,7 +296,7 @@ export class Entity {
     if (entity.longTextProperties) {
       entity.longTextProperties.forEach((prop) => {
         properties.push({
-          id: prop.id,
+          id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue ? prop.propertyValue.value : null,
         });
@@ -304,7 +307,7 @@ export class Entity {
   }
 
   static toSpec(entity: PrismaEntity): EntitySpec.Entity {
-    console.log("Entity to spec:", entity);
+    //console.log("Entity to spec:", entity);
 
     const properties: EntitySpec.EntityProperty[] = [
       ...Entity.booleanPropertiesToSpec(entity),
@@ -548,9 +551,9 @@ export class Entity {
 
   static async syncEntityProperties(
     entityId: number,
-    userId: string,
     properties: EntityProperty[]
   ): Promise<Result<null, Error>> {
+    console.log("Syncing entity properties:", { entityId, properties });
     const dataTypesRes = await Entity.getDataTypesForProperties(properties);
     if (dataTypesRes.isErr()) {
       console.error(
@@ -615,6 +618,15 @@ export class Entity {
 
         return ok(null);
       }
+
+      await prisma.booleanPropertyValue.update({
+        where: { id: property.id },
+        data: {
+          value,
+        },
+      });
+
+      return ok(null);
     } catch (error) {
       console.error("Error syncing boolean property:", error);
       return err(error);
@@ -645,6 +657,15 @@ export class Entity {
 
         return ok(null);
       }
+
+      await prisma.intPropertyValue.update({
+        where: { id: property.id },
+        data: {
+          value,
+        },
+      });
+
+      return ok(null);
     } catch (error) {
       console.error("Error syncing int property:", error);
       return err(error);
@@ -655,6 +676,7 @@ export class Entity {
     entityId: number,
     property: EntityProperty
   ): Promise<Result<null, Error>> {
+    console.log("Syncing image property:", { entityId, property });
     try {
       const value = property.value as ImageDataValue;
 
@@ -666,16 +688,29 @@ export class Entity {
           },
         });
 
+        const data = {
+          entityId,
+          propertyConfigId: property.propertyConfigId,
+          propertyValueId: imagePropertyValue.id,
+        };
+
+        console.log("Creating entity image property with data:", data);
         await prisma.entityImageProperty.create({
-          data: {
-            entityId,
-            propertyConfigId: property.propertyConfigId,
-            propertyValueId: imagePropertyValue.id,
-          },
+          data,
         });
 
         return ok(null);
       }
+
+      await prisma.imagePropertyValue.update({
+        where: { id: property.id },
+        data: {
+          url: value.src,
+          altText: value.alt,
+        },
+      });
+
+      return ok(null);
     } catch (error) {
       console.error("Error syncing image property:", error);
       return err(error);
@@ -707,6 +742,15 @@ export class Entity {
 
         return ok(null);
       }
+
+      await prisma.shortTextPropertyValue.update({
+        where: { id: property.id },
+        data: {
+          value,
+        },
+      });
+
+      return ok(null);
     } catch (error) {
       console.error("Error syncing boolean property:", error);
       return err(error);
@@ -739,6 +783,15 @@ export class Entity {
 
         return ok(null);
       }
+
+      await prisma.longTextPropertyValue.update({
+        where: { id: property.id },
+        data: {
+          value,
+        },
+      });
+
+      return ok(null);
     } catch (error) {
       console.error("Error syncing long text property:", error);
       return err(error);

@@ -418,12 +418,12 @@ export class PropertyConfig {
       id: data.id,
       userId: data.userId,
       name: data.name,
-      renderType: data.renderType as Entity.RenderType,
       required: data.required,
       repeat: data.repeat,
       allowed: data.allowed,
       prefix: data.prefix,
       suffix: data.suffix,
+      hidden: data.hidden,
     };
 
     switch (data.dataType) {

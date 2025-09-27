@@ -224,9 +224,12 @@ model EntityConfig {
   description String?          @db.VarChar(255)
   properties  PropertyConfig[]
   userId      String?          @db.Uuid
+  revisionOf  Int?
 
   entityPropertyOrders EntityPropertyOrder[]
   entities             Entity[]
+  revision             EntityConfig?         @relation("EntityConfigRevisions", fields: [revisionOf], references: [id])
+  revisions            EntityConfig[]        @relation("EntityConfigRevisions")
 
   @@unique([id, name])
 }

@@ -37,13 +37,20 @@ export async function listConfig(
       });
     case HttpMethod.POST:
       const createBody = (await request.json()) as EntityConfigCreateBody;
-      const entityConfig = await EntityConfig.create(userId, {
+      const entityConfigRes = await EntityConfig.create(userId, {
         userId,
         name: createBody.name,
         description: createBody.description,
         properties: createBody.properties,
       });
-      return jsonReply({ ...entityConfig });
+
+      if (entityConfigRes.isErr()) {
+        context.error(entityConfigRes.error);
+        return {
+          status: 500,
+        };
+      }
+      return jsonReply({ ...entityConfigRes.value });
     case HttpMethod.PUT:
       const updateBody = (await request.json()) as EntityConfigUpdateBody;
       await EntityConfig.update(userId, updateBody);

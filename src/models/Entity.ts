@@ -101,10 +101,6 @@ const prismaEntity = Prisma.validator<Prisma.EntityFindUniqueArgs>()({
 
 export type PrismaEntity = Prisma.EntityGetPayload<typeof prismaEntity>;
 
-export type EntityItem = Omit<PrismaEntity, "tags"> & {
-  tags: string[];
-};
-
 export type EntityConfigCreateBody = Omit<Entity.EntityConfig, "id">;
 
 export type EntityConfigUpdateBody = Entity.EntityConfig;

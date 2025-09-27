@@ -16,11 +16,9 @@ import {
   EntityList,
   EntityListParams,
   ContextEntities,
-  EntityItem,
 } from "../models/Entity";
 import {
   DataType,
-  EntityConfig,
   EntityProperty,
   ImageDataValue,
 } from "api-spec/models/Entity";

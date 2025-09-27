@@ -14,7 +14,7 @@ import {
 } from "..";
 import { Entity as EntitySpec } from "api-spec/models";
 import { ListFilter, ListSort, ListContext } from "api-spec/models/List";
-import { EntityBodyPayload, EntityItem } from "../models/Entity";
+import { EntityBodyPayload } from "../models/Entity";
 import { Entity } from "../lib/Entity";
 
 const perPage = 25;

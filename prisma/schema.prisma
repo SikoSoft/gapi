@@ -176,7 +176,7 @@ model Entity {
   entityConfig EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
 }
 
-model EntityPropertyOrder {
+model EntityPropertyConfigOrder {
   entityConfigId   Int
   propertyConfigId Int @unique
   order            Int @default(0)
@@ -207,7 +207,7 @@ model PropertyConfig {
   defaultImageValue     PropertyConfigImageDefaultValue?
   defaultBooleanValue   PropertyConfigBooleanDefaultValue?
 
-  entityPropertyOrder EntityPropertyOrder?
+  entityPropertyConfigOrder EntityPropertyConfigOrder?
 
   entityBooleanProperties   EntityBooleanProperty[]
   entityImageProperties     EntityImageProperty[]
@@ -226,10 +226,10 @@ model EntityConfig {
   userId      String?          @db.Uuid
   revisionOf  Int?
 
-  entityPropertyOrders EntityPropertyOrder[]
-  entities             Entity[]
-  revision             EntityConfig?         @relation("EntityConfigRevisions", fields: [revisionOf], references: [id])
-  revisions            EntityConfig[]        @relation("EntityConfigRevisions")
+  entityPropertyConfigOrders EntityPropertyConfigOrder[]
+  entities                   Entity[]
+  revision                   EntityConfig?               @relation("EntityConfigRevisions", fields: [revisionOf], references: [id])
+  revisions                  EntityConfig[]              @relation("EntityConfigRevisions")
 
   @@unique([id, name])
 }

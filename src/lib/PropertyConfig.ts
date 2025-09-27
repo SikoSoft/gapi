@@ -391,7 +391,7 @@ export class PropertyConfig {
     newOrder: number
   ): Promise<Result<null, Error>> {
     try {
-      await prisma.entityPropertyOrder.upsert({
+      await prisma.entityPropertyConfigOrder.upsert({
         where: { propertyConfigId, entityConfigId },
         update: { order: newOrder },
         create: {

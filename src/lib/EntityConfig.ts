@@ -117,7 +117,7 @@ export class EntityConfig {
         },
         include: {
           properties: {
-            orderBy: { entityPropertyOrder: { order: "asc" } },
+            orderBy: { entityPropertyConfigOrder: { order: "asc" } },
             include: {
               defaultBooleanValue: {
                 include: {
@@ -162,7 +162,7 @@ export class EntityConfig {
         where: { id },
         include: {
           properties: {
-            orderBy: { entityPropertyOrder: { order: "asc" } },
+            orderBy: { entityPropertyConfigOrder: { order: "asc" } },
             include: {
               defaultBooleanValue: {
                 include: {
@@ -208,7 +208,7 @@ export class EntityConfig {
         where: { userId },
         include: {
           properties: {
-            orderBy: { entityPropertyOrder: { order: "asc" } },
+            orderBy: { entityPropertyConfigOrder: { order: "asc" } },
             include: {
               defaultBooleanValue: {
                 include: {

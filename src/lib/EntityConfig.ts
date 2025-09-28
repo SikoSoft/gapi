@@ -35,6 +35,11 @@ export class EntityConfig {
                   booleanValue: true,
                 },
               },
+              defaultDateValue: {
+                include: {
+                  dateValue: true,
+                },
+              },
               defaultIntValue: {
                 include: {
                   intValue: true,
@@ -124,6 +129,11 @@ export class EntityConfig {
                   booleanValue: true,
                 },
               },
+              defaultDateValue: {
+                include: {
+                  dateValue: true,
+                },
+              },
               defaultIntValue: {
                 include: {
                   intValue: true,
@@ -167,6 +177,11 @@ export class EntityConfig {
               defaultBooleanValue: {
                 include: {
                   booleanValue: true,
+                },
+              },
+              defaultDateValue: {
+                include: {
+                  dateValue: true,
                 },
               },
               defaultIntValue: {
@@ -213,6 +228,11 @@ export class EntityConfig {
               defaultBooleanValue: {
                 include: {
                   booleanValue: true,
+                },
+              },
+              defaultDateValue: {
+                include: {
+                  dateValue: true,
                 },
               },
               defaultIntValue: {

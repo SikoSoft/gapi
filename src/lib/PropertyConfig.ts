@@ -39,6 +39,11 @@ export class PropertyConfig {
               booleanValue: true,
             },
           },
+          defaultDateValue: {
+            include: {
+              dateValue: true,
+            },
+          },
           defaultIntValue: {
             include: {
               intValue: true,
@@ -101,6 +106,11 @@ export class PropertyConfig {
           defaultBooleanValue: {
             include: {
               booleanValue: true,
+            },
+          },
+          defaultDateValue: {
+            include: {
+              dateValue: true,
             },
           },
           defaultIntValue: {
@@ -481,6 +491,12 @@ export class PropertyConfig {
           ...commonConfig,
           dataType: DataType.BOOLEAN,
           defaultValue: data?.defaultBooleanValue?.booleanValue?.value || false,
+        };
+      case DataType.DATE:
+        return {
+          ...commonConfig,
+          dataType: DataType.DATE,
+          defaultValue: data?.defaultDateValue?.dateValue?.value || new Date(),
         };
       case DataType.INT:
         return {

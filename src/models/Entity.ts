@@ -38,6 +38,11 @@ const prismaEntityConfig =
               booleanValue: true,
             },
           },
+          defaultDateValue: {
+            include: {
+              dateValue: true,
+            },
+          },
           defaultIntValue: {
             include: {
               intValue: true,

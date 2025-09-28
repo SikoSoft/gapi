@@ -81,6 +81,11 @@ const prismaEntity = Prisma.validator<Prisma.EntityFindUniqueArgs>()({
         propertyValue: true,
       },
     },
+    dateProperties: {
+      include: {
+        propertyValue: true,
+      },
+    },
     intProperties: {
       include: {
         propertyValue: true,

@@ -23,6 +23,7 @@ import {
   ImageDataValue,
 } from "api-spec/models/Entity";
 import { Entity as EntitySpec } from "api-spec/models";
+import { Util } from "./Util";
 
 export class Entity {
   static getFilteredConditions(userId: string, filter: ListFilter) {
@@ -121,10 +122,13 @@ export class Entity {
           booleanProperties: {
             include: { propertyValue: true },
           },
-          intProperties: {
+          dateProperties: {
             include: { propertyValue: true },
           },
           imageProperties: {
+            include: { propertyValue: true },
+          },
+          intProperties: {
             include: { propertyValue: true },
           },
           longTextProperties: {
@@ -136,7 +140,11 @@ export class Entity {
         },
       });
       Tagging.syncEntityTags(entity.id, data.tags);
-      await Entity.syncEntityProperties(entity.id, data.properties);
+      await Entity.syncEntityProperties(
+        entity.id,
+        data.properties,
+        parseInt(data.timeZone)
+      );
       return ok(Entity.toSpec(entity));
     } catch (error) {
       return err(error);
@@ -154,7 +162,11 @@ export class Entity {
       if (entityRes.isErr()) {
         return err(entityRes.error);
       }
-      await Entity.syncEntityProperties(id, data.properties);
+      await Entity.syncEntityProperties(
+        id,
+        data.properties,
+        parseInt(data.timeZone)
+      );
 
       return ok(entityRes.value);
     } catch (error) {
@@ -175,7 +187,7 @@ export class Entity {
               propertyValue: true,
             },
           },
-          intProperties: {
+          dateProperties: {
             include: {
               propertyValue: true,
             },
@@ -185,6 +197,12 @@ export class Entity {
               propertyValue: true,
             },
           },
+          intProperties: {
+            include: {
+              propertyValue: true,
+            },
+          },
+
           longTextProperties: {
             include: {
               propertyValue: true,
@@ -218,6 +236,25 @@ export class Entity {
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue ? prop.propertyValue.value : false,
+          order: prop.order,
+        });
+      });
+    }
+
+    return properties;
+  }
+
+  static datePropertiesToSpec(
+    entity: PrismaEntity
+  ): EntitySpec.EntityProperty[] {
+    const properties: EntitySpec.EntityProperty[] = [];
+
+    if (entity.dateProperties) {
+      entity.dateProperties.forEach((prop) => {
+        properties.push({
+          id: prop.propertyValueId,
+          propertyConfigId: prop.propertyConfigId,
+          value: prop.propertyValue ? prop.propertyValue.value : new Date(),
           order: prop.order,
         });
       });
@@ -314,8 +351,9 @@ export class Entity {
 
     const properties: EntitySpec.EntityProperty[] = [
       ...Entity.booleanPropertiesToSpec(entity),
-      ...Entity.intPropertiesToSpec(entity),
+      ...Entity.datePropertiesToSpec(entity),
       ...Entity.imagePropertiesToSpec(entity),
+      ...Entity.intPropertiesToSpec(entity),
       ...Entity.longTextPropertiesToSpec(entity),
       ...Entity.shortTextPropertiesToSpec(entity),
     ].sort((a, b) => a.order - b.order);
@@ -356,10 +394,13 @@ export class Entity {
             booleanProperties: {
               include: { propertyValue: true },
             },
-            intProperties: {
+            dateProperties: {
               include: { propertyValue: true },
             },
             imageProperties: {
+              include: { propertyValue: true },
+            },
+            intProperties: {
               include: { propertyValue: true },
             },
             longTextProperties: {
@@ -409,10 +450,13 @@ export class Entity {
           booleanProperties: {
             include: { propertyValue: true },
           },
-          intProperties: {
+          dateProperties: {
             include: { propertyValue: true },
           },
           imageProperties: {
+            include: { propertyValue: true },
+          },
+          intProperties: {
             include: { propertyValue: true },
           },
           longTextProperties: {
@@ -475,10 +519,13 @@ export class Entity {
               booleanProperties: {
                 include: { propertyValue: true },
               },
-              intProperties: {
+              dateProperties: {
                 include: { propertyValue: true },
               },
               imageProperties: {
+                include: { propertyValue: true },
+              },
+              intProperties: {
                 include: { propertyValue: true },
               },
               longTextProperties: {
@@ -554,7 +601,8 @@ export class Entity {
 
   static async syncEntityProperties(
     entityId: number,
-    properties: EntityProperty[]
+    properties: EntityProperty[],
+    timeZone: number
   ): Promise<Result<null, Error>> {
     console.log("Syncing entity properties:", { entityId, properties });
     const dataTypesRes = await Entity.getDataTypesForProperties(properties);
@@ -572,11 +620,18 @@ export class Entity {
         case DataType.BOOLEAN:
           await Entity.syncBooleanProperty(entityId, property);
           break;
-        case DataType.INT:
-          await Entity.syncIntProperty(entityId, property);
+        case DataType.DATE:
+          property.value = Util.getDateInTimeZone(
+            property.value as string,
+            timeZone
+          );
+          await Entity.syncDateProperty(entityId, property);
           break;
         case DataType.IMAGE:
           await Entity.syncImageProperty(entityId, property);
+          break;
+        case DataType.INT:
+          await Entity.syncIntProperty(entityId, property);
           break;
         case DataType.SHORT_TEXT:
           await Entity.syncShortTextProperty(entityId, property);
@@ -636,6 +691,50 @@ export class Entity {
       return ok(null);
     } catch (error) {
       console.error("Error syncing boolean property:", error);
+      return err(error);
+    }
+  }
+
+  static async syncDateProperty(
+    entityId: number,
+    property: EntityProperty
+  ): Promise<Result<null, Error>> {
+    console.log("Syncing date property:", { entityId, property });
+    try {
+      const value = property.value as Date;
+
+      if (!property.id) {
+        const datePropertyValue = await prisma.datePropertyValue.create({
+          data: {
+            value,
+          },
+        });
+
+        await prisma.entityDateProperty.create({
+          data: {
+            entityId,
+            propertyConfigId: property.propertyConfigId,
+            propertyValueId: datePropertyValue.id,
+            order: property.order,
+          },
+        });
+
+        return ok(null);
+      }
+
+      await prisma.datePropertyValue.update({
+        where: { id: property.id },
+        data: {
+          value,
+          entityPropertyValue: {
+            update: { order: property.order },
+          },
+        },
+      });
+
+      return ok(null);
+    } catch (error) {
+      console.error("Error syncing date property:", error);
       return err(error);
     }
   }

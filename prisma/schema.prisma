@@ -110,6 +110,7 @@ model EntityBooleanProperty {
   entityId         Int
   propertyConfigId Int
   propertyValueId  Int @unique
+  order            Int @default(0)
 
   entity         Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
   propertyValue  BooleanPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
@@ -121,6 +122,7 @@ model EntityImageProperty {
   entityId         Int
   propertyConfigId Int
   propertyValueId  Int @unique
+  order            Int @default(0)
 
   entity         Entity             @relation(fields: [entityId], references: [id], onDelete: Cascade)
   propertyValue  ImagePropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
@@ -132,6 +134,7 @@ model EntityIntProperty {
   entityId         Int
   propertyConfigId Int
   propertyValueId  Int @unique
+  order            Int @default(0)
 
   entity         Entity           @relation(fields: [entityId], references: [id], onDelete: Cascade)
   propertyValue  IntPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
@@ -143,6 +146,7 @@ model EntityLongTextProperty {
   entityId         Int
   propertyConfigId Int
   propertyValueId  Int @unique
+  order            Int @default(0)
 
   entity         Entity                @relation(fields: [entityId], references: [id], onDelete: Cascade)
   propertyValue  LongTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
@@ -154,6 +158,7 @@ model EntityShortTextProperty {
   entityId         Int
   propertyConfigId Int
   propertyValueId  Int @unique
+  order            Int @default(0)
 
   entity         Entity                 @relation(fields: [entityId], references: [id], onDelete: Cascade)
   propertyValue  ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)

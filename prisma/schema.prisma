@@ -32,6 +32,14 @@ model BooleanPropertyValue {
   entityPropertyValue        EntityBooleanProperty?
 }
 
+model DatePropertyValue {
+  id    Int      @id @default(autoincrement())
+  value DateTime
+
+  propertyConfigDefaultValue PropertyConfigDateDefaultValue?
+  entityPropertyValue        EntityDateProperty?
+}
+
 model ImagePropertyValue {
   id      Int    @id @default(autoincrement())
   url     String
@@ -71,6 +79,14 @@ model PropertyConfigBooleanDefaultValue {
 
   propertyConfig PropertyConfig       @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
   booleanValue   BooleanPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model PropertyConfigDateDefaultValue {
+  propertyValueId  Int @unique
+  propertyConfigId Int @unique
+
+  propertyConfig PropertyConfig    @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+  dateValue      DatePropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
 model PropertyConfigImageDefaultValue {
@@ -115,6 +131,18 @@ model EntityBooleanProperty {
   entity         Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
   propertyValue  BooleanPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
   propertyConfig PropertyConfig       @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+}
+
+model EntityDateProperty {
+  id               Int @id @default(autoincrement())
+  entityId         Int
+  propertyConfigId Int
+  propertyValueId  Int @unique
+  order            Int @default(0)
+
+  entity         Entity            @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue  DatePropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  propertyConfig PropertyConfig    @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
 }
 
 model EntityImageProperty {
@@ -173,6 +201,7 @@ model Entity {
   userId              String?                   @db.Uuid
   tags                EntityTag[]
   booleanProperties   EntityBooleanProperty[]
+  dateProperties      EntityDateProperty[]
   imageProperties     EntityImageProperty[]
   intProperties       EntityIntProperty[]
   longTextProperties  EntityLongTextProperty[]
@@ -206,16 +235,18 @@ model PropertyConfig {
   entityConfigId Int          @default(0)
   entityConfig   EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
 
+  defaultBooleanValue   PropertyConfigBooleanDefaultValue?
+  defaultDateValue      PropertyConfigDateDefaultValue?
+  defaultImageValue     PropertyConfigImageDefaultValue?
+  defaultIntValue       PropertyConfigIntDefaultValue?
   defaultLongTextValue  PropertyConfigLongTextDefaultValue?
   defaultShortTextValue PropertyConfigShortTextDefaultValue?
-  defaultIntValue       PropertyConfigIntDefaultValue?
-  defaultImageValue     PropertyConfigImageDefaultValue?
-  defaultBooleanValue   PropertyConfigBooleanDefaultValue?
 
   entityPropertyConfigOrder EntityPropertyConfigOrder?
 
   entityBooleanProperties   EntityBooleanProperty[]
   entityImageProperties     EntityImageProperty[]
+  entityDateProperties      EntityDateProperty[]
   entityIntProperties       EntityIntProperty[]
   entityLongTextProperties  EntityLongTextProperty[]
   entityShortTextProperties EntityShortTextProperty[]

@@ -57,7 +57,7 @@ export type PrismaFullPropertyConfig = Prisma.PropertyConfigGetPayload<
 export type PropertyConfigCreateBody = Omit<
   Entity.EntityPropertyConfig,
   "id" | "userId" | "entityConfigId"
->;
+> & { timeZone: number };
 
 export type PropertyConfigUpdateBody = PropertyConfigCreateBody; //Entity.EntityPropertyConfig;
 
@@ -67,6 +67,7 @@ const ImageDataValue = t.type({
 });
 
 const CommonPropertyConfig = t.type({
+  timeZone: t.number,
   name: t.string,
   required: t.number,
   repeat: t.number,
@@ -83,6 +84,15 @@ export const propertyConfigCreateSchema = t.union([
       t.type({
         dataType: t.literal(Entity.DataType.BOOLEAN),
         defaultValue: t.boolean,
+      }),
+    ])
+  ),
+  t.exact(
+    t.intersection([
+      CommonPropertyConfig,
+      t.type({
+        dataType: t.literal(Entity.DataType.DATE),
+        defaultValue: t.string,
       }),
     ])
   ),

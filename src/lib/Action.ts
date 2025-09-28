@@ -18,6 +18,7 @@ import {
   ContextActions,
   ActionItem,
 } from "../models/Action";
+import { Util } from "./Util";
 
 export class Action {
   static getFilteredConditions(userId: string, filter: ListFilter) {
@@ -139,11 +140,9 @@ export class Action {
     id: number,
     data: ActionBodyPayload
   ): Promise<Result<ActionItem, Error>> {
-    const timeZone = parseInt(data.timeZone);
-    const serverTimeZone = new Date().getTimezoneOffset();
-    const timeZoneDiff = serverTimeZone - timeZone;
-    const occurredAt = new Date(
-      new Date(data.occurredAt).getTime() - timeZoneDiff * 60000
+    const occurredAt = Util.getDateInTimeZone(
+      data.occurredAt,
+      parseInt(data.timeZone)
     );
     try {
       const action = await prisma.action.update({

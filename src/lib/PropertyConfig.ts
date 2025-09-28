@@ -10,12 +10,13 @@ import {
   BooleanDataValue,
   CommonEntityPropertyConfig,
   DataType,
+  DateDataValue,
   ImageDataValue,
   IntDataValue,
   LongTextDataValue,
   ShortTextDataValue,
 } from "api-spec/models/Entity";
-import { resolve } from "path/win32";
+import { Util } from "./Util";
 
 export class PropertyConfig {
   static async create(
@@ -23,7 +24,7 @@ export class PropertyConfig {
     entityConfigId: number,
     propertyConfig: PropertyConfigCreateBody
   ): Promise<Result<Entity.EntityPropertyConfig, Error>> {
-    const { defaultValue, ...data } = propertyConfig;
+    const { defaultValue, timeZone, ...data } = propertyConfig;
 
     try {
       const createdPropertyConfig = await prisma.propertyConfig.create({
@@ -63,7 +64,10 @@ export class PropertyConfig {
       const mappedConfig = PropertyConfig.mapDataToSpec(createdPropertyConfig);
       PropertyConfig.syncDefaultValue({
         ...mappedConfig,
-        defaultValue,
+        defaultValue:
+          data.dataType === DataType.DATE
+            ? Util.getDateInTimeZone(defaultValue as string, timeZone)
+            : defaultValue,
       } as Entity.EntityPropertyConfig);
       return ok(mappedConfig);
     } catch (error) {
@@ -86,7 +90,7 @@ export class PropertyConfig {
       propertyConfig,
     });
     try {
-      const { defaultValue, ...data } = propertyConfig;
+      const { defaultValue, timeZone, ...data } = propertyConfig;
 
       const updatedPropertyConfig = await prisma.propertyConfig.update({
         where: { userId, id, entityConfigId },
@@ -124,7 +128,10 @@ export class PropertyConfig {
       const mappedConfig = PropertyConfig.mapDataToSpec(updatedPropertyConfig);
       PropertyConfig.syncDefaultValue({
         ...mappedConfig,
-        defaultValue,
+        defaultValue:
+          data.dataType === DataType.DATE
+            ? Util.getDateInTimeZone(defaultValue as string, timeZone)
+            : defaultValue,
       } as Entity.EntityPropertyConfig);
       return ok(mappedConfig);
     } catch (error) {
@@ -158,6 +165,8 @@ export class PropertyConfig {
       switch (propertyConfig.dataType) {
         case DataType.BOOLEAN:
           return PropertyConfig.syncBooleanDefaultValue(propertyConfig);
+        case DataType.DATE:
+          return PropertyConfig.syncDateDefaultValue(propertyConfig);
         case DataType.IMAGE:
           return PropertyConfig.syncImageDefaultValue(propertyConfig);
         case DataType.INT:
@@ -213,6 +222,46 @@ export class PropertyConfig {
     } catch (error) {
       return err(
         new Error("Failed to update property config default boolean value", {
+          cause: error,
+        })
+      );
+    }
+  }
+
+  static async syncDateDefaultValue(
+    propertyConfig: Entity.EntityPropertyConfig
+  ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
+    try {
+      const value = propertyConfig.defaultValue as DateDataValue;
+      const existingDefault =
+        await prisma.propertyConfigDateDefaultValue.findUnique({
+          where: { propertyConfigId: propertyConfig.id },
+        });
+
+      if (existingDefault) {
+        await prisma.datePropertyValue.update({
+          where: { id: existingDefault.propertyValueId },
+          data: { value },
+        });
+
+        return ok(null);
+      }
+
+      const dateValue = await prisma.datePropertyValue.create({
+        data: {
+          value,
+        },
+      });
+
+      await prisma.propertyConfigDateDefaultValue.create({
+        data: {
+          propertyConfigId: propertyConfig.id,
+          propertyValueId: dateValue.id,
+        },
+      });
+    } catch (error) {
+      return err(
+        new Error("Failed to update property config default date value", {
           cause: error,
         })
       );

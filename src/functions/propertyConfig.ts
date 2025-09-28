@@ -80,6 +80,10 @@ export async function propertyConfig(
 
       validation = propertyConfigUpdateSchema.decode(updateBody);
       if (validation._tag === "Left") {
+        console.error(
+          "Validation failed:",
+          JSON.stringify(validation.left, null, 2)
+        );
         return {
           status: 400,
           body: JSON.stringify(validation.left),

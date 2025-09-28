@@ -431,25 +431,3 @@ model Setting {
   textSettings    TextSetting[]
   listConfig      ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 }
-
-model Property {
-  id               Int              @id @default(autoincrement())
-  entityId         Int
-  // entity           Entity           @relation(fields: [entityId], references: [id])
-  dateProperties   DateProperty[]
-  stringProperties StringProperty[]
-}
-
-model DateProperty {
-  id         Int      @id @default(autoincrement())
-  propertyId Int
-  date       DateTime
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-}
-
-model StringProperty {
-  id         Int      @id @default(autoincrement())
-  propertyId Int
-  string     String   @db.VarChar(255)
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-}

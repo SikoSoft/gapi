@@ -218,6 +218,7 @@ export class Entity {
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue ? prop.propertyValue.value : false,
+          order: prop.order,
         });
       });
     }
@@ -236,6 +237,7 @@ export class Entity {
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue ? prop.propertyValue.value : 0,
+          order: prop.order,
         });
       });
     }
@@ -261,6 +263,7 @@ export class Entity {
           value: prop.propertyValue
             ? { src: prop.propertyValue.url, alt: prop.propertyValue.altText }
             : { src: "", alt: "" },
+          order: prop.order,
         });
       });
     }
@@ -279,6 +282,7 @@ export class Entity {
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue ? prop.propertyValue.value : "",
+          order: prop.order,
         });
       });
     }
@@ -297,6 +301,7 @@ export class Entity {
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
           value: prop.propertyValue ? prop.propertyValue.value : null,
+          order: prop.order,
         });
       });
     }
@@ -611,6 +616,7 @@ export class Entity {
             entityId,
             propertyConfigId: property.propertyConfigId,
             propertyValueId: booleanPropertyValue.id,
+            order: property.order,
           },
         });
 
@@ -621,6 +627,9 @@ export class Entity {
         where: { id: property.id },
         data: {
           value,
+          entityPropertyValue: {
+            update: { order: property.order },
+          },
         },
       });
 
@@ -650,6 +659,7 @@ export class Entity {
             entityId,
             propertyConfigId: property.propertyConfigId,
             propertyValueId: intPropertyValue.id,
+            order: property.order,
           },
         });
 
@@ -660,6 +670,9 @@ export class Entity {
         where: { id: property.id },
         data: {
           value,
+          entityPropertyValue: {
+            update: { order: property.order },
+          },
         },
       });
 
@@ -690,6 +703,7 @@ export class Entity {
           entityId,
           propertyConfigId: property.propertyConfigId,
           propertyValueId: imagePropertyValue.id,
+          order: property.order,
         };
 
         console.log("Creating entity image property with data:", data);
@@ -705,6 +719,9 @@ export class Entity {
         data: {
           url: value.src,
           altText: value.alt,
+          entityPropertyValue: {
+            update: { order: property.order },
+          },
         },
       });
 
@@ -735,6 +752,7 @@ export class Entity {
             entityId,
             propertyConfigId: property.propertyConfigId,
             propertyValueId: shortTextPropertyValue.id,
+            order: property.order,
           },
         });
 
@@ -745,6 +763,7 @@ export class Entity {
         where: { id: property.id },
         data: {
           value,
+          entityPropertyValue: { update: { order: property.order } },
         },
       });
 
@@ -776,6 +795,7 @@ export class Entity {
             entityId,
             propertyConfigId: property.propertyConfigId,
             propertyValueId: longTextPropertyValue.id,
+            order: property.order,
           },
         });
 
@@ -786,6 +806,7 @@ export class Entity {
         where: { id: property.id },
         data: {
           value,
+          entityPropertyValue: { update: { order: property.order } },
         },
       });
 

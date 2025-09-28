@@ -318,7 +318,7 @@ export class Entity {
       ...Entity.imagePropertiesToSpec(entity),
       ...Entity.longTextPropertiesToSpec(entity),
       ...Entity.shortTextPropertiesToSpec(entity),
-    ];
+    ].sort((a, b) => a.order - b.order);
 
     return {
       id: entity.id,

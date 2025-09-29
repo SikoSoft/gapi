@@ -167,6 +167,59 @@ export class PropertyConfig {
     }
   }
 
+  static async getById(
+    userId: string,
+    propertyConfigId: number
+  ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
+    try {
+      const propertyConfig = await prisma.propertyConfig.findUnique({
+        where: { userId, id: propertyConfigId },
+        include: {
+          defaultBooleanValue: {
+            include: {
+              booleanValue: true,
+            },
+          },
+          defaultDateValue: {
+            include: {
+              dateValue: true,
+            },
+          },
+          defaultImageValue: {
+            include: {
+              imageValue: true,
+            },
+          },
+          defaultIntValue: {
+            include: {
+              intValue: true,
+            },
+          },
+          defaultLongTextValue: {
+            include: {
+              longTextValue: true,
+            },
+          },
+          defaultShortTextValue: {
+            include: {
+              shortTextValue: true,
+            },
+          },
+        },
+      });
+
+      if (!propertyConfig) {
+        return ok(null);
+      }
+
+      return ok(PropertyConfig.mapDataToSpec(propertyConfig));
+    } catch (error) {
+      return err(
+        new Error("Failed to get property config by ID", { cause: error })
+      );
+    }
+  }
+
   static async syncDefaultValue(
     propertyConfig: Entity.EntityPropertyConfig
   ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {

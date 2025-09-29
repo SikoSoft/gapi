@@ -15,6 +15,7 @@ import {
 } from "../models/PropertyConfig";
 import { EntityPropertyConfig } from "api-spec/models/Entity";
 import { Validation } from "io-ts";
+import { Revision } from "api-spec/lib/Revision";
 
 export async function propertyConfig(
   request: HttpRequest,
@@ -87,6 +88,31 @@ export async function propertyConfig(
         return {
           status: 400,
           body: JSON.stringify(validation.left),
+        };
+      }
+
+      const currentRes = await PropertyConfig.getById(userId, id);
+      if (currentRes.isErr()) {
+        context.error(currentRes.error);
+        return {
+          status: 404,
+          body: currentRes.error.message,
+        };
+      }
+
+      const revisionCheck = Revision.propertyIsSafe(currentRes.value, {
+        ...validation.right,
+        id,
+        entityConfigId,
+        userId,
+      } as EntityPropertyConfig);
+
+      if (revisionCheck.isValid === false) {
+        console.error("Revision conflict:", revisionCheck.problems.join(", "));
+
+        return {
+          status: 409,
+          body: "Revision conflict",
         };
       }
 

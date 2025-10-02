@@ -311,6 +311,7 @@ export class EntityConfig {
       properties: data.properties.map((property) =>
         EntityConfig.mapPropertyDataToSpec(property)
       ),
+      revisionOf: data.revisionOf,
     };
   }
 

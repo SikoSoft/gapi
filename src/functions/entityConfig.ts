@@ -42,6 +42,7 @@ export async function listConfig(
         name: createBody.name,
         description: createBody.description,
         properties: createBody.properties,
+        revisionOf: createBody.revisionOf,
       });
 
       if (entityConfigRes.isErr()) {

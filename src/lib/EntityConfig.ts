@@ -18,14 +18,20 @@ export class EntityConfig {
     try {
       const createdEntityConfig = await prisma.entityConfig.create({
         data: {
-          ...entityConfig,
+          name: entityConfig.name,
+          description: entityConfig.description,
           userId,
+          ...(entityConfig.revisionOf
+            ? { revision: { connect: { id: entityConfig.revisionOf } } }
+            : {}),
+          /*
           properties: {
             create: entityConfig.properties.map((property) => ({
               ...property,
               userId,
             })),
           },
+          */
         },
         include: {
           properties: {
@@ -99,9 +105,9 @@ export class EntityConfig {
 
       const updatedEntityConfig = await prisma.entityConfig.update({
         data: {
-          id: entityConfig.id,
           name: entityConfig.name,
           description: entityConfig.description,
+          /*
           properties: {
             update: updatedProperties.map((p) => {
               const { id, defaultValue, ...prop } = p;
@@ -115,6 +121,7 @@ export class EntityConfig {
               return prop;
             }),
           },
+          */
         },
         where: {
           id: entityConfig.id,

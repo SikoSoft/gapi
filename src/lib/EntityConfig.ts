@@ -319,6 +319,7 @@ export class EntityConfig {
         EntityConfig.mapPropertyDataToSpec(property)
       ),
       revisionOf: data.revisionOf,
+      allowPropertyOrdering: data.allowPropertyOrdering,
     };
   }
 

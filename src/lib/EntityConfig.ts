@@ -107,6 +107,7 @@ export class EntityConfig {
         data: {
           name: entityConfig.name,
           description: entityConfig.description,
+          allowPropertyOrdering: entityConfig.allowPropertyOrdering,
           /*
           properties: {
             update: updatedProperties.map((p) => {

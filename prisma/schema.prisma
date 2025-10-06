@@ -255,12 +255,13 @@ model PropertyConfig {
 }
 
 model EntityConfig {
-  id          Int              @id @default(autoincrement())
-  name        String           @db.VarChar(128)
-  description String?          @db.VarChar(255)
-  properties  PropertyConfig[]
-  userId      String?          @db.Uuid
-  revisionOf  Int?
+  id                    Int              @id @default(autoincrement())
+  name                  String           @db.VarChar(128)
+  allowPropertyOrdering Boolean          @default(false)
+  description           String?          @db.VarChar(255)
+  properties            PropertyConfig[]
+  userId                String?          @db.Uuid
+  revisionOf            Int?
 
   entityPropertyConfigOrders EntityPropertyConfigOrder[]
   entities                   Entity[]

@@ -97,7 +97,7 @@ export const propertyConfigCreateSchema = t.union([
       CommonPropertyConfig,
       t.type({
         dataType: t.literal(Entity.DataType.DATE),
-        defaultValue: t.string,
+        defaultValue: t.union([t.string, t.null]),
       }),
     ])
   ),

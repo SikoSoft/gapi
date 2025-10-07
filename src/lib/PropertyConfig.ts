@@ -140,7 +140,9 @@ export class PropertyConfig {
         ...mappedConfig,
         defaultValue:
           data.dataType === DataType.DATE
-            ? Util.getDateInTimeZone(defaultValue as string, timeZone)
+            ? defaultValue !== null
+              ? Util.getDateInTimeZone(defaultValue as string, timeZone)
+              : null
             : defaultValue,
       } as Entity.EntityPropertyConfig);
       return ok(mappedConfig);
@@ -300,6 +302,21 @@ export class PropertyConfig {
         await prisma.propertyConfigDateDefaultValue.findUnique({
           where: { propertyConfigId: propertyConfig.id },
         });
+
+      if (value === null) {
+        console.log("delete date default value!!!!!!!!!!!!!!!");
+        if (existingDefault) {
+          await prisma.datePropertyValue.deleteMany({
+            where: { id: existingDefault.propertyValueId },
+          });
+        }
+
+        await prisma.propertyConfigDateDefaultValue.deleteMany({
+          where: { propertyConfigId: propertyConfig.id },
+        });
+
+        return ok(null);
+      }
 
       if (existingDefault) {
         await prisma.datePropertyValue.update({
@@ -549,7 +566,7 @@ export class PropertyConfig {
         return {
           ...commonConfig,
           dataType: DataType.DATE,
-          defaultValue: data?.defaultDateValue?.dateValue?.value || new Date(),
+          defaultValue: data?.defaultDateValue?.dateValue?.value ?? new Date(),
         };
       case DataType.INT:
         return {

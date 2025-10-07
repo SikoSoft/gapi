@@ -566,7 +566,7 @@ export class PropertyConfig {
         return {
           ...commonConfig,
           dataType: DataType.DATE,
-          defaultValue: data?.defaultDateValue?.dateValue?.value ?? new Date(),
+          defaultValue: data?.defaultDateValue?.dateValue?.value ?? null,
         };
       case DataType.INT:
         return {

@@ -117,35 +117,20 @@ export class Entity {
           userId,
           entityConfigId: data.entityConfigId,
         },
-        include: {
-          tags: true,
-          booleanProperties: {
-            include: { propertyValue: true },
-          },
-          dateProperties: {
-            include: { propertyValue: true },
-          },
-          imageProperties: {
-            include: { propertyValue: true },
-          },
-          intProperties: {
-            include: { propertyValue: true },
-          },
-          longTextProperties: {
-            include: { propertyValue: true },
-          },
-          shortTextProperties: {
-            include: { propertyValue: true },
-          },
-        },
       });
+
       Tagging.syncEntityTags(entity.id, data.tags);
       await Entity.syncEntityProperties(
         entity.id,
         data.properties,
         parseInt(data.timeZone)
       );
-      return ok(Entity.toSpec(entity));
+
+      const entityRes = await Entity.getEntity(entity.id);
+      if (entityRes.isErr()) {
+        return err(entityRes.error);
+      }
+      return ok(entityRes.value);
     } catch (error) {
       return err(error);
     }

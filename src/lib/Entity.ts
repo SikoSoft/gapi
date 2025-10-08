@@ -621,10 +621,10 @@ export class Entity {
           await Entity.syncBooleanProperty(entityId, property);
           break;
         case DataType.DATE:
-          property.value = Util.getDateInTimeZone(
-            property.value as string,
-            timeZone
-          );
+          property.value =
+            property.value === null
+              ? null
+              : Util.getDateInTimeZone(property.value as string, timeZone);
           await Entity.syncDateProperty(entityId, property);
           break;
         case DataType.IMAGE:
@@ -706,7 +706,7 @@ export class Entity {
       if (!property.id) {
         const datePropertyValue = await prisma.datePropertyValue.create({
           data: {
-            value,
+            ...(value && { value }),
           },
         });
 
@@ -725,7 +725,7 @@ export class Entity {
       await prisma.datePropertyValue.update({
         where: { id: property.id },
         data: {
-          value,
+          ...(value && { value }),
           entityPropertyValue: {
             update: { order: property.order },
           },

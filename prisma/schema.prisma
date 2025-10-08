@@ -34,7 +34,7 @@ model BooleanPropertyValue {
 
 model DatePropertyValue {
   id    Int      @id @default(autoincrement())
-  value DateTime
+  value DateTime @default(now())
 
   propertyConfigDefaultValue PropertyConfigDateDefaultValue?
   entityPropertyValue        EntityDateProperty?

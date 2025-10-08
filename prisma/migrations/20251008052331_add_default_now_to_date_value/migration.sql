@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "DatePropertyValue" ALTER COLUMN "value" SET DEFAULT CURRENT_TIMESTAMP;

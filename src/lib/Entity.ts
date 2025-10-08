@@ -158,16 +158,17 @@ export class Entity {
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
       Tagging.syncEntityTags(id, data.tags);
-      const entityRes = await Entity.getEntity(id);
-      if (entityRes.isErr()) {
-        return err(entityRes.error);
-      }
+
       await Entity.syncEntityProperties(
         id,
         data.properties,
         parseInt(data.timeZone)
       );
 
+      const entityRes = await Entity.getEntity(id);
+      if (entityRes.isErr()) {
+        return err(entityRes.error);
+      }
       return ok(entityRes.value);
     } catch (error) {
       return err(error);

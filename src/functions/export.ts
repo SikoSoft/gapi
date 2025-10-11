@@ -32,7 +32,7 @@ export async function entity(
     };
   }
 
-  return jsonReply({ ...res.value });
+  return jsonReply({ entities: res.value });
 }
 
 app.http("export", {

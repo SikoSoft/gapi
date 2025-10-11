@@ -24,6 +24,7 @@ import {
 } from "api-spec/models/Entity";
 import { Entity as EntitySpec } from "api-spec/models";
 import { Util } from "./Util";
+import { en } from "zod/locales";
 
 export class Entity {
   static getFilteredConditions(userId: string, filter: ListFilter) {
@@ -416,6 +417,45 @@ export class Entity {
         context: contextEntitiesRes.value,
         total,
       });
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  static async export(
+    userId: string,
+    entityConfigIds: number[]
+  ): Promise<Result<EntitySpec.Entity[], Error>> {
+    let entities: EntitySpec.Entity[];
+
+    try {
+      entities = (
+        await prisma.entity.findMany({
+          where: { userId, entityConfigId: { in: entityConfigIds } },
+          include: {
+            tags: true,
+            booleanProperties: {
+              include: { propertyValue: true },
+            },
+            dateProperties: {
+              include: { propertyValue: true },
+            },
+            imageProperties: {
+              include: { propertyValue: true },
+            },
+            intProperties: {
+              include: { propertyValue: true },
+            },
+            longTextProperties: {
+              include: { propertyValue: true },
+            },
+            shortTextProperties: {
+              include: { propertyValue: true },
+            },
+          },
+        })
+      ).map((entity) => Entity.toSpec(entity));
+      return ok(entities);
     } catch (error) {
       return err(error);
     }

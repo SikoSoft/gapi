@@ -267,6 +267,7 @@ model EntityConfig {
   entities                   Entity[]
   revision                   EntityConfig?               @relation("EntityConfigRevisions", fields: [revisionOf], references: [id])
   revisions                  EntityConfig[]              @relation("EntityConfigRevisions")
+  ListFilterType             ListFilterType[]
 
   @@unique([id, name])
 }
@@ -344,11 +345,20 @@ model ListFilterTag {
   @@unique([listConfigId, tag, type])
 }
 
+model ListFilterType {
+  entityConfigId Int    @id
+  listConfigId   String @db.Uuid
+
+  entityConfig EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
+  listFilter   ListFilter   @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+}
+
 model ListFilter {
   listConfigId      String           @unique @db.Uuid
   includeUntagged   Boolean          @default(false)
   includeAll        Boolean          @default(false)
   includeAllTagging Boolean          @default(false)
+  includeTypes      ListFilterType[]
   time              ListFilterTime?
   text              ListFilterText[]
   tagging           ListFilterTag[]

@@ -8,6 +8,7 @@ const prismaListConfig = Prisma.validator<Prisma.ListConfigFindManyArgs>()({
         time: true,
         text: true,
         tagging: true,
+        includeTypes: true,
       },
     },
     sort: true,
@@ -31,6 +32,7 @@ const prismaListFilter = Prisma.validator<Prisma.ListFilterFindManyArgs>()({
     text: true,
     tagging: true,
     time: true,
+    includeTypes: true,
   },
 });
 

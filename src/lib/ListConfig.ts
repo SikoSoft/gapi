@@ -100,6 +100,10 @@ export class ListConfig {
       await ListConfig.updateTags(listConfig.id, listConfig.filter.tagging);
       await ListConfig.updateTime(listConfig.id, listConfig.filter.time);
       await ListConfig.updateText(listConfig.id, listConfig.filter.text);
+      await ListConfig.updateTypes(
+        listConfig.id,
+        listConfig.filter.includeTypes
+      );
       await ListConfig.updateFilter(listConfig.id, listConfig.filter);
       const updatedRes = await ListConfig.getById(listConfig.id);
       if (updatedRes.isErr()) {
@@ -157,6 +161,27 @@ export class ListConfig {
     } catch (error) {
       return err(
         new Error("Failed to update listConfig tags", { cause: error })
+      );
+    }
+  }
+
+  static async updateTypes(
+    listConfigId: string,
+    types: number[]
+  ): Promise<Result<null, Error>> {
+    console.log("Updating types:", types);
+    try {
+      await prisma.listFilterType.deleteMany({ where: { listConfigId } });
+      await prisma.listFilterType.createMany({
+        data: types.map((entityConfigId) => ({
+          listConfigId,
+          entityConfigId,
+        })),
+      });
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to update listConfig types", { cause: error })
       );
     }
   }
@@ -327,6 +352,18 @@ export class ListConfig {
     return tagging;
   }
 
+  static mapFilterTypesDataToSpec(
+    data: PrismaListConfig["filter"]["includeTypes"]
+  ): List.ListFilter["includeTypes"] {
+    const includeTypes: List.ListFilter["includeTypes"] = [];
+
+    data.forEach((filterType) => {
+      includeTypes.push(filterType.entityConfigId);
+    });
+
+    return includeTypes;
+  }
+
   static mapFilterDataToSpec(
     data: PrismaListConfig["filter"]
   ): List.ListFilter {
@@ -334,7 +371,7 @@ export class ListConfig {
       includeAll: data.includeAll,
       includeUntagged: data.includeUntagged,
       includeAllTagging: data.includeAllTagging,
-      includeTypes: [],
+      includeTypes: ListConfig.mapFilterTypesDataToSpec(data.includeTypes),
       tagging: ListConfig.mapFilterTagsDataToSpec(data.tagging),
       text: ListConfig.mapTextDataToSpec(data.text),
       time: ListConfig.mapTimeDataToSpec(data.time),

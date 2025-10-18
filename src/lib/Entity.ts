@@ -50,6 +50,11 @@ export class Entity {
         ? {
             AND: [
               {
+                ...(filter.includeTypes.length
+                  ? { entityConfigId: { in: filter.includeTypes } }
+                  : {}),
+              },
+              {
                 ...(filter.time.type === ListFilterTimeType.ALL_TIME
                   ? { createdAt: { lte: new Date() } }
                   : {

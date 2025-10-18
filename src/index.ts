@@ -90,6 +90,7 @@ export function getDefaultFilter(): ListFilter {
     includeUntagged: true,
     includeAll: true,
     includeAllTagging: true,
+    includeTypes: [],
   };
 }
 

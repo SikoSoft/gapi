@@ -56,7 +56,7 @@ export async function listConfig(
     case HttpMethod.PUT:
       const updateBody = (await request.json()) as EntityConfigUpdateBody;
       await EntityConfig.update(userId, updateBody);
-      return jsonReply({ id: updateBody.id });
+      return jsonReply({ ...updateBody });
     case HttpMethod.DELETE:
       let id: number;
       if (!request.params.id) {

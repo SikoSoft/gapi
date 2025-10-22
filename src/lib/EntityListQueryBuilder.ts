@@ -10,8 +10,17 @@ import {
 } from "api-spec/models/List";
 import { getDefaultFilter } from "..";
 import { EntityPropTypeModelName } from "../models/Entity";
+import { Util } from "./Util";
 
 export class EntityListQueryBuilder {
+  static propTypes: EntityPropTypeModelName[] = [
+    "Boolean",
+    "Date",
+    "Image",
+    "Int",
+    "LongText",
+    "ShortText",
+  ];
   private userId: string = "";
   private filter: ListFilter = getDefaultFilter();
   private sort: ListSort = {
@@ -49,9 +58,10 @@ export class EntityListQueryBuilder {
           ? "COUNT(*)"
           : `
         e.*,
-        entityTags,
-        IntValues,
-        ShortTextValues,
+        tags,
+       ${EntityListQueryBuilder.propTypes
+         .map((type) => `"${Util.uncapitalize(type)}Properties"`)
+         .join(", ")},
         sortPropRows."value" as sortValue`
       }
       FROM
@@ -80,39 +90,36 @@ export class EntityListQueryBuilder {
     	LEFT JOIN LATERAL (
 		    SELECT COALESCE(json_agg(
 			    entityTag."label" ORDER BY entityTag."label"), '[]'::json
-		    ) AS entityTags
+		    ) AS tags
 		  FROM "EntityTag" entityTag
 		  WHERE entityTag."entityId" = e."id"	
-	  ) entityTags ON true
+	  ) tags ON true
    `;
   }
 
   getPropTypesFragment(): string {
-    const propTypes: EntityPropTypeModelName[] = [
-      "Boolean",
-      "Date",
-      "Image",
-      "Int",
-      "LongText",
-      "ShortText",
-    ];
-    return propTypes.map((type) => this.getPropTypeFragment(type)).join("\n");
+    return EntityListQueryBuilder.propTypes
+      .map((type) => this.getPropTypeFragment(type))
+      .join("\n");
   }
 
   getPropTypeFragment(propType: EntityPropTypeModelName): string {
+    const propTypeCamelCase = Util.uncapitalize(propType);
+
     return `
 	    LEFT JOIN LATERAL (
 		    SELECT json_agg(
 			    json_build_object(
 			    'entityId', ${propType}Prop."entityId",
 			    'propertyValueId', ${propType}Prop."propertyValueId",
+          'order', ${propType}Prop."order",
           ${
             propType === "Image"
               ? `'url', ${propType}PropVal."url",'altText', ${propType}PropVal."altText"`
               : `'value', ${propType}PropVal."value"`
           }
 			  ) ORDER BY ${propType}Prop."order"
-		  ) AS ${propType}Values
+		  ) AS "${propTypeCamelCase}Properties"
 		  FROM "Entity${propType}Property" ${propType}Prop
 		  JOIN "${propType}PropertyValue" ${propType}PropVal ON ${propType}Prop."propertyValueId" = ${propType}PropVal."id"
 		  WHERE ${propType}Prop."entityId" = e."id"

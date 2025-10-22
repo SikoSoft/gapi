@@ -41,34 +41,50 @@ export class EntityListQueryBuilder {
     this.pagination = { start, perPage };
   }
 
-  getQuery(): string {
+  buildQuery(countOnly: boolean = false): string {
     let query = `
       SELECT
+      ${
+        countOnly
+          ? "COUNT(*)"
+          : `
         e.*,
         entityTags,
         IntValues,
         ShortTextValues,
-        sortPropRows."value" as sortValue
+        sortPropRows."value" as sortValue`
+      }
       FROM
-        "Entity" e
+        "Entity" e`;
 
-	LEFT JOIN LATERAL (
-		SELECT COALESCE(json_agg(
-			entityTag."label" ORDER BY entityTag."label"), '[]'::json
-		) AS entityTags
-		FROM "EntityTag" entityTag
-		WHERE entityTag."entityId" = e."id"
-		
-	) entityTags ON true
+    if (!countOnly) {
+      query += this.getTagsFragment();
+      query += this.getPropTypesFragment();
+      query += this.getSortFragment();
+      query += `ORDER BY sortValue DESC, e."id"`;
+    }
 
-      ${this.getPropTypesFragment()}
-      ${this.getSortFragment()}
-
-
-      ORDER BY sortValue DESC, e."id"
-    
-    `;
     return query;
+  }
+
+  getQuery(): string {
+    return this.buildQuery();
+  }
+
+  getCountQuery(): string {
+    return this.buildQuery(true);
+  }
+
+  getTagsFragment(): string {
+    return `
+    	LEFT JOIN LATERAL (
+		    SELECT COALESCE(json_agg(
+			    entityTag."label" ORDER BY entityTag."label"), '[]'::json
+		    ) AS entityTags
+		  FROM "EntityTag" entityTag
+		  WHERE entityTag."entityId" = e."id"	
+	  ) entityTags ON true
+   `;
   }
 
   getPropTypesFragment(): string {

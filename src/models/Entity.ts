@@ -122,3 +122,5 @@ export type EntityPropTypeModelName =
   | "Int"
   | "LongText"
   | "ShortText";
+
+export type EntityListQueryBuilderParams = {};

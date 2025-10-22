@@ -372,60 +372,17 @@ export class Entity {
 
     let entities: EntitySpec.Entity[];
 
-    /*
-    const rawEntities = await prisma.$queryRaw`
-  SELECT e.*, ipv."value" AS int_value
-  FROM "Entity" e, "EntityIntProperty" ip, "IntPropertyValue" ipv
-  WHERE ip."entityId" = e."id"
-  AND ipv."id" = ip."propertyValueId"
-`;
-*/
-
     const listQuery = new EntityListQueryBuilder();
     listQuery.setUserId(userId);
     listQuery.setFilter(filter);
     listQuery.setSort(sort);
     listQuery.setPagination(start, perPage);
 
-    console.log("query", listQuery.getQuery());
-    const rawEntities = await prisma.$queryRaw(
-      Prisma.sql([listQuery.getQuery()])
-    );
-
-    console.log("Raw entities:", JSON.stringify(rawEntities, null, 2));
-
     try {
       entities = (
-        await prisma.entity.findMany({
-          relationLoadStrategy: "join",
-          skip: start,
-          take: perPage,
-          where,
-          orderBy: {
-            [sort.property]: sort.direction,
-          },
-          include: {
-            tags: true,
-            booleanProperties: {
-              include: { propertyValue: true },
-            },
-            dateProperties: {
-              include: { propertyValue: true },
-            },
-            imageProperties: {
-              include: { propertyValue: true },
-            },
-            intProperties: {
-              include: { propertyValue: true },
-            },
-            longTextProperties: {
-              include: { propertyValue: true },
-            },
-            shortTextProperties: {
-              include: { propertyValue: true },
-            },
-          },
-        })
+        (await prisma.$queryRaw(
+          Prisma.sql([listQuery.getQuery()])
+        )) as PrismaEntity[]
       ).map((entity) => Entity.toSpec(entity));
 
       const contextEntitiesRes = await Entity.getContextEntities(

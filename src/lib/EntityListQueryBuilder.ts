@@ -1,9 +1,5 @@
 import {
-  ListContext,
-  ListContextType,
-  ListContextUnit,
   ListFilter,
-  ListFilterTimeType,
   ListSort,
   ListSortDirection,
   ListSortProperty,
@@ -112,11 +108,12 @@ export class EntityListQueryBuilder {
 			    json_build_object(
 			    'entityId', ${propType}Prop."entityId",
 			    'propertyValueId', ${propType}Prop."propertyValueId",
+          'propertyConfigId', ${propType}Prop."propertyConfigId",
           'order', ${propType}Prop."order",
           ${
             propType === "Image"
-              ? `'url', ${propType}PropVal."url",'altText', ${propType}PropVal."altText"`
-              : `'value', ${propType}PropVal."value"`
+              ? `'propertyValue', json_build_object('url', ${propType}PropVal."url",'altText', ${propType}PropVal."altText")`
+              : `'propertyValue', json_build_object('value', ${propType}PropVal."value")`
           }
 			  ) ORDER BY ${propType}Prop."order"
 		  ) AS "${propTypeCamelCase}Properties"

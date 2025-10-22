@@ -18,7 +18,9 @@ import { IdentityManager } from "./lib/IdentityManager";
 
 export const defaultUser = "f00300fd-dd74-4e17-8624-b67295cfa053";
 
-export const prisma = new PrismaClient();
+export const prisma = new PrismaClient({
+  //log: ["query", "info", "warn", "error"],
+});
 
 export const jsonReply = <T>(
   object: T = {} as T,

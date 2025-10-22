@@ -114,3 +114,11 @@ export type PrismaEntity = Prisma.EntityGetPayload<typeof prismaEntity>;
 export type EntityConfigCreateBody = Omit<Entity.EntityConfig, "id">;
 
 export type EntityConfigUpdateBody = Entity.EntityConfig;
+
+export type EntityPropTypeModelName =
+  | "Boolean"
+  | "Date"
+  | "Image"
+  | "Int"
+  | "LongText"
+  | "ShortText";

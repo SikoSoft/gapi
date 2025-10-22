@@ -24,7 +24,7 @@ import {
 } from "api-spec/models/Entity";
 import { Entity as EntitySpec } from "api-spec/models";
 import { Util } from "./Util";
-import { en } from "zod/locales";
+import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
 
 export class Entity {
   static getFilteredConditions(userId: string, filter: ListFilter) {
@@ -372,9 +372,32 @@ export class Entity {
 
     let entities: EntitySpec.Entity[];
 
+    /*
+    const rawEntities = await prisma.$queryRaw`
+  SELECT e.*, ipv."value" AS int_value
+  FROM "Entity" e, "EntityIntProperty" ip, "IntPropertyValue" ipv
+  WHERE ip."entityId" = e."id"
+  AND ipv."id" = ip."propertyValueId"
+`;
+*/
+
+    const listQuery = new EntityListQueryBuilder();
+    listQuery.setUserId(userId);
+    listQuery.setFilter(filter);
+    listQuery.setSort(sort);
+    listQuery.setPagination(start, perPage);
+
+    console.log("query", listQuery.getQuery());
+    const rawEntities = await prisma.$queryRaw(
+      Prisma.sql([listQuery.getQuery()])
+    );
+
+    console.log("Raw entities:", JSON.stringify(rawEntities, null, 2));
+
     try {
       entities = (
         await prisma.entity.findMany({
+          relationLoadStrategy: "join",
           skip: start,
           take: perPage,
           where,

@@ -66,7 +66,7 @@ export class EntityListQueryBuilder {
     if (!countOnly) {
       query += this.getTagsFragment();
       query += this.getPropTypesFragment();
-      query += this.getSortFragment();
+      query += this.getSortFragment("Int");
       query += `ORDER BY sortValue DESC, e."id"`;
     }
 
@@ -124,14 +124,16 @@ export class EntityListQueryBuilder {
    `;
   }
 
-  getSortFragment(): string {
+  getSortFragment(propType: EntityPropTypeModelName): string {
+    const propTypeCamelCase = Util.uncapitalize(propType);
+
     return `
       LEFT JOIN LATERAL (
-		    SELECT intPropVal."value"
-		    FROM "EntityIntProperty" intProp
-		    JOIN "IntPropertyValue" intPropVal ON intPropVal."id" = intProp."propertyValueId"
-		    WHERE intProp."entityId" = e."id"
-		    AND intProp."propertyConfigId" = 11
+		    SELECT ${propTypeCamelCase}PropVal."value"
+		    FROM "Entity${propType}Property" ${propTypeCamelCase}Prop
+		    JOIN "${propType}PropertyValue" ${propTypeCamelCase}PropVal ON ${propTypeCamelCase}Prop."propertyValueId" = ${propTypeCamelCase}PropVal."id"
+		    WHERE ${propTypeCamelCase}Prop."entityId" = e."id"
+		    AND ${propTypeCamelCase}Prop."propertyConfigId" = 11
 		    LIMIT 1
 	    ) sortPropRows ON true
    `;

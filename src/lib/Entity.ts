@@ -377,6 +377,7 @@ export class Entity {
     listQuery.setFilter(filter);
     listQuery.setSort(sort);
     listQuery.setPagination(start, perPage);
+    console.log("Built list query:", listQuery.getQuery());
 
     try {
       entities = (

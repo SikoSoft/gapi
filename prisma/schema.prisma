@@ -317,7 +317,9 @@ model ListConfig {
 
 model ListSort {
   listConfigId String     @unique @db.Uuid
-  property     String     @db.VarChar(64)
+  property     String?    @db.VarChar(64)
+  propertyId   Int?       @default(0)
+  dataType     String?    @db.VarChar(64)
   direction    String     @db.VarChar(64)
   listConfig   ListConfig @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 }

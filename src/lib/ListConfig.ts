@@ -7,6 +7,7 @@ import {
   ListFilterTimeType,
   ListFilterType,
   ListSortDirection,
+  ListSortNativeProperty,
   ListSortProperty,
 } from "api-spec/models/List";
 import { Settings } from "api-spec/models/Setting";
@@ -35,7 +36,7 @@ export class ListConfig {
           },
           sort: {
             create: {
-              property: ListSortProperty.CREATED_AT,
+              property: ListSortNativeProperty.CREATED_AT,
               direction: ListSortDirection.DESC,
             },
           },
@@ -127,7 +128,7 @@ export class ListConfig {
           listConfigId,
         },
         data: {
-          ...sort,
+          //...sort,
         },
       });
     } catch (error) {
@@ -414,17 +415,6 @@ export class ListConfig {
     return {
       property: data.property as List.ListSortProperty,
       direction: data.direction as List.ListSortDirection,
-    };
-  }
-
-  static mapSortSpecToData(
-    listConfigId: string,
-    spec: List.ListSort
-  ): PrismaListConfig["sort"] {
-    return {
-      property: spec.property,
-      direction: spec.direction,
-      listConfigId,
     };
   }
 

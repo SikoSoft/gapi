@@ -381,8 +381,10 @@ export class Entity {
 
     try {
       entities = (
-        (await prisma.$queryRaw(
-          Prisma.sql([listQuery.getQuery()])
+        (await prisma.$queryRawUnsafe(
+          listQuery.getQuery(),
+          perPage,
+          start
         )) as PrismaEntity[]
       ).map((entity) => Entity.toSpec(entity));
 
@@ -524,7 +526,7 @@ export class Entity {
               ],
             },
             orderBy: {
-              [sort.property]: sort.direction,
+              //[sort.property]: sort.direction,
             },
             include: {
               tags: true,

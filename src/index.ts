@@ -11,6 +11,7 @@ import {
   ListFilterType,
   ListSort,
   ListSortDirection,
+  ListSortNativeProperty,
   ListSortProperty,
 } from "api-spec/models/List";
 import { Introspection } from "./models/Introspection";
@@ -98,7 +99,7 @@ export function getDefaultFilter(): ListFilter {
 
 export function getDefaultSort(): ListSort {
   return {
-    property: ListSortProperty.OCCURRED_AT,
+    property: ListSortNativeProperty.OCCURRED_AT,
     direction: ListSortDirection.DESC,
   };
 }

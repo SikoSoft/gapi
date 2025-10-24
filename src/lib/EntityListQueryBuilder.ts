@@ -1,7 +1,9 @@
 import {
   ListFilter,
   ListSort,
+  ListSortCustomProperty,
   ListSortDirection,
+  ListSortNativeProperty,
   ListSortProperty,
 } from "api-spec/models/List";
 import { getDefaultFilter } from "..";
@@ -13,7 +15,7 @@ export class EntityListQueryBuilder {
   private userId: string = "";
   private filter: ListFilter = getDefaultFilter();
   private sort: ListSort = {
-    property: ListSortProperty.CREATED_AT,
+    property: ListSortNativeProperty.CREATED_AT,
     direction: ListSortDirection.DESC,
   };
   private pagination: { start: number; perPage: number } = {
@@ -40,6 +42,8 @@ export class EntityListQueryBuilder {
   }
 
   buildQuery(countOnly: boolean = false): string {
+    const sortFragment = this.getSortFragment();
+
     let query = `
       SELECT
       ${
@@ -50,8 +54,8 @@ export class EntityListQueryBuilder {
         tags,
        ${Object.values(DataType)
          .map((type) => `"${type}Properties"`)
-         .join(", ")},
-        sortPropRows."value" as sortValue`
+         .join(", ")}
+        ${sortFragment ? `, sortPropRows."value" as sortValue` : ""}`
       }
       FROM
         "Entity" e`;
@@ -59,9 +63,8 @@ export class EntityListQueryBuilder {
     if (!countOnly) {
       query += this.getTagsFragment();
       query += this.getPropTypesFragment();
-      query += this.getSortFragment(DataType.INT);
-      query += `ORDER BY sortValue DESC, e."id"`;
-      query += ` LIMIT ${this.pagination.perPage} OFFSET ${this.pagination.start}`;
+      query += sortFragment;
+      query += ` LIMIT $1 OFFSET $2`;
     }
 
     return query;
@@ -119,9 +122,19 @@ export class EntityListQueryBuilder {
    `;
   }
 
-  getSortFragment(dataType: DataType): string {
-    const propTypeCamelCase = dataType;
-    const propTypePascalCase = Util.capitalize(dataType);
+  isCustomSort(property: ListSortProperty): property is ListSortCustomProperty {
+    return (property as ListSortCustomProperty).propertyId !== undefined;
+  }
+
+  getSortFragment(): string {
+    const sortProperty = this.sort.property;
+
+    if (!this.isCustomSort(sortProperty)) {
+      return "";
+    }
+
+    const propTypeCamelCase = sortProperty.dataType;
+    const propTypePascalCase = Util.capitalize(sortProperty.dataType);
 
     return `
       LEFT JOIN LATERAL (
@@ -129,9 +142,9 @@ export class EntityListQueryBuilder {
 		    FROM "Entity${propTypePascalCase}Property" ${propTypeCamelCase}Prop
 		    JOIN "${propTypePascalCase}PropertyValue" ${propTypeCamelCase}PropVal ON ${propTypeCamelCase}Prop."propertyValueId" = ${propTypeCamelCase}PropVal."id"
 		    WHERE ${propTypeCamelCase}Prop."entityId" = e."id"
-		    AND ${propTypeCamelCase}Prop."propertyConfigId" = 11
+		    AND ${propTypeCamelCase}Prop."propertyConfigId" = ${sortProperty.propertyId}
 		    LIMIT 1
 	    ) sortPropRows ON true
-   `;
+        ORDER BY sortValue ${this.sort.direction}, e."id"`;
   }
 }

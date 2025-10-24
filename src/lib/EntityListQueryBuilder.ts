@@ -61,6 +61,7 @@ export class EntityListQueryBuilder {
       query += this.getPropTypesFragment();
       query += this.getSortFragment(DataType.INT);
       query += `ORDER BY sortValue DESC, e."id"`;
+      query += ` LIMIT ${this.pagination.perPage} OFFSET ${this.pagination.start}`;
     }
 
     return query;

@@ -6,6 +6,7 @@ import { PrismaListConfig } from "../models/ListConfig";
 import {
   ListFilterTimeType,
   ListFilterType,
+  ListSortCustomProperty,
   ListSortDirection,
   ListSortNativeProperty,
   ListSortProperty,
@@ -13,6 +14,7 @@ import {
 import { Settings } from "api-spec/models/Setting";
 import { Setting } from "./Setting";
 import { setting } from "../functions/setting";
+import { DataType } from "api-spec/models/Entity";
 
 export class ListConfig {
   static async create(
@@ -123,12 +125,32 @@ export class ListConfig {
     sort: List.ListSort
   ): Promise<Result<null, Error>> {
     try {
+      if ((sort.property as ListSortCustomProperty).propertyId !== undefined) {
+        const property = sort.property as ListSortCustomProperty;
+        await prisma.listSort.update({
+          where: {
+            listConfigId,
+          },
+          data: {
+            propertyId: property.propertyId,
+            dataType: property.dataType,
+            property: null,
+            direction: sort.direction,
+          },
+        });
+        return ok(null);
+      }
+
+      const property = sort.property as ListSortNativeProperty;
       await prisma.listSort.update({
         where: {
           listConfigId,
         },
         data: {
-          //...sort,
+          propertyId: null,
+          dataType: null,
+          property,
+          direction: sort.direction,
         },
       });
     } catch (error) {
@@ -412,8 +434,18 @@ export class ListConfig {
   }
 
   static mapSortDataToSpec(data: PrismaListConfig["sort"]): List.ListSort {
+    let property: ListSortProperty;
+    if (data.propertyId && data.dataType) {
+      property = {
+        propertyId: data.propertyId,
+        dataType: data.dataType,
+      } as List.ListSortCustomProperty;
+    } else {
+      property = data.property as List.ListSortNativeProperty;
+    }
+
     return {
-      property: data.property as List.ListSortProperty,
+      property,
       direction: data.direction as List.ListSortDirection,
     };
   }

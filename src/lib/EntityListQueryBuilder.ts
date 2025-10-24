@@ -7,16 +7,9 @@ import {
 import { getDefaultFilter } from "..";
 import { EntityPropTypeModelName } from "../models/Entity";
 import { Util } from "./Util";
+import { DataType } from "api-spec/models/Entity";
 
 export class EntityListQueryBuilder {
-  static propTypes: EntityPropTypeModelName[] = [
-    "Boolean",
-    "Date",
-    "Image",
-    "Int",
-    "LongText",
-    "ShortText",
-  ];
   private userId: string = "";
   private filter: ListFilter = getDefaultFilter();
   private sort: ListSort = {
@@ -55,8 +48,8 @@ export class EntityListQueryBuilder {
           : `
         e.*,
         tags,
-       ${EntityListQueryBuilder.propTypes
-         .map((type) => `"${Util.uncapitalize(type)}Properties"`)
+       ${Object.values(DataType)
+         .map((type) => `"${type}Properties"`)
          .join(", ")},
         sortPropRows."value" as sortValue`
       }
@@ -66,7 +59,7 @@ export class EntityListQueryBuilder {
     if (!countOnly) {
       query += this.getTagsFragment();
       query += this.getPropTypesFragment();
-      query += this.getSortFragment("Int");
+      query += this.getSortFragment(DataType.INT);
       query += `ORDER BY sortValue DESC, e."id"`;
     }
 
@@ -94,44 +87,46 @@ export class EntityListQueryBuilder {
   }
 
   getPropTypesFragment(): string {
-    return EntityListQueryBuilder.propTypes
+    return Object.values(DataType)
       .map((type) => this.getPropTypeFragment(type))
       .join("\n");
   }
 
-  getPropTypeFragment(propType: EntityPropTypeModelName): string {
-    const propTypeCamelCase = Util.uncapitalize(propType);
+  getPropTypeFragment(dataType: DataType): string {
+    const dataTypeCamelCase = dataType;
+    const dataTypePascalCase = Util.capitalize(dataType);
 
     return `
 	    LEFT JOIN LATERAL (
 		    SELECT json_agg(
 			    json_build_object(
-			    'entityId', ${propType}Prop."entityId",
-			    'propertyValueId', ${propType}Prop."propertyValueId",
-          'propertyConfigId', ${propType}Prop."propertyConfigId",
-          'order', ${propType}Prop."order",
+			    'entityId', ${dataTypePascalCase}Prop."entityId",
+			    'propertyValueId', ${dataTypePascalCase}Prop."propertyValueId",
+          'propertyConfigId', ${dataTypePascalCase}Prop."propertyConfigId",
+          'order', ${dataTypePascalCase}Prop."order",
           ${
-            propType === "Image"
-              ? `'propertyValue', json_build_object('url', ${propType}PropVal."url",'altText', ${propType}PropVal."altText")`
-              : `'propertyValue', json_build_object('value', ${propType}PropVal."value")`
+            dataTypePascalCase === "Image"
+              ? `'propertyValue', json_build_object('url', ${dataTypePascalCase}PropVal."url",'altText', ${dataTypePascalCase}PropVal."altText")`
+              : `'propertyValue', json_build_object('value', ${dataTypePascalCase}PropVal."value")`
           }
-			  ) ORDER BY ${propType}Prop."order"
-		  ) AS "${propTypeCamelCase}Properties"
-		  FROM "Entity${propType}Property" ${propType}Prop
-		  JOIN "${propType}PropertyValue" ${propType}PropVal ON ${propType}Prop."propertyValueId" = ${propType}PropVal."id"
-		  WHERE ${propType}Prop."entityId" = e."id"
-    ) ${propType}Props ON true
+			  ) ORDER BY ${dataTypePascalCase}Prop."order"
+		  ) AS "${dataTypeCamelCase}Properties"
+		  FROM "Entity${dataTypePascalCase}Property" ${dataTypePascalCase}Prop
+		  JOIN "${dataTypePascalCase}PropertyValue" ${dataTypePascalCase}PropVal ON ${dataTypePascalCase}Prop."propertyValueId" = ${dataTypePascalCase}PropVal."id"
+		  WHERE ${dataTypePascalCase}Prop."entityId" = e."id"
+    ) ${dataTypePascalCase}Props ON true
    `;
   }
 
-  getSortFragment(propType: EntityPropTypeModelName): string {
-    const propTypeCamelCase = Util.uncapitalize(propType);
+  getSortFragment(dataType: DataType): string {
+    const propTypeCamelCase = dataType;
+    const propTypePascalCase = Util.capitalize(dataType);
 
     return `
       LEFT JOIN LATERAL (
 		    SELECT ${propTypeCamelCase}PropVal."value"
-		    FROM "Entity${propType}Property" ${propTypeCamelCase}Prop
-		    JOIN "${propType}PropertyValue" ${propTypeCamelCase}PropVal ON ${propTypeCamelCase}Prop."propertyValueId" = ${propTypeCamelCase}PropVal."id"
+		    FROM "Entity${propTypePascalCase}Property" ${propTypeCamelCase}Prop
+		    JOIN "${propTypePascalCase}PropertyValue" ${propTypeCamelCase}PropVal ON ${propTypeCamelCase}Prop."propertyValueId" = ${propTypeCamelCase}PropVal."id"
 		    WHERE ${propTypeCamelCase}Prop."entityId" = e."id"
 		    AND ${propTypeCamelCase}Prop."propertyConfigId" = 11
 		    LIMIT 1

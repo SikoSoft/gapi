@@ -6,12 +6,13 @@ import {
   ListSortNativeProperty,
   ListSortProperty,
 } from "api-spec/models/List";
-import { getDefaultFilter } from "..";
-import { EntityPropTypeModelName } from "../models/Entity";
+import { getDefaultFilter, prisma } from "..";
+import { EntityPropTypeModelName, PrismaEntity } from "../models/Entity";
 import { Util } from "./Util";
 import { DataType } from "api-spec/models/Entity";
 
 export class EntityListQueryBuilder {
+  private params: Record<string, any> = {};
   private userId: string = "";
   private filter: ListFilter = getDefaultFilter();
   private sort: ListSort = {
@@ -67,10 +68,13 @@ export class EntityListQueryBuilder {
         "Entity" e`;
 
     if (!countOnly) {
+      this.registerParam("limit", this.pagination.perPage);
+      this.registerParam("offset", this.pagination.start);
+
       query += this.getTagsFragment();
       query += this.getPropTypesFragment();
       query += sortFragment;
-      query += ` LIMIT $1 OFFSET $2`;
+      query += ` LIMIT {limit} OFFSET {offset}`;
     }
 
     return query;
@@ -78,6 +82,27 @@ export class EntityListQueryBuilder {
 
   getQuery(): string {
     return this.buildQuery();
+  }
+
+  async runQuery(): Promise<PrismaEntity[]> {
+    let query = this.getQuery();
+
+    for (const key in this.params) {
+      query = query.replace(
+        `{${key}}`,
+        `$${Object.keys(this.params).indexOf(key) + 1}`
+      );
+    }
+
+    const result = (await prisma.$queryRawUnsafe(
+      query,
+      ...Object.values(this.params)
+    )) as PrismaEntity[];
+    return result;
+  }
+
+  registerParam(placeholder: string, value: any) {
+    this.params[placeholder] = value;
   }
 
   getCountQuery(): string {
@@ -163,5 +188,37 @@ export class EntityListQueryBuilder {
     }
 
     return this.getCustomSortFragment();
+  }
+
+  getFilterTagsContainsOneOfFragment(): string {
+    const tagLabels = this.filter.tagging.containsOneOf || [];
+    if (tagLabels.length === 0) {
+      return "";
+    }
+
+    return `
+      AND EXISTS (
+        SELECT 1
+        FROM "EntityTag" entityTag
+        WHERE entityTag."entityId" = e."id"
+          AND entityTag."label" = ANY($1::text[])
+      )
+    `;
+  }
+
+  getFilterTagsContainsAllOfFragment(): string {
+    const tagLabels = this.filter.tagging.containsAllOf || [];
+    if (tagLabels.length === 0) {
+      return "";
+    }
+
+    return `
+      AND (
+        SELECT COUNT(DISTINCT entityTag."label")
+        FROM "EntityTag" entityTag
+        WHERE entityTag."entityId" = e."id"
+          AND entityTag."label" = ANY($1::text[])
+      ) = array_length($1::text[], 1)
+    `;
   }
 }

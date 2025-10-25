@@ -380,13 +380,9 @@ export class Entity {
     console.log("Built list query:", listQuery.getQuery());
 
     try {
-      entities = (
-        (await prisma.$queryRawUnsafe(
-          listQuery.getQuery(),
-          perPage,
-          start
-        )) as PrismaEntity[]
-      ).map((entity) => Entity.toSpec(entity));
+      entities = (await listQuery.runQuery()).map((entity) =>
+        Entity.toSpec(entity)
+      );
 
       const contextEntitiesRes = await Entity.getContextEntities(
         context,

@@ -22,6 +22,7 @@ export class EntityListQueryBuilder {
     start: 0,
     perPage: 25,
   };
+  private isCustomSort: boolean = false;
 
   constructor() {}
 
@@ -35,6 +36,11 @@ export class EntityListQueryBuilder {
 
   setSort(sort: ListSort) {
     this.sort = sort;
+    const sortProperty = this.sort.property;
+
+    if ((sortProperty as ListSortCustomProperty).propertyId !== undefined) {
+      this.isCustomSort = true;
+    }
   }
 
   setPagination(start: number, perPage: number) {
@@ -55,7 +61,7 @@ export class EntityListQueryBuilder {
        ${Object.values(DataType)
          .map((type) => `"${type}Properties"`)
          .join(", ")}
-        ${sortFragment ? `, sortPropRows."value" as sortValue` : ""}`
+        ${this.isCustomSort ? `, sortPropRows."value" as sortValue` : ""}`
       }
       FROM
         "Entity" e`;
@@ -122,17 +128,20 @@ export class EntityListQueryBuilder {
    `;
   }
 
-  isCustomSort(property: ListSortProperty): property is ListSortCustomProperty {
-    return (property as ListSortCustomProperty).propertyId !== undefined;
+  getNativeSortFragment(): string {
+    const sortProperty = this.sort.property as ListSortNativeProperty;
+
+    const sortColumn = Object.values(ListSortNativeProperty).includes(
+      sortProperty
+    )
+      ? sortProperty
+      : ListSortNativeProperty.CREATED_AT;
+
+    return `ORDER BY e."${sortColumn}" ${this.sort.direction}, e."id"`;
   }
 
-  getSortFragment(): string {
-    const sortProperty = this.sort.property;
-
-    if (!this.isCustomSort(sortProperty)) {
-      return "";
-    }
-
+  getCustomSortFragment(): string {
+    const sortProperty = this.sort.property as ListSortCustomProperty;
     const propTypeCamelCase = sortProperty.dataType;
     const propTypePascalCase = Util.capitalize(sortProperty.dataType);
 
@@ -146,5 +155,13 @@ export class EntityListQueryBuilder {
 		    LIMIT 1
 	    ) sortPropRows ON true
         ORDER BY sortValue ${this.sort.direction}, e."id"`;
+  }
+
+  getSortFragment(): string {
+    if (!this.isCustomSort) {
+      return this.getNativeSortFragment();
+    }
+
+    return this.getCustomSortFragment();
   }
 }

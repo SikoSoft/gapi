@@ -29,6 +29,7 @@ export class EntityListQueryBuilder {
 
   setUserId(userId: string) {
     this.userId = userId;
+    this.registerParam("userId", this.userId);
   }
 
   setFilter(filter: ListFilter) {
@@ -65,16 +66,31 @@ export class EntityListQueryBuilder {
         ${this.isCustomSort ? `, sortPropRows."value" as sortValue` : ""}`
       }
       FROM
-        "Entity" e`;
+        "Entity" e
+        `;
 
     if (!countOnly) {
       this.registerParam("limit", this.pagination.perPage);
       this.registerParam("offset", this.pagination.start);
 
-      query += this.getTagsFragment();
-      query += this.getPropTypesFragment();
-      query += sortFragment;
-      query += ` LIMIT {limit} OFFSET {offset}`;
+      query += `
+        ${this.getTagsFragment()}
+        ${this.getPropTypesFragment()}
+        ${sortFragment}
+        `;
+    }
+
+    query += `
+      WHERE
+        e."userId" = {userId}::uuid
+        ${this.getFilterFragment()}
+    `;
+
+    if (!countOnly) {
+      query += `
+        ORDER BY sortValue ${this.sort.direction}, e."id"
+        LIMIT {limit} OFFSET {offset}
+      `;
     }
 
     return query;
@@ -89,7 +105,7 @@ export class EntityListQueryBuilder {
 
     for (const key in this.params) {
       query = query.replace(
-        `{${key}}`,
+        new RegExp(`\\{${key}\\}`, "g"),
         `$${Object.keys(this.params).indexOf(key) + 1}`
       );
     }
@@ -181,7 +197,7 @@ export class EntityListQueryBuilder {
 		    AND ${propTypeCamelCase}Prop."propertyConfigId" = ${sortProperty.propertyId}
 		    LIMIT 1
 	    ) sortPropRows ON true
-        ORDER BY sortValue ${this.sort.direction}, e."id"`;
+      `;
   }
 
   getSortFragment(): string {
@@ -236,7 +252,7 @@ export class EntityListQueryBuilder {
         SELECT COUNT(DISTINCT entityTag."label")
         FROM "EntityTag" entityTag
         WHERE entityTag."entityId" = e."id"
-          AND entityTag."label" = ANY($1::text[])
+          AND entityTag."label" = ANY({tagLabels}::text[])
       ) = array_length({tagLabels}::text[], 1)
     `;
   }

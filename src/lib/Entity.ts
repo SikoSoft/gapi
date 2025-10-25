@@ -339,7 +339,7 @@ export class Entity {
   }
 
   static toSpec(entity: PrismaEntity): EntitySpec.Entity {
-    //console.log("Entity to spec:", entity);
+    console.log("Entity to spec:", entity);
 
     const properties: EntitySpec.EntityProperty[] = [
       ...Entity.booleanPropertiesToSpec(entity),

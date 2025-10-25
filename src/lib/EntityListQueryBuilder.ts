@@ -113,7 +113,9 @@ export class EntityListQueryBuilder {
     return `
     	LEFT JOIN LATERAL (
 		    SELECT COALESCE(json_agg(
-			    entityTag."label" ORDER BY entityTag."label"), '[]'::json
+          json_build_object(
+            'label', entityTag."label"
+          ) ORDER BY entityTag."label"), '[]'::json
 		    ) AS tags
 		  FROM "EntityTag" entityTag
 		  WHERE entityTag."entityId" = e."id"	
@@ -190,18 +192,33 @@ export class EntityListQueryBuilder {
     return this.getCustomSortFragment();
   }
 
+  getFilterFragment(): string {
+    let fragment = "";
+    if (this.filter.tagging.containsAllOf.length) {
+      fragment += this.getFilterTagsContainsAllOfFragment();
+    }
+
+    if (this.filter.tagging.containsOneOf.length) {
+      fragment += this.getFilterTagsContainsOneOfFragment();
+    }
+
+    return fragment;
+  }
+
   getFilterTagsContainsOneOfFragment(): string {
     const tagLabels = this.filter.tagging.containsOneOf || [];
     if (tagLabels.length === 0) {
       return "";
     }
 
+    this.registerParam("tagLabels", tagLabels);
+
     return `
       AND EXISTS (
         SELECT 1
         FROM "EntityTag" entityTag
         WHERE entityTag."entityId" = e."id"
-          AND entityTag."label" = ANY($1::text[])
+          AND entityTag."label" = ANY({tagLabels}::text[])
       )
     `;
   }
@@ -212,13 +229,15 @@ export class EntityListQueryBuilder {
       return "";
     }
 
+    this.registerParam("tagLabels", tagLabels);
+
     return `
       AND (
         SELECT COUNT(DISTINCT entityTag."label")
         FROM "EntityTag" entityTag
         WHERE entityTag."entityId" = e."id"
           AND entityTag."label" = ANY($1::text[])
-      ) = array_length($1::text[], 1)
+      ) = array_length({tagLabels}::text[], 1)
     `;
   }
 }

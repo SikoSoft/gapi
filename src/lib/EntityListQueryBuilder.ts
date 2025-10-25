@@ -240,12 +240,19 @@ export class EntityListQueryBuilder {
     this.registerParam("tagLabels", tagLabels);
 
     return `
-      AND EXISTS (
+      ${
+        this.filter.includeUntagged
+          ? ` AND ( ${this.getFilterTagsUnfilteredFragment()} OR `
+          : " AND "
+      }
+
+      EXISTS (
         SELECT 1
         FROM "EntityTag" entityTag
         WHERE entityTag."entityId" = e."id"
           AND entityTag."label" = ANY({tagLabels}::text[])
       )
+      ${this.filter.includeUntagged ? ")" : " "}
     `;
   }
 
@@ -258,12 +265,26 @@ export class EntityListQueryBuilder {
     this.registerParam("tagLabels", tagLabels);
 
     return `
-      AND (
+      ${
+        this.filter.includeUntagged
+          ? ` AND ( ${this.getFilterTagsUnfilteredFragment()} OR `
+          : " AND "
+      }
+
+     (
         SELECT COUNT(DISTINCT entityTag."label")
         FROM "EntityTag" entityTag
         WHERE entityTag."entityId" = e."id"
           AND entityTag."label" = ANY({tagLabels}::text[])
       ) = array_length({tagLabels}::text[], 1)
+      ${this.filter.includeUntagged ? ")" : " "}
     `;
+  }
+
+  getFilterTagsUnfilteredFragment(): string {
+    return `
+      NOT EXISTS (
+        SELECT 1 FROM "EntityTag" entityTag WHERE entityTag."entityId" = e."id"
+      )`;
   }
 }

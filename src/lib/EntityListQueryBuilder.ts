@@ -40,7 +40,7 @@ export class EntityListQueryBuilder {
     this.sort = sort;
     const sortProperty = this.sort.property;
 
-    if ((sortProperty as ListSortCustomProperty).propertyId !== undefined) {
+    if ((sortProperty as ListSortCustomProperty)?.propertyId !== undefined) {
       this.isCustomSort = true;
     }
   }
@@ -50,8 +50,6 @@ export class EntityListQueryBuilder {
   }
 
   buildQuery(countOnly: boolean = false): string {
-    const sortFragment = this.getSortFragment();
-
     let query = `
       SELECT
       ${
@@ -76,7 +74,7 @@ export class EntityListQueryBuilder {
       query += `
         ${this.getTagsFragment()}
         ${this.getPropTypesFragment()}
-        ${sortFragment}
+        ${this.getSortJoinFragment()}
         `;
     }
 
@@ -88,7 +86,7 @@ export class EntityListQueryBuilder {
 
     if (!countOnly) {
       query += `
-        ORDER BY sortValue ${this.sort.direction}, e."id"
+      ${this.getSortFragment()}
         LIMIT {limit} OFFSET {offset}
       `;
     }
@@ -171,19 +169,7 @@ export class EntityListQueryBuilder {
    `;
   }
 
-  getNativeSortFragment(): string {
-    const sortProperty = this.sort.property as ListSortNativeProperty;
-
-    const sortColumn = Object.values(ListSortNativeProperty).includes(
-      sortProperty
-    )
-      ? sortProperty
-      : ListSortNativeProperty.CREATED_AT;
-
-    return `ORDER BY e."${sortColumn}" ${this.sort.direction}, e."id"`;
-  }
-
-  getCustomSortFragment(): string {
+  getCustomSortJoinFragment(): string {
     const sortProperty = this.sort.property as ListSortCustomProperty;
     const propTypeCamelCase = sortProperty.dataType;
     const propTypePascalCase = Util.capitalize(sortProperty.dataType);
@@ -198,6 +184,30 @@ export class EntityListQueryBuilder {
 		    LIMIT 1
 	    ) sortPropRows ON true
       `;
+  }
+
+  getSortJoinFragment(): string {
+    if (!this.isCustomSort) {
+      return "";
+    }
+
+    return this.getCustomSortJoinFragment();
+  }
+
+  getNativeSortFragment(): string {
+    const sortProperty = this.sort.property as ListSortNativeProperty;
+
+    const sortColumn = Object.values(ListSortNativeProperty).includes(
+      sortProperty
+    )
+      ? sortProperty
+      : ListSortNativeProperty.CREATED_AT;
+
+    return `ORDER BY e."${sortColumn}" ${this.sort.direction}, e."id"`;
+  }
+
+  getCustomSortFragment(): string {
+    return `ORDER BY sortValue ${this.sort.direction}, e."id"`;
   }
 
   getSortFragment(): string {

@@ -11,7 +11,7 @@ export interface ExportBody {
   entityConfigIds: number[];
 }
 
-export async function entity(
+export async function data(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
@@ -35,9 +35,9 @@ export async function entity(
   return jsonReply({ entities: res.value });
 }
 
-app.http("export", {
+app.http("data", {
   methods: ["POST"],
   authLevel: "anonymous",
-  handler: entity,
-  route: "export",
+  handler: data,
+  route: "data",
 });

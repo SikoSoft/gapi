@@ -17,6 +17,8 @@ import {
 import { Introspection } from "./models/Introspection";
 import { IdentityManager } from "./lib/IdentityManager";
 
+export const ENABLE_NUKE = process.env.ENABLE_NUKE === "1" || false;
+
 export const defaultUser = "f00300fd-dd74-4e17-8624-b67295cfa053";
 
 export const prisma = new PrismaClient({
@@ -99,7 +101,7 @@ export function getDefaultFilter(): ListFilter {
 
 export function getDefaultSort(): ListSort {
   return {
-    property: ListSortNativeProperty.OCCURRED_AT,
+    property: ListSortNativeProperty.CREATED_AT,
     direction: ListSortDirection.DESC,
   };
 }

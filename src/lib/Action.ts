@@ -7,6 +7,7 @@ import {
   ListFilter,
   ListFilterTimeType,
   ListSort,
+  ListSortNativeProperty,
 } from "api-spec/models/List";
 import { prisma } from "..";
 import { Tagging } from "./Tagging";
@@ -180,6 +181,8 @@ export class Action {
     start,
     perPage,
   }: ActionListParams): Promise<Result<ActionList, Error>> {
+    const sortProperty = sort.property as ListSortNativeProperty;
+
     const where = Action.getFilteredConditions(userId, filter);
 
     let actions: ActionItem[];
@@ -191,7 +194,7 @@ export class Action {
           take: perPage,
           where,
           orderBy: {
-            [sort.property]: sort.direction,
+            [sortProperty]: sort.direction,
           },
           include: {
             tags: true,
@@ -246,6 +249,8 @@ export class Action {
     actions: ActionItem[],
     sort: ListSort
   ): Promise<Result<ContextActions, Error>> {
+    const sortProperty = sort.property as ListSortNativeProperty;
+
     let contextActions: ContextActions = {};
 
     if (listContext) {
@@ -280,7 +285,7 @@ export class Action {
               ],
             },
             orderBy: {
-              [sort.property]: sort.direction,
+              [sortProperty]: sort.direction,
             },
             include: {
               tags: true,

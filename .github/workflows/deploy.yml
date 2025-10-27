@@ -35,20 +35,6 @@ jobs:
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           AZURE_STORAGE_URL: ${{ secrets.AZURE_STORAGE_URL }}
 
-      - name: "Clean deployment folder"
-        run: |
-          rm -rf node_modules
-          rm -rf test
-          rm -rf .git
-          rm -rf .vscode
-          rm -f *.ts
-          rm -f *.js.map
-          rm -f local.settings.json
-          rm -f tsconfig.json
-          rm -rf __azurite_db*__.json
-          rm -rf __blobstorage__
-          rm -rf __queuestorage__
-
       - name: "Show deployment folder size and contents"
         run: |
           du -sh ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}

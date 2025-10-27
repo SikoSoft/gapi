@@ -34,6 +34,12 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           AZURE_STORAGE_URL: ${{ secrets.AZURE_STORAGE_URL }}
+
+      - name: "Show deployment folder size and contents"
+        run: |
+          du -sh ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          ls -lR ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1
         id: fa

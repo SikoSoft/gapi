@@ -114,6 +114,16 @@ export async function action(
       const filter = getFilter(request);
       const sort = getSort(request);
       const listContext = getContext(request);
+
+      context.log({
+        userId,
+        filter,
+        context: listContext,
+        sort,
+        start,
+        perPage,
+      });
+
       const actionListRes = await Action.getList({
         userId,
         filter,

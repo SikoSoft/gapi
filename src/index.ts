@@ -1,9 +1,4 @@
-import { Result, err, ok } from "neverthrow";
-import {
-  HttpRequest,
-  HttpResponseInit,
-  InvocationContext,
-} from "@azure/functions";
+import { HttpRequest, HttpResponseInit } from "@azure/functions";
 import { PrismaClient } from "@prisma/client";
 import {
   ListFilter,
@@ -12,7 +7,6 @@ import {
   ListSort,
   ListSortDirection,
   ListSortNativeProperty,
-  ListSortProperty,
 } from "api-spec/models/List";
 import { Introspection } from "./models/Introspection";
 import { IdentityManager } from "./lib/IdentityManager";

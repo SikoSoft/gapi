@@ -7,7 +7,7 @@ on:
 
 env:
   AZURE_FUNCTIONAPP_NAME: blog-server
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: "dist"
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: "."
   NODE_VERSION: "20.x"
 
 jobs:
@@ -25,13 +25,29 @@ jobs:
       - name: "Resolve Project Dependencies Using Npm"
         shell: bash
         run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           npm install
           npm run build --if-present
           npx prisma migrate deploy
+          popd
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           AZURE_STORAGE_URL: ${{ secrets.AZURE_STORAGE_URL }}
+
+      - name: "Clean deployment folder"
+        run: |
+          rm -rf node_modules
+          rm -rf test
+          rm -rf .git
+          rm -rf .vscode
+          rm -f *.ts
+          rm -f *.js.map
+          rm -f local.settings.json
+          rm -f tsconfig.json
+          rm -rf __azurite_db*__.json
+          rm -rf __blobstorage__
+          rm -rf __queuestorage__
 
       - name: "Show deployment folder size and contents"
         run: |

@@ -69,7 +69,7 @@ export class Data {
         const prismaEntity = await prisma.entity.create({
           data: {
             userId,
-            entityConfigId: entity.type,
+            entityConfigId: entityConfigMap[entity.type],
           },
         });
 
@@ -77,7 +77,9 @@ export class Data {
         await Entity.syncEntityProperties(
           prismaEntity.id,
           entity.properties.map((p) => ({
-            ...p,
+            id: 0,
+            value: p.value,
+            order: p.order,
             propertyConfigId: entityPropertyConfigMap[p.propertyConfigId],
           })),
           timeZone

@@ -8,6 +8,7 @@ import { ENABLE_NUKE, forbiddenReply, introspect, jsonReply } from "..";
 import { Entity } from "../lib/Entity";
 import { IntrospectionUser } from "../models/Introspection";
 import { Data } from "../lib/Data";
+import { ExportDataContents } from "api-spec/models/Data";
 
 export interface ExportBody {
   entityConfigIds: number[];
@@ -24,6 +25,28 @@ async function handleExport(
   const res = await Entity.export(userId, body.entityConfigIds);
 
   if (res.isErr()) {
+    return {
+      status: 500,
+    };
+  }
+
+  return jsonReply({ entities: res.value });
+}
+
+async function handleImport(
+  request: HttpRequest,
+  introspection: IntrospectionUser
+): Promise<HttpResponseInit> {
+  const userId = introspection.user.id;
+
+  let body = (await request.json()) as ExportDataContents & {
+    timeZone: number;
+  };
+
+  const res = await Data.import(userId, body, body.timeZone);
+
+  if (res.isErr()) {
+    console.error("Failed to import data:", res.error);
     return {
       status: 500,
     };
@@ -60,7 +83,12 @@ export async function data(
 
   switch (request.method) {
     case "POST":
-      return await handleExport(request, introspection);
+      switch (request.params.operation) {
+        case "export":
+          return await handleExport(request, introspection);
+        case "import":
+          return await handleImport(request, introspection);
+      }
     case "DELETE":
       return await handleDelete(request, introspection);
   }
@@ -70,5 +98,5 @@ app.http("data", {
   methods: ["POST", "DELETE"],
   authLevel: "anonymous",
   handler: data,
-  route: "data",
+  route: "data/{operation?}",
 });

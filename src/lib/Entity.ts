@@ -129,7 +129,7 @@ export class Entity {
       await Entity.syncEntityProperties(
         entity.id,
         data.properties,
-        parseInt(data.timeZone)
+        data.timeZone
       );
 
       const entityRes = await Entity.getEntity(entity.id);
@@ -150,11 +150,7 @@ export class Entity {
     try {
       Tagging.syncEntityTags(id, data.tags);
 
-      await Entity.syncEntityProperties(
-        id,
-        data.properties,
-        parseInt(data.timeZone)
-      );
+      await Entity.syncEntityProperties(id, data.properties, data.timeZone);
 
       const entityRes = await Entity.getEntity(id);
       if (entityRes.isErr()) {

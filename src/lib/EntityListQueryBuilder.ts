@@ -147,6 +147,11 @@ export class EntityListQueryBuilder {
     const dataTypeCamelCase = dataType;
     const dataTypePascalCase = Util.capitalize(dataType);
 
+    const valueExpr =
+      dataTypePascalCase === "Date"
+        ? `( (EXTRACT(EPOCH FROM ${dataTypePascalCase}PropVal."value") * 1000)::bigint )`
+        : `${dataTypePascalCase}PropVal."value"`;
+
     return `
 	    LEFT JOIN LATERAL (
 		    SELECT json_agg(
@@ -158,7 +163,7 @@ export class EntityListQueryBuilder {
           ${
             dataTypePascalCase === "Image"
               ? `'propertyValue', json_build_object('url', ${dataTypePascalCase}PropVal."url",'altText', ${dataTypePascalCase}PropVal."altText")`
-              : `'propertyValue', json_build_object('value', ${dataTypePascalCase}PropVal."value")`
+              : `'propertyValue', json_build_object('value', ${valueExpr})`
           }
 			  ) ORDER BY ${dataTypePascalCase}Prop."order"
 		  ) AS "${dataTypeCamelCase}Properties"

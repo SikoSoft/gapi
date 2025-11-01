@@ -5,7 +5,7 @@ import { Entity } from "api-spec/models";
 export interface EntityBodyPayload {
   entityConfigId: number;
   desc: string;
-  timeZone: string;
+  timeZone: number;
   tags: string[];
   properties: Entity.EntityProperty[];
 }

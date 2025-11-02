@@ -35,6 +35,7 @@ export async function listConfig(
     case HttpMethod.GET:
       const listConfigsRes = await ListConfig.getByUser(userId);
       if (listConfigsRes.isErr()) {
+        context.error(listConfigsRes.error);
         return forbiddenReply();
       }
 

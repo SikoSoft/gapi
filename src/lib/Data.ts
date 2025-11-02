@@ -1,12 +1,22 @@
 import { err, ok, Result } from "neverthrow";
+import { v4 as uuidv4 } from "uuid";
 import { prisma } from "..";
-import { ExportConfigData, ExportDataContents } from "api-spec/models/Data";
+import {
+  ExportEntityConfigData,
+  ExportDataContents,
+} from "api-spec/models/Data";
 import {
   ImportEntityConfigMap,
   ImportEntityPropertyConfigMap,
 } from "../models/Data";
 import { Tagging } from "./Tagging";
 import { Entity } from "./Entity";
+import { ListConfig } from "./ListConfig";
+import {
+  ListFilterTimeType,
+  ListSortNativeProperty,
+  ListSortDirection,
+} from "api-spec/models/List";
 
 export class Data {
   static async reset(): Promise<Result<null, Error>> {
@@ -33,7 +43,7 @@ export class Data {
       const entityConfigMap: ImportEntityConfigMap = {};
       const entityPropertyConfigMap: ImportEntityPropertyConfigMap = {};
 
-      for (const config of data.configs) {
+      for (const config of data.entityConfigs) {
         const entityConfig = await prisma.entityConfig.create({
           data: {
             userId,
@@ -86,6 +96,50 @@ export class Data {
           })),
           timeZone
         );
+      }
+
+      for (const listConfig of data.listConfigs) {
+        const id = uuidv4();
+        const prismaListConfig = await prisma.listConfig.create({
+          data: {
+            id,
+            userId,
+            name: listConfig.name,
+            filter: {
+              create: {
+                includeAll: true,
+                includeUntagged: true,
+                includeAllTagging: true,
+                time: { create: { type: ListFilterTimeType.ALL_TIME } },
+              },
+            },
+            sort: {
+              create: {
+                property: ListSortNativeProperty.CREATED_AT,
+                direction: ListSortDirection.DESC,
+              },
+            },
+          },
+        });
+
+        await ListConfig.updateSort(prismaListConfig.id, listConfig.sort);
+        await ListConfig.updateTags(
+          prismaListConfig.id,
+          listConfig.filter.tagging
+        );
+        await ListConfig.updateTime(
+          prismaListConfig.id,
+          listConfig.filter.time
+        );
+        await ListConfig.updateText(
+          prismaListConfig.id,
+          listConfig.filter.text
+        );
+        await ListConfig.updateTypes(
+          prismaListConfig.id,
+          listConfig.filter.includeTypes
+        );
+        await ListConfig.updateFilter(prismaListConfig.id, listConfig.filter);
       }
 
       return ok(null);

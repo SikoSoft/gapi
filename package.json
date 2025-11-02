@@ -32,7 +32,7 @@
     "@azure/functions": "^4.4.0",
     "@azure/storage-blob": "^12.28.0",
     "@prisma/client": "^6.17.1",
-    "api-spec": "github:SikoSoft/api-spec#1.37.0",
+    "api-spec": "github:SikoSoft/api-spec#1.38.0",
     "argon2": "^0.41.1",
     "into-stream": "^9.0.0",
     "io-ts": "^2.2.22",

@@ -225,6 +225,12 @@ export class EntityListQueryBuilder {
 
   getFilterFragment(): string {
     let fragment = "";
+
+    if (this.filter.includeTypes && this.filter.includeTypes.length) {
+      fragment += ` AND e."entityConfigId" = ANY({types}::int[]) `;
+      this.registerParam("types", this.filter.includeTypes);
+    }
+
     if (this.filter.tagging.containsAllOf.length) {
       fragment += this.getFilterTagsContainsAllOfFragment();
     }

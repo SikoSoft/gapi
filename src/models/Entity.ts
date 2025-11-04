@@ -1,6 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { ListContext, ListFilter, ListSort } from "api-spec/models/List";
 import { Entity } from "api-spec/models";
+import { DataType } from "api-spec/models/Entity";
+
+export type PropertyReference = {
+  dataType: DataType;
+  propertyValueId: number;
+};
 
 export interface EntityBodyPayload {
   entityConfigId: number;
@@ -8,6 +14,7 @@ export interface EntityBodyPayload {
   timeZone: number;
   tags: string[];
   properties: Entity.EntityProperty[];
+  propertyReferences: PropertyReference[];
 }
 
 export type ContextEntities = Record<number, PrismaEntity[]>;
@@ -114,13 +121,5 @@ export type PrismaEntity = Prisma.EntityGetPayload<typeof prismaEntity>;
 export type EntityConfigCreateBody = Omit<Entity.EntityConfig, "id">;
 
 export type EntityConfigUpdateBody = Entity.EntityConfig;
-
-export type EntityPropTypeModelName =
-  | "Boolean"
-  | "Date"
-  | "Image"
-  | "Int"
-  | "LongText"
-  | "ShortText";
 
 export type EntityListQueryBuilderParams = {};

@@ -16,6 +16,7 @@ import {
   EntityList,
   EntityListParams,
   ContextEntities,
+  PropertyReference,
 } from "../models/Entity";
 import {
   DataType,
@@ -129,6 +130,7 @@ export class Entity {
       await Entity.syncEntityProperties(
         entity.id,
         data.properties,
+        [],
         data.timeZone
       );
 
@@ -150,7 +152,12 @@ export class Entity {
     try {
       Tagging.syncEntityTags(id, data.tags);
 
-      await Entity.syncEntityProperties(id, data.properties, data.timeZone);
+      await Entity.syncEntityProperties(
+        id,
+        data.properties,
+        data.propertyReferences,
+        data.timeZone
+      );
 
       const entityRes = await Entity.getEntity(id);
       if (entityRes.isErr()) {
@@ -605,12 +612,81 @@ export class Entity {
     }
   }
 
+  static async cleanOrphanedProperties(
+    entityId: number,
+    propertyReferences: PropertyReference[],
+    properties: EntityProperty[],
+    dataTypeMap: Record<number, DataType>
+  ): Promise<void> {
+    const idsToPurge: Record<DataType, number[]> = Object.values(
+      DataType
+    ).reduce((acc, dataType) => {
+      acc[dataType] = [];
+      return acc;
+    }, {} as Record<DataType, number[]>);
+
+    for (const propertyReference of propertyReferences) {
+      const isStillReferenced = properties.find(
+        (p) =>
+          p.id === propertyReference.propertyValueId &&
+          dataTypeMap[p.propertyConfigId] === propertyReference.dataType
+      );
+      if (!isStillReferenced) {
+        idsToPurge[propertyReference.dataType].push(
+          propertyReference.propertyValueId
+        );
+      }
+    }
+
+    for (const dataType in idsToPurge) {
+      const ids = idsToPurge[dataType as DataType];
+      if (ids.length === 0) {
+        continue;
+      }
+
+      switch (dataType) {
+        case DataType.BOOLEAN:
+          await prisma.entityBooleanProperty.deleteMany({
+            where: { propertyValueId: { in: ids }, entityId },
+          });
+          break;
+        case DataType.DATE:
+          await prisma.entityDateProperty.deleteMany({
+            where: { propertyValueId: { in: ids }, entityId },
+          });
+          break;
+        case DataType.IMAGE:
+          await prisma.entityImageProperty.deleteMany({
+            where: { propertyValueId: { in: ids }, entityId },
+          });
+          break;
+        case DataType.INT:
+          await prisma.entityIntProperty.deleteMany({
+            where: { propertyValueId: { in: ids }, entityId },
+          });
+          break;
+        case DataType.SHORT_TEXT:
+          await prisma.entityShortTextProperty.deleteMany({
+            where: { propertyValueId: { in: ids }, entityId },
+          });
+          break;
+        case DataType.LONG_TEXT:
+          await prisma.entityLongTextProperty.deleteMany({
+            where: { propertyValueId: { in: ids }, entityId },
+          });
+          break;
+      }
+    }
+  }
+
   static async syncEntityProperties(
     entityId: number,
     properties: EntityProperty[],
+    propertyReferences: PropertyReference[],
     timeZone: number
   ): Promise<Result<null, Error>> {
     console.log("Syncing entity properties:", { entityId, properties });
+
     const dataTypesRes = await Entity.getDataTypesForProperties(properties);
     if (dataTypesRes.isErr()) {
       console.error(
@@ -620,6 +696,13 @@ export class Entity {
       return;
     }
     const dataTypes = dataTypesRes.value;
+
+    await Entity.cleanOrphanedProperties(
+      entityId,
+      propertyReferences,
+      properties,
+      dataTypes
+    );
 
     for (const property of properties) {
       switch (dataTypes[property.propertyConfigId]) {

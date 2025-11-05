@@ -34,7 +34,9 @@ export async function file(
     return forbiddenReply();
   }
   const userId = introspection.user.id;
-  //const body = (await request.json()) as RequestBody;
+
+  const rawPath = request.params?.path ?? "";
+  const destPath = sanitizePath(rawPath);
 
   const chunks: Uint8Array[] = [];
   const reader = request.body.getReader();
@@ -46,7 +48,6 @@ export async function file(
   const buffer = Buffer.concat(chunks);
 
   if (request.headers.has("content-type")) {
-    console.log("has content-type", request.headers.get("content-type"));
     const contentType = request.headers.get("content-type") || "";
     if (!contentType.startsWith("multipart/form-data")) {
       return {
@@ -54,15 +55,12 @@ export async function file(
         body: "Invalid content-type",
       };
     }
-  } else {
-    console.log("#####################no content-type");
   }
-
-  console.log("HEADERS", JSON.stringify(request.headers, null, 2));
 
   const boundary = multipart.getBoundary(request.headers.get("content-type"));
   const parts = multipart.Parse(buffer, boundary);
-  const blobName = getBlobName(parts[0].filename);
+  const filename = parts[0].filename || "upload";
+  const blobName = destPath ? `${destPath}/${filename}` : getBlobName(filename);
 
   const url = await FileStorage.uploadImage(
     blobName,
@@ -79,4 +77,32 @@ app.http("file", {
   methods: ["POST"],
   authLevel: "anonymous",
   handler: file,
+  route: "file/{*path}",
 });
+
+function sanitizePath(raw: string): string {
+  if (!raw) {
+    return "";
+  }
+
+  let decoded = "";
+
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    decoded = raw;
+  }
+
+  const parts = decoded
+    .split("/")
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0 && p !== "." && p !== "..");
+
+  const safe = parts.join("/");
+
+  if (safe.length > 255) {
+    return safe.slice(0, 255);
+  }
+
+  return safe;
+}

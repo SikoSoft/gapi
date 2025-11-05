@@ -13,8 +13,6 @@ import {
 } from "api-spec/models/List";
 import { Settings } from "api-spec/models/Setting";
 import { Setting } from "./Setting";
-import { setting } from "../functions/setting";
-import { DataType } from "api-spec/models/Entity";
 
 export class ListConfig {
   static async create(

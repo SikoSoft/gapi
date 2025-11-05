@@ -7,7 +7,7 @@ import {
   ListSortProperty,
 } from "api-spec/models/List";
 import { getDefaultFilter, prisma } from "..";
-import { EntityPropTypeModelName, PrismaEntity } from "../models/Entity";
+import { PrismaEntity } from "../models/Entity";
 import { Util } from "./Util";
 import { DataType } from "api-spec/models/Entity";
 

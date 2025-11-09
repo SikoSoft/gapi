@@ -697,12 +697,14 @@ export class Entity {
     }
     const dataTypes = dataTypesRes.value;
 
-    await Entity.cleanOrphanedProperties(
-      entityId,
-      propertyReferences,
-      properties,
-      dataTypes
-    );
+    if (propertyReferences.length > 0) {
+      await Entity.cleanOrphanedProperties(
+        entityId,
+        propertyReferences,
+        properties,
+        dataTypes
+      );
+    }
 
     for (const property of properties) {
       switch (dataTypes[property.propertyConfigId]) {

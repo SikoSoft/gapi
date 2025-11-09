@@ -94,6 +94,7 @@ export class Data {
             order: p.order,
             propertyConfigId: entityPropertyConfigMap[p.propertyConfigId],
           })),
+          [],
           timeZone
         );
       }

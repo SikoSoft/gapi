@@ -134,7 +134,6 @@ export class Data {
         }
       }
 
-      /*
       for (const entity of data.entities) {
         const prismaEntity = await prisma.entity.create({
           data: {
@@ -202,7 +201,7 @@ export class Data {
         );
         await ListConfig.updateFilter(prismaListConfig.id, listConfig.filter);
       }
-*/
+
       return ok(null);
     } catch (error) {
       return err(error);

@@ -1,6 +1,6 @@
 import { err, ok, Result } from "neverthrow";
 import { v4 as uuidv4 } from "uuid";
-import { prisma } from "..";
+import { prisma, sha256Hex } from "..";
 import {
   ExportEntityConfigData,
   ExportDataContents,
@@ -17,6 +17,8 @@ import {
   ListSortNativeProperty,
   ListSortDirection,
 } from "api-spec/models/List";
+import { Revision } from "api-spec/lib/Revision";
+import { EntityConfig } from "./EntityConfig";
 
 export class Data {
   static async reset(): Promise<Result<null, Error>> {
@@ -38,12 +40,69 @@ export class Data {
   ): Promise<Result<null, Error>> {
     try {
       console.log("userId:", userId);
-      console.log("data:", data);
+      //console.log("data:", data);
 
       const entityConfigMap: ImportEntityConfigMap = {};
       const entityPropertyConfigMap: ImportEntityPropertyConfigMap = {};
 
+      const entityConfigsRes = await EntityConfig.getByUser(userId);
+      const entityConfigHashMap: { hash: string; id: number }[] = [];
+      if (entityConfigsRes.isErr()) {
+        console.error(
+          "Failed to retrieve entity configs:",
+          entityConfigsRes.error
+        );
+        return err(new Error("Failed to retrieve entity configs"));
+      }
+
+      const entityConfigs = entityConfigsRes.value;
+
+      /*
+      for (const config of entityConfigs.value) {
+        const entityAsString = Revision.getEntityConfigAsString(config);
+        const hash = entityAsString; //sha256Hex(entityAsString);
+        entityConfigHashMap.push({ hash, id: config.id });
+      }
+        */
+
+      console.log("EntityConfig Hash Map:", entityConfigHashMap);
+
       for (const config of data.entityConfigs) {
+        const entityAsString = Revision.getEntityConfigAsString(config);
+        const hash = entityAsString; //sha256Hex(entityAsString);
+        console.log("Importing EntityConfig:\n", hash);
+
+        const entityConfigMatch = entityConfigs.find((e) => {
+          console.log(
+            "Comparing entity config:",
+            Revision.getEntityConfigAsString(e),
+            "with",
+            hash
+          );
+          return Revision.getEntityConfigAsString(e) === hash;
+        });
+        if (entityConfigMatch) {
+          console.log("EntityConfig already exists, skipping:", entityAsString);
+          entityConfigMap[config.id] = entityConfigMatch.id;
+
+          for (const property of config.properties) {
+            const propertyHash = Revision.getPropertyConfigAsString(property);
+            const propertyConfigMatch = entityConfigMatch.properties.find(
+              (e) => Revision.getPropertyConfigAsString(e) === propertyHash
+            );
+            if (propertyConfigMatch) {
+              console.log(
+                "EntityPropertyConfig already exists, skipping:",
+                property
+              );
+              entityPropertyConfigMap[property.id] = propertyConfigMatch.id;
+              continue;
+            }
+          }
+
+          continue;
+        }
+
         const entityConfig = await prisma.entityConfig.create({
           data: {
             userId,
@@ -75,6 +134,7 @@ export class Data {
         }
       }
 
+      /*
       for (const entity of data.entities) {
         const prismaEntity = await prisma.entity.create({
           data: {
@@ -142,7 +202,7 @@ export class Data {
         );
         await ListConfig.updateFilter(prismaListConfig.id, listConfig.filter);
       }
-
+*/
       return ok(null);
     } catch (error) {
       return err(error);

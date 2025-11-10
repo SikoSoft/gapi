@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { HttpRequest, HttpResponseInit } from "@azure/functions";
 import { PrismaClient } from "@prisma/client";
 import {
@@ -105,3 +106,7 @@ export const getIp = (req: HttpRequest): string => {
     ? req.headers["x-forwarded-for"].replace(/:[0-9]+/, "")
     : "0.0.0.0";
 };
+
+export function sha256Hex(input: string): string {
+  return crypto.createHash("sha256").update(input, "utf8").digest("hex");
+}

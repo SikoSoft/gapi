@@ -28,6 +28,26 @@ import { Util } from "./Util";
 import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
 
 export class Entity {
+  static async getPropertySuggestions(
+    userId: string,
+    propertyConfigId: string,
+    query: string
+  ): Promise<Result<string[], Error>> {
+    try {
+      const suggestions = await prisma.shortTextPropertyValue.findMany({
+        distinct: ["value"],
+        take: 10,
+        where: {
+          value: { startsWith: query, mode: "insensitive" },
+        },
+        orderBy: { value: "asc" },
+      });
+      return ok(suggestions.map((s) => s.value));
+    } catch (error) {
+      return err(error);
+    }
+  }
+
   static getFilteredConditions(userId: string, filter: ListFilter) {
     let startTime: Date;
     let endTime: Date;
@@ -387,21 +407,24 @@ export class Entity {
         Entity.toSpec(entity)
       );
 
+      /*
       const contextEntitiesRes = await Entity.getContextEntities(
         context,
         entities,
         sort
       );
+      
 
       if (contextEntitiesRes.isErr()) {
         return err(contextEntitiesRes.error);
       }
+        */
 
       const total = await prisma.entity.count({ where });
 
       return ok({
         entities,
-        context: contextEntitiesRes.value,
+        context: [], // contextEntitiesRes.value,
         total,
       });
     } catch (error) {

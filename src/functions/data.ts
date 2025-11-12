@@ -8,7 +8,7 @@ import { ENABLE_NUKE, forbiddenReply, introspect, jsonReply } from "..";
 import { Entity } from "../lib/Entity";
 import { IntrospectionUser } from "../models/Introspection";
 import { Data } from "../lib/Data";
-import { ExportDataContents } from "api-spec/models/Data";
+import { ExportDataContents, NukedDataType } from "api-spec/models/Data";
 
 export interface ExportBody {
   entityConfigIds: number[];
@@ -57,10 +57,17 @@ async function handleImport(
 
 async function handleDelete(
   request: HttpRequest,
-  introspection: IntrospectionUser
+  introspection: IntrospectionUser,
+  operation: string
 ): Promise<HttpResponseInit> {
   if (ENABLE_NUKE) {
-    await Data.reset();
+    if (!operationIsNukable(operation)) {
+      return {
+        status: 400,
+      };
+    }
+
+    await Data.reset([operation]);
 
     return {
       status: 202,
@@ -71,6 +78,10 @@ async function handleDelete(
     status: 400,
   };
 }
+
+const operationIsNukable = (operation: string): operation is NukedDataType => {
+  return Object.values(NukedDataType).includes(operation as NukedDataType);
+};
 
 export async function data(
   request: HttpRequest,
@@ -90,7 +101,11 @@ export async function data(
           return await handleImport(request, introspection);
       }
     case "DELETE":
-      return await handleDelete(request, introspection);
+      return await handleDelete(
+        request,
+        introspection,
+        request.params.operation
+      );
   }
 }
 

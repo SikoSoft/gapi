@@ -208,7 +208,7 @@ export class EntityListQueryBuilder {
       ? sortProperty
       : ListSortNativeProperty.CREATED_AT;
 
-    return `ORDER BY e."${sortColumn}" ${this.sort.direction}, e."id"`;
+    return `ORDER BY e."${sortColumn}" ${this.sort.direction}`;
   }
 
   getCustomSortFragment(): string {

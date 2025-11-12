@@ -4,6 +4,7 @@ import { prisma, sha256Hex } from "..";
 import {
   ExportEntityConfigData,
   ExportDataContents,
+  NukedDataType,
 } from "api-spec/models/Data";
 import {
   ImportEntityConfigMap,
@@ -21,12 +22,20 @@ import { Revision } from "api-spec/lib/Revision";
 import { EntityConfig } from "./EntityConfig";
 
 export class Data {
-  static async reset(): Promise<Result<null, Error>> {
+  static async reset(
+    nukedDataTypes: NukedDataType[]
+  ): Promise<Result<null, Error>> {
     try {
-      await prisma.$executeRaw`TRUNCATE TABLE "ListConfig" CASCADE`;
-      await prisma.$executeRaw`TRUNCATE TABLE "Entity" CASCADE`;
-      await prisma.$executeRaw`TRUNCATE TABLE "PropertyConfig" CASCADE`;
-      await prisma.$executeRaw`TRUNCATE TABLE "EntityConfig" CASCADE`;
+      if (nukedDataTypes.includes(NukedDataType.LIST_CONFIGS)) {
+        await prisma.$executeRaw`TRUNCATE TABLE "ListConfig" CASCADE`;
+      }
+      if (nukedDataTypes.includes(NukedDataType.ENTITIES)) {
+        await prisma.$executeRaw`TRUNCATE TABLE "Entity" CASCADE`;
+      }
+      if (nukedDataTypes.includes(NukedDataType.ENTITY_CONFIGS)) {
+        await prisma.$executeRaw`TRUNCATE TABLE "PropertyConfig" CASCADE`;
+        await prisma.$executeRaw`TRUNCATE TABLE "EntityConfig" CASCADE`;
+      }
       return ok(null);
     } catch (err) {
       return err(new Error("Failed to reset data"));

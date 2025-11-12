@@ -19,7 +19,7 @@ export async function propertySuggestion(
 
   const suggestionsRes = await Entity.getPropertySuggestions(
     introspection.user.id,
-    request.params.propertyConfigId,
+    parseInt(request.params.propertyConfigId, 10),
     request.params.query
   );
 

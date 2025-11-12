@@ -30,7 +30,7 @@ import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
 export class Entity {
   static async getPropertySuggestions(
     userId: string,
-    propertyConfigId: string,
+    propertyConfigId: number,
     query: string
   ): Promise<Result<string[], Error>> {
     try {
@@ -39,6 +39,9 @@ export class Entity {
         take: 10,
         where: {
           value: { startsWith: query, mode: "insensitive" },
+          entityPropertyValue: {
+            propertyConfigId,
+          },
         },
         orderBy: { value: "asc" },
       });

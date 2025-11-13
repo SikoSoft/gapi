@@ -25,7 +25,7 @@ export async function operation(
   switch (body.operation.type) {
     case OperationType.DELETE:
       for (const actionId of body.actions) {
-        const deleteAllTagsRes = await Tagging.deleteAllActionTags(actionId);
+        const deleteAllTagsRes = await Tagging.deleteAllEntityTags(actionId);
         if (deleteAllTagsRes.isErr()) {
           context.error(deleteAllTagsRes.error);
 
@@ -49,12 +49,12 @@ export async function operation(
           return { status: 500 };
         }
 
-        const addActionTagsRes = await Tagging.addActionTags(
+        const addEntityTagsRes = await Tagging.addEntityTags(
           actionId,
           body.operation.tags
         );
-        if (addActionTagsRes.isErr()) {
-          context.error(addActionTagsRes.error);
+        if (addEntityTagsRes.isErr()) {
+          context.error(addEntityTagsRes.error);
 
           return { status: 500 };
         }
@@ -62,12 +62,12 @@ export async function operation(
       break;
     case OperationType.REMOVE_TAGS:
       for (const actionId of body.actions) {
-        const deleteActionTagsRes = await Tagging.deleteActionTags(
+        const deleteEntityTagsRes = await Tagging.deleteEntityTags(
           actionId,
           body.operation.tags
         );
-        if (deleteActionTagsRes.isErr()) {
-          context.error(deleteActionTagsRes.error);
+        if (deleteEntityTagsRes.isErr()) {
+          context.error(deleteEntityTagsRes.error);
 
           return { status: 500 };
         }
@@ -75,7 +75,7 @@ export async function operation(
       break;
     case OperationType.REPLACE_TAGS:
       for (const actionId of body.actions) {
-        const deleteAllTagsRes = await Tagging.deleteAllActionTags(actionId);
+        const deleteAllTagsRes = await Tagging.deleteAllEntityTags(actionId);
         if (deleteAllTagsRes.isErr()) {
           context.error(deleteAllTagsRes.error);
 
@@ -89,7 +89,7 @@ export async function operation(
           return { status: 500 };
         }
 
-        const addActionTagsRes = await Tagging.addActionTags(
+        const addActionTagsRes = await Tagging.addEntityTags(
           actionId,
           body.operation.tags
         );

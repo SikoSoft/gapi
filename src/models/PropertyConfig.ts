@@ -62,7 +62,7 @@ export type PrismaFullPropertyConfig = Prisma.PropertyConfigGetPayload<
 export type PropertyConfigCreateBody = Omit<
   Entity.EntityPropertyConfig,
   "id" | "userId" | "entityConfigId"
-> & { timeZone: number };
+> & { timeZone: number; performDriftCheck: boolean };
 
 export type PropertyConfigUpdateBody = PropertyConfigCreateBody; //Entity.EntityPropertyConfig;
 
@@ -72,6 +72,7 @@ const ImageDataValue = t.type({
 });
 
 const CommonPropertyConfig = t.type({
+  performDriftCheck: t.boolean,
   timeZone: t.number,
   name: t.string,
   required: t.number,

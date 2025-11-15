@@ -91,29 +91,34 @@ export async function propertyConfig(
         };
       }
 
-      const currentRes = await PropertyConfig.getById(userId, id);
-      if (currentRes.isErr()) {
-        context.error(currentRes.error);
-        return {
-          status: 404,
-          body: currentRes.error.message,
-        };
-      }
+      if (validation.right.performDriftCheck) {
+        const currentRes = await PropertyConfig.getById(userId, id);
+        if (currentRes.isErr()) {
+          context.error(currentRes.error);
+          return {
+            status: 404,
+            body: currentRes.error.message,
+          };
+        }
 
-      const revisionCheck = Revision.propertyIsSafe(currentRes.value, {
-        ...validation.right,
-        id,
-        entityConfigId,
-        userId,
-      } as EntityPropertyConfig);
+        const revisionCheck = Revision.propertyIsSafe(currentRes.value, {
+          ...validation.right,
+          id,
+          entityConfigId,
+          userId,
+        } as EntityPropertyConfig);
 
-      if (revisionCheck.isValid === false) {
-        console.error("Revision conflict:", revisionCheck.problems.join(", "));
+        if (revisionCheck.isValid === false) {
+          console.error(
+            "Revision conflict:",
+            revisionCheck.problems.join(", ")
+          );
 
-        return {
-          status: 409,
-          body: "Revision conflict",
-        };
+          return {
+            status: 409,
+            body: "Revision conflict",
+          };
+        }
       }
 
       const updatedRes = await PropertyConfig.update(

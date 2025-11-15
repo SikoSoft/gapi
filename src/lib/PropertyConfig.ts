@@ -95,7 +95,8 @@ export class PropertyConfig {
       propertyConfig,
     });
     try {
-      const { defaultValue, timeZone, ...data } = propertyConfig;
+      const { defaultValue, timeZone, performDriftCheck, ...data } =
+        propertyConfig;
 
       const updatedPropertyConfig = await prisma.propertyConfig.update({
         where: { userId, id, entityConfigId },

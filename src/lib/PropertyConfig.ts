@@ -24,7 +24,8 @@ export class PropertyConfig {
     entityConfigId: number,
     propertyConfig: PropertyConfigCreateBody
   ): Promise<Result<Entity.EntityPropertyConfig, Error>> {
-    const { defaultValue, timeZone, ...data } = propertyConfig;
+    const { defaultValue, timeZone, performDriftCheck, ...data } =
+      propertyConfig;
 
     try {
       const createdPropertyConfig = await prisma.propertyConfig.create({

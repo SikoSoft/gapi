@@ -323,12 +323,21 @@ model Leaderboard {
 }
 
 model ListConfig {
-  id      String      @id @db.Uuid
-  name    String      @db.VarChar(128)
-  userId  String?     @db.Uuid
+  id      String            @id @db.Uuid
+  name    String            @db.VarChar(128)
+  userId  String?           @db.Uuid
   sort    ListSort?
   filter  ListFilter?
   setting Setting?
+  themes  ListConfigTheme[]
+}
+
+model ListConfigTheme {
+  listConfigId String     @db.Uuid
+  theme        String     @db.VarChar(64)
+  listConfig   ListConfig @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([listConfigId, theme])
 }
 
 model ListSort {

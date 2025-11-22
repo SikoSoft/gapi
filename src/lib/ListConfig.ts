@@ -58,6 +58,7 @@ export class ListConfig {
               booleanSettings: true,
             },
           },
+          themes: true,
         },
       });
 
@@ -151,6 +152,7 @@ export class ListConfig {
           direction: sort.direction,
         },
       });
+      return ok(null);
     } catch (error) {
       return err(
         new Error("Failed to update listConfig sort", { cause: error })
@@ -310,6 +312,7 @@ export class ListConfig {
               booleanSettings: true,
             },
           },
+          themes: true,
         },
       });
 
@@ -342,6 +345,7 @@ export class ListConfig {
               booleanSettings: true,
             },
           },
+          themes: true,
         },
         orderBy: { name: "asc" },
       });
@@ -454,11 +458,13 @@ export class ListConfig {
 
   static mapDataToSpec(data: PrismaListConfig): List.ListConfig {
     return {
+      userId: data.userId,
       id: data.id,
       name: data.name,
       filter: ListConfig.mapFilterDataToSpec(data.filter),
       sort: ListConfig.mapSortDataToSpec(data.sort),
       setting: ListConfig.mapSettingDataToSpec(data.setting),
+      themes: [],
     };
   }
 }

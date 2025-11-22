@@ -365,7 +365,7 @@ export class Entity {
   }
 
   static toSpec(entity: PrismaEntity): EntitySpec.Entity {
-    console.log("Entity to spec:", entity);
+    //console.log("Entity to spec:", entity);
 
     const properties: EntitySpec.EntityProperty[] = [
       ...Entity.booleanPropertiesToSpec(entity),
@@ -403,7 +403,7 @@ export class Entity {
     listQuery.setFilter(filter);
     listQuery.setSort(sort);
     listQuery.setPagination(start, perPage);
-    console.log("Built list query:", listQuery.getQuery());
+    //console.log("Built list query:", listQuery.getQuery());
 
     try {
       entities = (await listQuery.runQuery()).map((entity) =>

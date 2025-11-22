@@ -19,6 +19,7 @@ const prismaListConfig = Prisma.validator<Prisma.ListConfigFindManyArgs>()({
         booleanSettings: true,
       },
     },
+    themes: true,
   },
 });
 

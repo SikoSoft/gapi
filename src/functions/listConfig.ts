@@ -19,6 +19,7 @@ export interface CreateBody {
 export interface UpdateBody extends CreateBody {
   filter: ListFilter;
   sort: ListSort;
+  themes: string[];
 }
 
 export async function listConfig(

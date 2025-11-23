@@ -322,6 +322,27 @@ export class ListConfig {
     }
   }
 
+  static async updateThemes(
+    listConfigId: string,
+    themes: string[]
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.listConfigTheme.deleteMany({ where: { listConfigId } });
+      await prisma.listConfigTheme.createMany({
+        data: themes.map((theme, index) => ({
+          listConfigId,
+          theme,
+          order: index,
+        })),
+      });
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to update listConfig themes", { cause: error })
+      );
+    }
+  }
+
   static async getByUser(
     userId: string
   ): Promise<Result<List.ListConfig[], Error>> {
@@ -456,6 +477,10 @@ export class ListConfig {
     return Setting.mapDataToSpec(data);
   }
 
+  static mapThemesDataToSpec(data: PrismaListConfig["themes"]): string[] {
+    return data.sort((a, b) => a.order - b.order).map((theme) => theme.theme);
+  }
+
   static mapDataToSpec(data: PrismaListConfig): List.ListConfig {
     return {
       userId: data.userId,
@@ -464,7 +489,7 @@ export class ListConfig {
       filter: ListConfig.mapFilterDataToSpec(data.filter),
       sort: ListConfig.mapSortDataToSpec(data.sort),
       setting: ListConfig.mapSettingDataToSpec(data.setting),
-      themes: [],
+      themes: ListConfig.mapThemesDataToSpec(data.themes),
     };
   }
 }

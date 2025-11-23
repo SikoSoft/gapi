@@ -335,6 +335,7 @@ model ListConfig {
 model ListConfigTheme {
   listConfigId String     @db.Uuid
   theme        String     @db.VarChar(64)
+  order        Int        @default(0)
   listConfig   ListConfig @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 
   @@unique([listConfigId, theme])

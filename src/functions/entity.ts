@@ -7,53 +7,17 @@ import {
 } from "@azure/functions";
 import {
   forbiddenReply,
-  getDefaultFilter,
-  getDefaultSort,
   introspect,
   jsonReply,
+  getStart,
+  getPerPage,
+  getFilter,
+  getSort,
+  getContext,
 } from "..";
 import { Entity as EntitySpec } from "api-spec/models";
-import { ListFilter, ListSort, ListContext } from "api-spec/models/List";
 import { EntityBodyPayload } from "../models/Entity";
 import { Entity } from "../lib/Entity";
-
-const perPage = 25;
-
-function getStart(request: HttpRequest): number {
-  return request.query.has("start")
-    ? parseInt(request.query.get("start") || "")
-    : 0;
-}
-
-function getPerPage(request: HttpRequest): number {
-  return request.query.has("perPage")
-    ? parseInt(request.query.get("perPage") || "")
-    : perPage;
-}
-
-function getFilter(request: HttpRequest): ListFilter {
-  if (request.query.has("filter")) {
-    return JSON.parse(request.query.get("filter")) as ListFilter;
-  }
-
-  return getDefaultFilter();
-}
-
-function getSort(request: HttpRequest): ListSort {
-  if (request.query.has("sort")) {
-    return JSON.parse(request.query.get("sort")) as ListSort;
-  }
-
-  return getDefaultSort();
-}
-
-function getContext(request: HttpRequest): ListContext | null {
-  if (request.query.has("context")) {
-    return JSON.parse(request.query.get("context")) as ListContext;
-  }
-
-  return null;
-}
 
 export async function entity(
   request: HttpRequest,

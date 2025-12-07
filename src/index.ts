@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { HttpRequest, HttpResponseInit } from "@azure/functions";
 import { PrismaClient } from "@prisma/client";
 import {
+  ListContext,
   ListFilter,
   ListFilterTimeType,
   ListFilterType,
@@ -109,4 +110,40 @@ export const getIp = (req: HttpRequest): string => {
 
 export function sha256Hex(input: string): string {
   return crypto.createHash("sha256").update(input, "utf8").digest("hex");
+}
+
+export function getStart(request: HttpRequest): number {
+  return request.query.has("start")
+    ? parseInt(request.query.get("start") || "")
+    : 0;
+}
+
+export function getPerPage(request: HttpRequest): number {
+  return request.query.has("perPage")
+    ? parseInt(request.query.get("perPage") || "")
+    : 25;
+}
+
+export function getFilter(request: HttpRequest): ListFilter {
+  if (request.query.has("filter")) {
+    return JSON.parse(request.query.get("filter")) as ListFilter;
+  }
+
+  return getDefaultFilter();
+}
+
+export function getSort(request: HttpRequest): ListSort {
+  if (request.query.has("sort")) {
+    return JSON.parse(request.query.get("sort")) as ListSort;
+  }
+
+  return getDefaultSort();
+}
+
+export function getContext(request: HttpRequest): ListContext | null {
+  if (request.query.has("context")) {
+    return JSON.parse(request.query.get("context")) as ListContext;
+  }
+
+  return null;
 }

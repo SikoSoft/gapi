@@ -57,6 +57,8 @@ export class Setting {
     });
 
     switch (settingType) {
+      case SettingDataName.BOOLEAN:
+        return await Setting.updateBooleanSetting(settingRecord.id, setting);
       case SettingDataName.NUMBER:
         return await Setting.updateNumberSetting(settingRecord.id, setting);
       case SettingDataName.TEXT:
@@ -64,6 +66,36 @@ export class Setting {
     }
 
     return err(new Error("Setting type not supported"));
+  }
+
+  static async updateBooleanSetting(
+    settingId: string,
+    setting: SettingSpec
+  ): Promise<Result<boolean, Error>> {
+    const settingControlType = settingsConfig[setting.name].control.type;
+
+    if (settingControlType !== ControlType.BOOLEAN) {
+      throw new Error("Setting is not a boolean setting");
+    }
+
+    const value = setting.value as SettingTypeConfig[typeof settingControlType];
+
+    try {
+      await prisma.booleanSetting.upsert({
+        where: { booleanSettingId: { settingId, name: setting.name } },
+        create: {
+          settingId,
+          name: setting.name,
+          value,
+        },
+        update: {
+          value,
+        },
+      });
+      return ok(true);
+    } catch (error) {
+      return err(error);
+    }
   }
 
   static async updateTextSetting(

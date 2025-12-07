@@ -26,6 +26,7 @@ export class ListConfig {
           id,
           name,
           userId,
+          public: false,
           filter: {
             create: {
               includeAll: true,
@@ -91,6 +92,7 @@ export class ListConfig {
         data: {
           id: listConfig.id,
           name: listConfig.name,
+          public: listConfig.public,
         },
         where: {
           id: listConfig.id,
@@ -486,6 +488,7 @@ export class ListConfig {
       userId: data.userId,
       id: data.id,
       name: data.name,
+      public: data.public,
       filter: ListConfig.mapFilterDataToSpec(data.filter),
       sort: ListConfig.mapSortDataToSpec(data.sort),
       setting: ListConfig.mapSettingDataToSpec(data.setting),

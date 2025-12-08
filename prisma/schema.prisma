@@ -325,7 +325,6 @@ model Leaderboard {
 model ListConfig {
   id      String            @id @db.Uuid
   name    String            @db.VarChar(128)
-  public  Boolean           @default(false)
   userId  String?           @db.Uuid
   sort    ListSort?
   filter  ListFilter?

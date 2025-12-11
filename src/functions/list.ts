@@ -14,6 +14,7 @@ import {
 } from "..";
 import { ListConfig } from "../lib/ListConfig";
 import { Entity } from "../lib/Entity";
+import { EntityConfig } from "../lib/EntityConfig";
 
 export async function list(
   request: HttpRequest,
@@ -59,7 +60,22 @@ export async function list(
       status: 500,
     };
   }
-  return jsonReply(entityListRes.value);
+
+  const entityConfigsRes = await EntityConfig.getByIds(
+    entityListRes.value.entities.map((e) => e.type)
+  );
+
+  if (entityConfigsRes.isErr()) {
+    context.error(entityConfigsRes.error);
+
+    return {
+      status: 500,
+    };
+  }
+
+  const entityConfigs = entityConfigsRes.value;
+
+  return jsonReply({ ...entityListRes.value, entityConfigs, listConfig });
 }
 
 app.http("list", {

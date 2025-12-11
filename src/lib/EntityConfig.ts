@@ -223,6 +223,61 @@ export class EntityConfig {
     }
   }
 
+  static async getByIds(
+    ids: number[]
+  ): Promise<Result<Entity.EntityConfig[], Error>> {
+    try {
+      const entityConfigs = await prisma.entityConfig.findMany({
+        where: { id: { in: ids } },
+        include: {
+          properties: {
+            orderBy: { entityPropertyConfigOrder: { order: "asc" } },
+            include: {
+              defaultBooleanValue: {
+                include: {
+                  booleanValue: true,
+                },
+              },
+              defaultDateValue: {
+                include: {
+                  dateValue: true,
+                },
+              },
+              defaultIntValue: {
+                include: {
+                  intValue: true,
+                },
+              },
+              defaultImageValue: {
+                include: {
+                  imageValue: true,
+                },
+              },
+              defaultLongTextValue: {
+                include: {
+                  longTextValue: true,
+                },
+              },
+              defaultShortTextValue: {
+                include: {
+                  shortTextValue: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return ok(
+        entityConfigs.map((entityConfig) =>
+          EntityConfig.mapDataToSpec(entityConfig)
+        )
+      );
+    } catch (error) {
+      return err(new Error("Failed to get entityConfig", { cause: error }));
+    }
+  }
+
   static async getByUser(
     userId: string
   ): Promise<Result<Entity.EntityConfig[], Error>> {

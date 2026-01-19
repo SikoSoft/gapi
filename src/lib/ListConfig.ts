@@ -26,7 +26,7 @@ export class ListConfig {
           id,
           name,
           userId,
-          public: false,
+          //public: false,
           filter: {
             create: {
               includeAll: true,

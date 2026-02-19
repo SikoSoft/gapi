@@ -323,13 +323,14 @@ model Leaderboard {
 }
 
 model ListConfig {
-  id      String            @id @db.Uuid
-  name    String            @db.VarChar(128)
-  userId  String?           @db.Uuid
-  sort    ListSort?
-  filter  ListFilter?
-  setting Setting?
-  themes  ListConfigTheme[]
+  id                   String                @id @db.Uuid
+  name                 String                @db.VarChar(128)
+  userId               String?               @db.Uuid
+  sort                 ListSort?
+  filter               ListFilter?
+  setting              Setting?
+  themes               ListConfigTheme[]
+  workspaceListConfigs WorkspaceListConfig[]
 }
 
 model ListConfigTheme {
@@ -375,11 +376,13 @@ model ListFilterTag {
 }
 
 model ListFilterType {
-  entityConfigId Int    @id
+  entityConfigId Int
   listConfigId   String @db.Uuid
 
   entityConfig EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
   listFilter   ListFilter   @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+
+  @@id([entityConfigId, listConfigId])
 }
 
 model ListFilter {
@@ -470,4 +473,22 @@ model Setting {
   numberSettings  NumberSetting[]
   textSettings    TextSetting[]
   listConfig      ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id                   String                @id @db.Uuid
+  name                 String                @db.VarChar(128)
+  userId               String                @db.Uuid
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  workspaceListConfigs WorkspaceListConfig[]
+}
+
+model WorkspaceListConfig {
+  workspaceId  String     @db.Uuid
+  listConfigId String     @db.Uuid
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  listConfig   ListConfig @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, listConfigId])
 }

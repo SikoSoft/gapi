@@ -33,13 +33,23 @@ export async function user(
       return jsonReply({ id: res.value });
     case "PUT":
       break;
+    case "GET":
+      const userId = request.params.id;
+      const userRes = await IdentityManager.getUser(userId);
+      if (userRes.isErr()) {
+        return {
+          status: 404,
+        };
+      }
+      return jsonReply(userRes.value);
     default:
       return jsonReply({ error: "Method not allowed" }, 405);
   }
 }
 
 app.http("user", {
-  methods: ["POST", "PUT"],
+  methods: ["POST", "PUT", "GET"],
   authLevel: "anonymous",
   handler: user,
+  route: "user/{id?}",
 });

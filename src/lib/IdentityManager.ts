@@ -199,4 +199,21 @@ export class IdentityManager {
       data: { roles: { set: [] } },
     });
   }
+
+  static async getUser(userId: string): Promise<Result<User, Error>> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { roles: { include: { role: true } } },
+      });
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      return ok(user);
+    } catch (error) {
+      return err(error);
+    }
+  }
 }

@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import Crypto from "crypto";
 import * as argon2 from "argon2";
 import { prisma } from "..";
-import { PrismaSession, User } from "../models/Identity";
+import { PrismaSession, User, userSchema, UserType } from "../models/Identity";
 
 export interface UserPayload {
   username: string;
@@ -216,4 +216,29 @@ export class IdentityManager {
       return err(error);
     }
   }
+
+  static async getUsers(): Promise<Result<User[], Error>> {
+    try {
+      const users = await prisma.user.findMany({
+        include: { roles: { include: { role: true } } },
+      });
+
+      return ok(users);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  /*
+  static async mapUser(user: User): Promise<UserType> {
+      const validation = userSchema.decode(user);
+      if (validation._tag === "Left") {
+        return {
+          status: 400,
+          body: JSON.stringify(validation.left),
+        };
+      }
+
+  }
+  */
 }

@@ -35,13 +35,23 @@ export async function user(
       break;
     case "GET":
       const userId = request.params.id;
-      const userRes = await IdentityManager.getUser(userId);
-      if (userRes.isErr()) {
+      if (userId) {
+        const userRes = await IdentityManager.getUser(userId);
+        if (userRes.isErr()) {
+          return {
+            status: 404,
+          };
+        }
+        return jsonReply(userRes.value);
+      }
+
+      const usersRes = await IdentityManager.getUsers();
+      if (usersRes.isErr()) {
         return {
           status: 404,
         };
       }
-      return jsonReply(userRes.value);
+      return jsonReply(usersRes.value);
     default:
       return jsonReply({ error: "Method not allowed" }, 405);
   }

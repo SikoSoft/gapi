@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import * as t from "io-ts";
 
 export class User {
   id: string;
@@ -33,3 +34,15 @@ export interface UserCreateBody {
 export interface UserUpdateBody {
   roles: string[];
 }
+
+export const userSchema = t.exact(
+  t.type({
+    id: t.string,
+    username: t.string,
+    firstName: t.string,
+    lastName: t.string,
+    roles: t.array(t.string),
+  })
+);
+
+export type UserType = t.TypeOf<typeof userSchema>;

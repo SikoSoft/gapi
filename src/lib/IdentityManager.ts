@@ -200,12 +200,14 @@ export class IdentityManager {
     });
   }
 
-  static async getUser(userId: string): Promise<Result<User, Error>> {
+  static async getUser(userId: string): Promise<Result<UserType, Error>> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { roles: { include: { role: true } } },
-      });
+      const user = IdentityManager.mapUser(
+        await prisma.user.findUnique({
+          where: { id: userId },
+          include: { roles: { include: { role: true } } },
+        })
+      );
 
       if (!user) {
         throw new Error("User not found");
@@ -217,11 +219,13 @@ export class IdentityManager {
     }
   }
 
-  static async getUsers(): Promise<Result<User[], Error>> {
+  static async getUsers(): Promise<Result<UserType[], Error>> {
     try {
-      const users = await prisma.user.findMany({
-        include: { roles: { include: { role: true } } },
-      });
+      const users = (
+        await prisma.user.findMany({
+          include: { roles: { include: { role: true } } },
+        })
+      ).map(IdentityManager.mapUser);
 
       return ok(users);
     } catch (error) {
@@ -229,16 +233,12 @@ export class IdentityManager {
     }
   }
 
-  /*
-  static async mapUser(user: User): Promise<UserType> {
-      const validation = userSchema.decode(user);
-      if (validation._tag === "Left") {
-        return {
-          status: 400,
-          body: JSON.stringify(validation.left),
-        };
-      }
+  static mapUser(user: User): UserType {
+    const validation = userSchema.decode(user);
+    if (validation._tag === "Left") {
+      throw new Error("Invalid user data");
+    }
 
+    return validation.right;
   }
-  */
 }

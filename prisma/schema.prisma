@@ -409,18 +409,11 @@ model User {
 
 model UserRole {
   userId  String   @db.Uuid
-  roleId  Int      @default(0)
+  role    String   @db.VarChar(128)
   addedAt DateTime @updatedAt
   user    User     @relation(fields: [userId], references: [id])
-  role    Role     @relation(fields: [roleId], references: [id])
 
-  @@id([userId(), roleId()])
-}
-
-model Role {
-  id    Int        @id @default(autoincrement())
-  label String     @db.VarChar(128)
-  users UserRole[]
+  @@unique(name: "roleId", fields: [userId, role])
 }
 
 model Session {

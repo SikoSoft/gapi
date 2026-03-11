@@ -17,9 +17,16 @@ export class Session {
   active: boolean;
 }
 
+const prismaUser = Prisma.validator<Prisma.UserFindUniqueArgs>()({
+  where: { id: "" } ,
+  include: { roles: true } ,
+});
+
+export type PrismaUser = Prisma.UserGetPayload<typeof prismaUser>;
+
 const prismaSession = Prisma.validator<Prisma.SessionFindUniqueArgs>()({
   where: { authToken: "", active: true, expiresAt: { gt: new Date() } },
-  include: { user: { include: { roles: { include: { role: true } } } } },
+  include: { user: { include: { roles: true } } },
 });
 
 export type PrismaSession = Prisma.SessionGetPayload<typeof prismaSession>;
@@ -32,6 +39,7 @@ export interface UserCreateBody {
 }
 
 export interface UserUpdateBody {
+  userId: string;
   roles: string[];
 }
 

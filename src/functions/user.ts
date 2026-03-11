@@ -6,7 +6,7 @@ import {
 } from "@azure/functions";
 import { IdentityManager } from "../lib/IdentityManager";
 import { jsonReply } from "..";
-import { UserCreateBody } from "../models/Identity";
+import { UserCreateBody, UserUpdateBody } from "../models/Identity";
 
 export async function user(
   request: HttpRequest,
@@ -32,7 +32,19 @@ export async function user(
 
       return jsonReply({ id: res.value });
     case "PUT":
-      break;
+      let success = false;
+      const updateBody = (await request.json()) as UserUpdateBody;
+      context.log("updateBody", updateBody);
+
+      if (updateBody.roles) {
+        const updateRes = await IdentityManager.updateUserRoles(
+          updateBody.userId,
+          updateBody.roles
+        );
+        success = updateRes.isOk();
+      }
+
+      return jsonReply({ success });
     case "GET":
       const userId = request.params.id;
       if (userId) {
@@ -45,6 +57,7 @@ export async function user(
         return jsonReply(userRes.value);
       }
 
+      console.log("Getting all users");
       const usersRes = await IdentityManager.getUsers();
       if (usersRes.isErr()) {
         return {

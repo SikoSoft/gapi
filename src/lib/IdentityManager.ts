@@ -3,7 +3,13 @@ import { v4 as uuidv4 } from "uuid";
 import Crypto from "crypto";
 import * as argon2 from "argon2";
 import { prisma } from "..";
-import { PrismaSession, User, userSchema, UserType } from "../models/Identity";
+import {
+  PrismaSession,
+  PrismaUser,
+  User,
+  userSchema,
+  UserType,
+} from "../models/Identity";
 
 export interface UserPayload {
   username: string;
@@ -130,7 +136,7 @@ export class IdentityManager {
     try {
       session = await prisma.session.findUnique({
         where: { authToken, active: true, expiresAt: { gt: new Date() } },
-        include: { user: { include: { roles: { include: { role: true } } } } },
+        include: { user: { include: { roles: true } } },
       });
     } catch (error) {
       return err(error);
@@ -205,7 +211,7 @@ export class IdentityManager {
       const user = IdentityManager.mapUser(
         await prisma.user.findUnique({
           where: { id: userId },
-          include: { roles: { include: { role: true } } },
+          include: { roles: true },
         })
       );
 
@@ -223,7 +229,7 @@ export class IdentityManager {
     try {
       const users = (
         await prisma.user.findMany({
-          include: { roles: { include: { role: true } } },
+          include: { roles: true },
         })
       ).map(IdentityManager.mapUser);
 
@@ -233,12 +239,26 @@ export class IdentityManager {
     }
   }
 
-  static mapUser(user: User): UserType {
-    const validation = userSchema.decode(user);
-    if (validation._tag === "Left") {
-      throw new Error("Invalid user data");
-    }
+  static mapUser(user: PrismaUser): UserType {
+    return { ...user, roles: user.roles.map((r) => r.role) };
+  }
 
-    return validation.right;
+  static async updateUserRoles(
+    userId: string,
+    roles: string[]
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.userRole.deleteMany({ where: { userId } });
+
+      const userRolesData = roles.map((role) => ({
+        userId,
+        role,
+      }));
+
+      await prisma.userRole.createMany({ data: userRolesData });
+      return ok(null);
+    } catch (error) {
+      return err(error);
+    }
   }
 }

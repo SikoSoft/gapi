@@ -57,7 +57,6 @@ export async function user(
         return jsonReply(userRes.value);
       }
 
-      console.log("Getting all users");
       const usersRes = await IdentityManager.getUsers();
       if (usersRes.isErr()) {
         return {

@@ -1,4 +1,4 @@
-import { Entity } from "api-spec/models";
+import { Entity, Identity } from "api-spec/models";
 import { EntityConfig } from "../lib/EntityConfig";
 import { ActionBodyPayload, ActionItem, ActionList } from "./Action";
 import { EntityConfigCreateBody, EntityConfigUpdateBody } from "./Entity";
@@ -58,6 +58,30 @@ export interface EndpointConfig {
     };
     [HttpMethod.DELETE]: {
       responseBody: null;
+    };
+  };
+  [EndpointName.USER]: {
+    [HttpMethod.GET]: {
+      responseBody: Identity.User;
+    };
+    [HttpMethod.POST]: {
+      requestBody: {
+        username: string;
+        firstName: string;
+        lastName: string;
+        password: string;
+      };
+      responseBody: { id: string };
+    };
+    [HttpMethod.PUT]: {
+      requestBody: {
+        username?: string;
+        firstName?: string;
+        lastName?: string;
+        password?: string;
+        roles?: string[];
+      };
+      responseBody: { success: boolean };
     };
   };
 }

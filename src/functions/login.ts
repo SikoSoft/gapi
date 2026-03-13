@@ -23,7 +23,7 @@ export async function login(
     context.error(userRes.error);
 
     return {
-      status: 500,
+      status: 403,
     };
   }
 
@@ -41,7 +41,7 @@ export async function login(
       context.error(passwordIsValidRes.error);
 
       return {
-        status: 500,
+        status: 403,
       };
     }
 
@@ -62,7 +62,7 @@ export async function login(
       context.error(numFailedAttemptsRes.error);
 
       return {
-        status: 500,
+        status: 403,
       };
     }
 

@@ -74,7 +74,12 @@ export async function login(
     }
 
     const authToken = await IdentityManager.createSession(user.id);
-    return jsonReply({ authToken, userId: user.id, username: user.username });
+    return jsonReply({
+      authToken,
+      userId: user.id,
+      username: user.username,
+      roles: user.roles,
+    });
   }
 
   await IdentityManager.saveLoginAttempt("", ip);

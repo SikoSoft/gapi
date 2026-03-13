@@ -10,6 +10,7 @@ import {
   userSchema,
   UserType,
 } from "../models/Identity";
+import { Identity } from "api-spec/models";
 
 export interface UserPayload {
   username: string;
@@ -44,9 +45,12 @@ export class IdentityManager {
     return ok(userId);
   }
 
-  static async getUserById(id: string): Promise<Result<User, Error>> {
+  static async getUserById(id: string): Promise<Result<PrismaUser, Error>> {
     try {
-      const user = await prisma.user.findFirst({ where: { id } });
+      const user = await prisma.user.findFirst({
+        where: { id },
+        include: { roles: true },
+      });
       return ok(user);
     } catch (error) {
       return err(error);
@@ -55,15 +59,16 @@ export class IdentityManager {
 
   static async getUserByUserName(
     username: string
-  ): Promise<Result<User | null, Error>> {
+  ): Promise<Result<Identity.User | null, Error>> {
     try {
       const user = await prisma.user.findFirst({
         where: {
           username: { equals: username, mode: "insensitive" },
         },
+        include: { roles: true },
       });
 
-      return ok(user);
+      return ok(IdentityManager.mapUser(user));
     } catch (error) {
       return err(error);
     }

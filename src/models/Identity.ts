@@ -18,8 +18,8 @@ export class Session {
 }
 
 const prismaUser = Prisma.validator<Prisma.UserFindUniqueArgs>()({
-  where: { id: "" } ,
-  include: { roles: true } ,
+  where: { id: "" },
+  include: { roles: true },
 });
 
 export type PrismaUser = Prisma.UserGetPayload<typeof prismaUser>;

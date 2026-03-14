@@ -46,6 +46,12 @@ export const introspect = async (
   if (request.headers.has("authorization")) {
     const authToken = request.headers.get("authorization")!;
 
+    if (!authToken) {
+      return {
+        isLoggedIn: false,
+      };
+    }
+
     const sessionRes = await IdentityManager.getSessionByAuthToken(authToken);
 
     if (sessionRes.isErr()) {

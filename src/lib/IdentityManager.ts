@@ -17,6 +17,29 @@ export interface UserPayload {
 }
 
 export class IdentityManager {
+  static readonly ALGORITHM = "aes-256-gcm";
+  static IV_LENGTH = 12;
+  static KEY = IdentityManager.getValidatedEncryptionKey();
+
+  private static getValidatedEncryptionKey(): Buffer {
+    const encryptionKey = process.env.ENCRYPTION_KEY;
+
+    if (!encryptionKey) {
+      throw new Error(
+        "ENCRYPTION_KEY is required and must be 32 bytes for aes-256-gcm"
+      );
+    }
+
+    const keyBuffer = Buffer.from(encryptionKey);
+    if (keyBuffer.length !== 32) {
+      throw new Error(
+        `ENCRYPTION_KEY must be exactly 32 bytes for aes-256-gcm, got ${keyBuffer.length} bytes`
+      );
+    }
+
+    return keyBuffer;
+  }
+
   static async createUser(
     username: string,
     firstName: string,
@@ -261,6 +284,58 @@ export class IdentityManager {
       }));
 
       await prisma.userRole.createMany({ data: userRolesData });
+      return ok(null);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  encryptToken(token: string): string {
+    const iv = Crypto.randomBytes(IdentityManager.IV_LENGTH);
+    const cipher = Crypto.createCipheriv(
+      IdentityManager.ALGORITHM,
+      IdentityManager.KEY,
+      iv
+    );
+
+    let encrypted = cipher.update(token, "utf8", "hex");
+    encrypted += cipher.final("hex");
+
+    const authTag = cipher.getAuthTag().toString("hex");
+
+    return `${iv.toString("hex")}:${authTag}:${encrypted}`;
+  }
+
+  decryptToken(encryptedData: string): string {
+    const [ivHex, authTagHex, encryptedText] = encryptedData.split(":");
+
+    const iv = Buffer.from(ivHex, "hex");
+    const authTag = Buffer.from(authTagHex, "hex");
+    const decipher = Crypto.createDecipheriv(
+      IdentityManager.ALGORITHM,
+      IdentityManager.KEY,
+      iv
+    );
+
+    decipher.setAuthTag(authTag);
+
+    let decrypted = decipher.update(encryptedText, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+
+    return decrypted;
+  }
+
+  async saveGoogleAccount(
+    userId: string,
+    googleId: string,
+    email: string,
+    refreshToken: string
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.userGoogleAccount.create({
+        data: { userId, googleId, email, refreshToken },
+      });
+
       return ok(null);
     } catch (error) {
       return err(error);

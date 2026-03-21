@@ -5,7 +5,7 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import { IdentityManager } from "../lib/IdentityManager";
-import { jsonReply } from "..";
+import { forbiddenReply, introspect, jsonReply } from "..";
 import { UserCreateBody, UserUpdateBody } from "../models/Identity";
 
 export async function user(
@@ -13,6 +13,9 @@ export async function user(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   context.log(`Http function processed request for url "${request.url}"`);
+
+  const introspection = await introspect(request);
+  console.log("introspection", introspection);
 
   switch (request.method) {
     case "POST":
@@ -37,6 +40,13 @@ export async function user(
       context.log("updateBody", updateBody);
 
       if (updateBody.roles) {
+        if (
+          !introspection.isLoggedIn ||
+          !introspection.user.roles.includes("admin")
+        ) {
+          return forbiddenReply();
+        }
+
         const updateRes = await IdentityManager.updateUserRoles(
           updateBody.userId,
           updateBody.roles
@@ -47,6 +57,14 @@ export async function user(
       return jsonReply({ success });
     case "GET":
       const userId = request.params.id;
+
+      if (
+        userId &&
+        (!introspection.isLoggedIn || introspection.user.id !== userId)
+      ) {
+        return forbiddenReply();
+      }
+
       if (userId) {
         const userRes = await IdentityManager.getUser(userId);
         if (userRes.isErr()) {
@@ -55,6 +73,13 @@ export async function user(
           };
         }
         return jsonReply(userRes.value);
+      }
+
+      if (
+        !introspection.isLoggedIn ||
+        !introspection.user.roles.includes("admin")
+      ) {
+        return forbiddenReply();
       }
 
       const usersRes = await IdentityManager.getUsers();

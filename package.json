@@ -34,6 +34,7 @@
     "@prisma/client": "^6.17.1",
     "api-spec": "github:SikoSoft/api-spec#1.48.0",
     "argon2": "^0.41.1",
+    "googleapis": "^171.4.0",
     "into-stream": "^9.0.0",
     "io-ts": "^2.2.22",
     "neverthrow": "^8.2.0",

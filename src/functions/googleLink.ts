@@ -32,7 +32,7 @@ export async function googleLink(
 
   const stateData: GoogleState = {
     userId,
-    returnTo: request.query.get("returnTo") || "/",
+    returnUrl: request.query.get("returnUrl") || "/",
   };
 
   const state = Buffer.from(JSON.stringify(stateData)).toString("base64");

@@ -64,9 +64,14 @@ export async function googleCallback(
       );
     }
 
+    const returnUrl = decodedState.returnUrl || "/";
+
     return {
-      status: 200,
-      body: "Authentication successful! You can close this tab.",
+      status: 302,
+      headers: {
+        Location: returnUrl,
+        "Cache-Control": "no-store",
+      },
     };
   } catch (error) {
     return {

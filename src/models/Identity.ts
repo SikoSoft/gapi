@@ -57,5 +57,5 @@ export type UserType = t.TypeOf<typeof userSchema>;
 
 export interface GoogleState {
   userId: string;
-  returnTo: string;
+  returnUrl: string;
 }

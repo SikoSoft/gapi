@@ -290,7 +290,7 @@ export class IdentityManager {
     }
   }
 
-  encryptToken(token: string): string {
+  static encryptToken(token: string): string {
     const iv = Crypto.randomBytes(IdentityManager.IV_LENGTH);
     const cipher = Crypto.createCipheriv(
       IdentityManager.ALGORITHM,
@@ -306,7 +306,7 @@ export class IdentityManager {
     return `${iv.toString("hex")}:${authTag}:${encrypted}`;
   }
 
-  decryptToken(encryptedData: string): string {
+  static decryptToken(encryptedData: string): string {
     const [ivHex, authTagHex, encryptedText] = encryptedData.split(":");
 
     const iv = Buffer.from(ivHex, "hex");
@@ -325,7 +325,7 @@ export class IdentityManager {
     return decrypted;
   }
 
-  async saveGoogleAccount(
+  static async saveGoogleAccount(
     userId: string,
     googleId: string,
     email: string,

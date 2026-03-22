@@ -54,3 +54,8 @@ export const userSchema = t.exact(
 );
 
 export type UserType = t.TypeOf<typeof userSchema>;
+
+export interface GoogleState {
+  userId: string;
+  returnTo: string;
+}

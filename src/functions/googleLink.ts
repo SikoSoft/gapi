@@ -7,12 +7,9 @@ import {
 } from "@azure/functions";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { GoogleState } from "../models/Identity";
+import { Google } from "../lib/Google";
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
+const oauth2Client = Google.getClient();
 
 export async function googleLink(
   request: HttpRequest,
@@ -40,11 +37,7 @@ export async function googleLink(
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
-    scope: [
-      "openid",
-      "email",
-      "https://www.googleapis.com/auth/calendar.events.readonly",
-    ],
+    scope: Google.SCOPES,
     state,
   });
 

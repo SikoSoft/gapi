@@ -69,6 +69,9 @@ export const introspect = async (
           id: session.userId,
           sessionId: authToken,
           roles: session.user.roles.map((r) => r.role),
+          ...(session.user.googleAccount.length > 0
+            ? { googleLink: true, googleAccount: session.user.googleAccount[0] }
+            : { googleLink: false }),
         },
         expiresAt: session.expiresAt,
       };

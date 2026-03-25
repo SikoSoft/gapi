@@ -1,10 +1,24 @@
+import { UserGoogleAccount } from "@prisma/client";
+
+export interface CommonUser {
+  id: string;
+  sessionId: string;
+  roles: string[];
+  googleLink: boolean;
+}
+
+export interface UserWithGoogleLink extends CommonUser {
+  googleLink: true;
+  googleAccount: UserGoogleAccount;
+}
+
+export interface UserWithoutGoogleLink extends CommonUser {
+  googleLink: false;
+}
+
 export interface IntrospectionUser {
   isLoggedIn: true;
-  user: {
-    id: string;
-    sessionId: string;
-    roles: string[];
-  };
+  user: UserWithGoogleLink | UserWithoutGoogleLink;
   expiresAt: Date;
 }
 

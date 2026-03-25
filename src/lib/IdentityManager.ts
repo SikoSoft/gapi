@@ -164,7 +164,7 @@ export class IdentityManager {
     try {
       session = await prisma.session.findUnique({
         where: { authToken, active: true, expiresAt: { gt: new Date() } },
-        include: { user: { include: { roles: true } } },
+        include: { user: { include: { roles: true, googleAccount: true } } },
       });
     } catch (error) {
       return err(error);

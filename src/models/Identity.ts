@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { calendar_v3 } from "googleapis";
 import * as t from "io-ts";
 
 export class User {
@@ -26,7 +27,7 @@ export type PrismaUser = Prisma.UserGetPayload<typeof prismaUser>;
 
 const prismaSession = Prisma.validator<Prisma.SessionFindUniqueArgs>()({
   where: { authToken: "", active: true, expiresAt: { gt: new Date() } },
-  include: { user: { include: { roles: true } } },
+  include: { user: { include: { roles: true, googleAccount: true } } },
 });
 
 export type PrismaSession = Prisma.SessionGetPayload<typeof prismaSession>;
@@ -59,3 +60,5 @@ export interface GoogleState {
   userId: string;
   returnUrl: string;
 }
+
+export type GoogleEvent = calendar_v3.Schema$Event;

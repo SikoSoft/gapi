@@ -1,4 +1,6 @@
-import { calendar_v3, google } from "googleapis";
+import { google } from "googleapis";
+import { Result, ok, err } from "neverthrow";
+import { GoogleEvent } from "../models/Identity";
 
 export class Google {
   static readonly SCOPES = [
@@ -17,7 +19,7 @@ export class Google {
 
   static async getCalendarEvents(
     refreshToken: string
-  ): Promise<calendar_v3.Schema$Event[]> {
+  ): Promise<Result<GoogleEvent[], Error>> {
     const googleClient = Google.getClient();
 
     googleClient.setCredentials({ refresh_token: refreshToken });
@@ -30,10 +32,9 @@ export class Google {
         timeMin: new Date().toISOString(),
         maxResults: 10,
       });
-      return events.data.items || [];
-    } catch (err) {
-      console.error("Failed to fetch events", err);
-      throw new Error("Failed to fetch events");
+      return ok(events.data.items || []);
+    } catch (error) {
+      return err(new Error("Failed to fetch events"));
     }
   }
 }

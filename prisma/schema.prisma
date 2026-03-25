@@ -398,14 +398,14 @@ model ListFilter {
 }
 
 model User {
-  id                String             @id @db.Uuid
-  username          String             @unique @db.VarChar(64)
-  firstName         String             @db.VarChar(64)
-  lastName          String             @db.VarChar(64)
-  password          String             @db.VarChar(255)
-  roles             UserRole[]
-  sessions          Session[]
-  userGoogleAccount UserGoogleAccount?
+  id            String              @id @db.Uuid
+  username      String              @unique @db.VarChar(64)
+  firstName     String              @db.VarChar(64)
+  lastName      String              @db.VarChar(64)
+  password      String              @db.VarChar(255)
+  roles         UserRole[]
+  sessions      Session[]
+  googleAccount UserGoogleAccount[]
 }
 
 model UserRole {

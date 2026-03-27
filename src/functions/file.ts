@@ -48,14 +48,12 @@ export async function file(
     ? `${destPath}/${filename}`
     : FileStorage.getBlobName(filename);
 
-  const url = await FileStorage.uploadImage(
-    blobName,
-    parts[0].data,
-    parts[0].type
-  );
+  await FileStorage.uploadImage(blobName, parts[0].data, parts[0].type);
+
+  const url = `${process.env.AZURE_STORAGE_URL}/images/${blobName}`;
 
   return jsonReply({
-    url: `${process.env.AZURE_STORAGE_URL}/images/${blobName}`,
+    url,
   });
 }
 

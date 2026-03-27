@@ -4,24 +4,9 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { forbiddenReply, introspect, jsonReply, prisma } from "..";
+import { forbiddenReply, introspect, jsonReply } from "..";
 import multipart from "parse-multipart";
 import { FileStorage } from "../lib/FileStorage";
-
-export function pad(x: number, padding: number = 2): string {
-  return x.toString().padStart(padding, "0");
-}
-
-export function shortDate(time: Date = new Date()): string {
-  const date = new Date(time);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate()
-  )}`;
-}
-
-const getBlobName = (fileName) => {
-  return `${shortDate()}/${fileName}`;
-};
 
 export type RequestBody = {};
 
@@ -33,10 +18,9 @@ export async function file(
   if (!introspection.isLoggedIn) {
     return forbiddenReply();
   }
-  const userId = introspection.user.id;
 
   const rawPath = request.params?.path ?? "";
-  const destPath = sanitizePath(rawPath);
+  const destPath = FileStorage.sanitizePath(rawPath);
 
   const chunks: Uint8Array[] = [];
   const reader = request.body.getReader();
@@ -60,7 +44,9 @@ export async function file(
   const boundary = multipart.getBoundary(request.headers.get("content-type"));
   const parts = multipart.Parse(buffer, boundary);
   const filename = parts[0].filename || "upload";
-  const blobName = destPath ? `${destPath}/${filename}` : getBlobName(filename);
+  const blobName = destPath
+    ? `${destPath}/${filename}`
+    : FileStorage.getBlobName(filename);
 
   const url = await FileStorage.uploadImage(
     blobName,
@@ -79,30 +65,3 @@ app.http("file", {
   handler: file,
   route: "file/{*path}",
 });
-
-function sanitizePath(raw: string): string {
-  if (!raw) {
-    return "";
-  }
-
-  let decoded = "";
-
-  try {
-    decoded = decodeURIComponent(raw);
-  } catch {
-    decoded = raw;
-  }
-
-  const parts = decoded
-    .split("/")
-    .map((p) => p.trim())
-    .filter((p) => p.length > 0 && p !== "." && p !== "..");
-
-  const safe = parts.join("/");
-
-  if (safe.length > 255) {
-    return safe.slice(0, 255);
-  }
-
-  return safe;
-}

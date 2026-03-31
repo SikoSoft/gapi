@@ -21,6 +21,8 @@ export class EntityConfig {
           name: entityConfig.name,
           description: entityConfig.description,
           userId,
+          aiEnabled: entityConfig.aiEnabled ?? false,
+          aiIdentifyPrompt: entityConfig.aiIdentifyPrompt,
           ...(entityConfig.revisionOf
             ? { revision: { connect: { id: entityConfig.revisionOf } } }
             : {}),
@@ -108,6 +110,8 @@ export class EntityConfig {
           name: entityConfig.name,
           description: entityConfig.description,
           allowPropertyOrdering: entityConfig.allowPropertyOrdering,
+          aiEnabled: entityConfig.aiEnabled,
+          aiIdentifyPrompt: entityConfig.aiIdentifyPrompt,
           /*
           properties: {
             update: updatedProperties.map((p) => {
@@ -376,6 +380,8 @@ export class EntityConfig {
       ),
       revisionOf: data.revisionOf,
       allowPropertyOrdering: data.allowPropertyOrdering,
+      aiEnabled: data.aiEnabled,
+      aiIdentifyPrompt: data.aiIdentifyPrompt,
     };
   }
 

@@ -277,6 +277,8 @@ model EntityConfig {
   properties            PropertyConfig[]
   userId                String?          @db.Uuid
   revisionOf            Int?
+  aiEnabled             Boolean          @default(false)
+  aiIdentifyPrompt      String?          @db.VarChar(255)
 
   entityPropertyConfigOrders EntityPropertyConfigOrder[]
   entities                   Entity[]

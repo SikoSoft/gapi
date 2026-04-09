@@ -60,6 +60,8 @@ export async function file(
     };
   }
 
+  const timeZone = request.query.get("timeZone") || 0;
+
   const [uploadBody, forwardedBody] = request.body.tee();
 
   const chunks: Uint8Array[] = [];
@@ -94,6 +96,7 @@ export async function file(
 
   const upstreamUrl = new URL("/assist/entity", upstreamBaseUrl);
   upstreamUrl.searchParams.set("url", url);
+  upstreamUrl.searchParams.set("timeZone", timeZone.toString());
 
   console.log("url", url);
 

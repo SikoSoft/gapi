@@ -243,6 +243,7 @@ model OptionsShortTextOption {
 
   propertyConfig PropertyConfig @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
 
+  @@unique([propertyConfigId, value])
   @@index([propertyConfigId], map: "idx_optionstextoption_propertyconfigid")
 }
 
@@ -253,6 +254,7 @@ model OptionsIntOption {
 
   propertyConfig PropertyConfig @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
 
+  @@unique([propertyConfigId, value])
   @@index([propertyConfigId], map: "idx_optionsintoption_propertyconfigid")
 }
 

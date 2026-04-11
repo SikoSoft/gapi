@@ -17,7 +17,6 @@ import {
   ShortTextDataValue,
 } from "api-spec/models/Entity";
 import { Util } from "./Util";
-import { data } from "../functions/data";
 
 export class PropertyConfig {
   static async create(
@@ -25,8 +24,43 @@ export class PropertyConfig {
     entityConfigId: number,
     propertyConfig: PropertyConfigCreateBody
   ): Promise<Result<Entity.EntityPropertyConfig, Error>> {
-    const { defaultValue, timeZone, performDriftCheck, ...data } =
+    const { defaultValue, timeZone, performDriftCheck, options, ...data } =
       propertyConfig;
+
+    const include = {
+      defaultBooleanValue: {
+        include: {
+          booleanValue: true,
+        },
+      },
+      defaultDateValue: {
+        include: {
+          dateValue: true,
+        },
+      },
+      defaultImageValue: {
+        include: {
+          imageValue: true,
+        },
+      },
+      defaultIntValue: {
+        include: {
+          intValue: true,
+        },
+      },
+      defaultLongTextValue: {
+        include: {
+          longTextValue: true,
+        },
+      },
+      defaultShortTextValue: {
+        include: {
+          shortTextValue: true,
+        },
+      },
+      optionsShortText: true,
+      optionsInt: true,
+    };
 
     try {
       const createdPropertyConfig = await prisma.propertyConfig.create({
@@ -35,42 +69,34 @@ export class PropertyConfig {
           userId,
           entityConfigId,
         },
-        include: {
-          defaultBooleanValue: {
-            include: {
-              booleanValue: true,
-            },
-          },
-          defaultDateValue: {
-            include: {
-              dateValue: true,
-            },
-          },
-          defaultIntValue: {
-            include: {
-              intValue: true,
-            },
-          },
-          defaultImageValue: {
-            include: {
-              imageValue: true,
-            },
-          },
-          defaultLongTextValue: {
-            include: {
-              longTextValue: true,
-            },
-          },
-          defaultShortTextValue: {
-            include: {
-              shortTextValue: true,
-            },
-          },
-          optionsShortText: true,
-          optionsInt: true,
-        },
+        include,
       });
-      const mappedConfig = PropertyConfig.mapDataToSpec(createdPropertyConfig);
+
+      if (
+        options !== undefined &&
+        (data.dataType === DataType.SHORT_TEXT ||
+          data.dataType === DataType.INT)
+      ) {
+        const optionsRes = await PropertyConfig.updateOptions(
+          createdPropertyConfig.id,
+          data.dataType,
+          options as string[] | number[]
+        );
+        if (optionsRes.isErr()) {
+          return err(optionsRes.error);
+        }
+      }
+
+      const propertyConfig = await prisma.propertyConfig.findUnique({
+        where: { userId, id: createdPropertyConfig.id },
+        include,
+      });
+
+      if (!propertyConfig) {
+        return ok(null);
+      }
+
+      const mappedConfig = PropertyConfig.mapDataToSpec(propertyConfig);
       PropertyConfig.syncDefaultValue({
         ...mappedConfig,
         defaultValue:

@@ -83,19 +83,23 @@ export async function file(
     }
   }
 
-  const boundary = multipart.getBoundary(request.headers.get("content-type"));
-  const parts = multipart.Parse(buffer, boundary);
-  const filename = parts[0].filename || "upload";
-  const blobName = destPath
-    ? `${destPath}/${filename}`
-    : FileStorage.getBlobName(filename);
+  let url = "";
 
-  await FileStorage.uploadImage(blobName, parts[0].data, parts[0].type);
+  if (request.query.get("saveImage") === "1") {
+    const boundary = multipart.getBoundary(request.headers.get("content-type"));
+    const parts = multipart.Parse(buffer, boundary);
+    const filename = parts[0].filename || "upload";
+    const blobName = destPath
+      ? `${destPath}/${filename}`
+      : FileStorage.getBlobName(filename);
 
-  const url = `${process.env.AZURE_STORAGE_URL}/images/${blobName}`;
-
+    await FileStorage.uploadImage(blobName, parts[0].data, parts[0].type);
+    url = `${process.env.AZURE_STORAGE_URL}/images/${blobName}`;
+  }
   const upstreamUrl = new URL("/assist/entity", upstreamBaseUrl);
-  upstreamUrl.searchParams.set("url", url);
+  if (url) {
+    upstreamUrl.searchParams.set("url", url);
+  }
   upstreamUrl.searchParams.set("timeZone", timeZone.toString());
 
   console.log("url", url);

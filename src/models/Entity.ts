@@ -70,6 +70,8 @@ const prismaEntityConfig =
               shortTextValue: true,
             },
           },
+          optionsShortText: true,
+          optionsInt: true,
         },
       },
     },

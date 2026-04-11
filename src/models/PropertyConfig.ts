@@ -36,6 +36,8 @@ const prismaPropertyConfig =
           shortTextValue: true,
         },
       },
+      optionsShortText: true,
+      optionsInt: true,
     },
   });
 
@@ -52,6 +54,8 @@ const prismaFullPropertyConfig =
       defaultImageValue: true,
       defaultLongTextValue: true,
       defaultShortTextValue: true,
+      optionsShortText: true,
+      optionsInt: true,
     },
   });
 
@@ -81,6 +85,7 @@ const CommonPropertyConfig = t.type({
   prefix: t.string,
   suffix: t.string,
   hidden: t.boolean,
+  optionsOnly: t.boolean,
 });
 
 export const propertyConfigCreateSchema = t.union([
@@ -90,6 +95,7 @@ export const propertyConfigCreateSchema = t.union([
       t.type({
         dataType: t.literal(Entity.DataType.BOOLEAN),
         defaultValue: t.boolean,
+        options: t.array(t.boolean),
       }),
     ])
   ),
@@ -99,6 +105,7 @@ export const propertyConfigCreateSchema = t.union([
       t.type({
         dataType: t.literal(Entity.DataType.DATE),
         defaultValue: t.union([t.string, t.null]),
+        options: t.array(t.union([t.string, t.null])),
       }),
     ])
   ),
@@ -108,6 +115,7 @@ export const propertyConfigCreateSchema = t.union([
       t.type({
         dataType: t.literal(Entity.DataType.INT),
         defaultValue: t.number,
+        options: t.array(t.number),
       }),
     ])
   ),
@@ -117,6 +125,7 @@ export const propertyConfigCreateSchema = t.union([
       t.type({
         dataType: t.literal(Entity.DataType.IMAGE),
         defaultValue: ImageDataValue,
+        options: t.array(ImageDataValue),
       }),
     ])
   ),
@@ -126,6 +135,7 @@ export const propertyConfigCreateSchema = t.union([
       t.type({
         dataType: t.literal(Entity.DataType.LONG_TEXT),
         defaultValue: t.string,
+        options: t.array(t.string),
       }),
     ])
   ),
@@ -135,6 +145,7 @@ export const propertyConfigCreateSchema = t.union([
       t.type({
         dataType: t.literal(Entity.DataType.SHORT_TEXT),
         defaultValue: t.string,
+        options: t.array(t.string),
       }),
     ])
   ),

@@ -17,6 +17,7 @@ import {
   ShortTextDataValue,
 } from "api-spec/models/Entity";
 import { Util } from "./Util";
+import { data } from "../functions/data";
 
 export class PropertyConfig {
   static async create(
@@ -65,6 +66,8 @@ export class PropertyConfig {
               shortTextValue: true,
             },
           },
+          optionsShortText: true,
+          optionsInt: true,
         },
       });
       const mappedConfig = PropertyConfig.mapDataToSpec(createdPropertyConfig);
@@ -96,8 +99,23 @@ export class PropertyConfig {
       propertyConfig,
     });
     try {
-      const { defaultValue, timeZone, performDriftCheck, ...data } =
+      const { defaultValue, timeZone, performDriftCheck, options, ...data } =
         propertyConfig;
+
+      if (
+        options !== undefined &&
+        (data.dataType === DataType.SHORT_TEXT ||
+          data.dataType === DataType.INT)
+      ) {
+        const optionsRes = await PropertyConfig.updateOptions(
+          id,
+          data.dataType,
+          options as string[] | number[]
+        );
+        if (optionsRes.isErr()) {
+          return err(optionsRes.error);
+        }
+      }
 
       const updatedPropertyConfig = await prisma.propertyConfig.update({
         where: { userId, id, entityConfigId },
@@ -135,8 +153,11 @@ export class PropertyConfig {
               shortTextValue: true,
             },
           },
+          optionsShortText: true,
+          optionsInt: true,
         },
       });
+
       const mappedConfig = PropertyConfig.mapDataToSpec(updatedPropertyConfig);
       PropertyConfig.syncDefaultValue({
         ...mappedConfig,
@@ -151,6 +172,43 @@ export class PropertyConfig {
     } catch (error) {
       return err(
         new Error("Failed to update property config", { cause: error })
+      );
+    }
+  }
+
+  static async updateOptions(
+    propertyConfigId: number,
+    dataType: DataType,
+    options: string[] | number[]
+  ): Promise<Result<null, Error>> {
+    try {
+      if (dataType === DataType.SHORT_TEXT) {
+        await prisma.optionsShortTextOption.deleteMany({
+          where: { propertyConfigId },
+        });
+        await prisma.optionsShortTextOption.createMany({
+          data: (options as string[]).map((value) => ({
+            propertyConfigId,
+            value,
+          })),
+          skipDuplicates: true,
+        });
+      } else if (dataType === DataType.INT) {
+        await prisma.optionsIntOption.deleteMany({
+          where: { propertyConfigId },
+        });
+        await prisma.optionsIntOption.createMany({
+          data: (options as number[]).map((value) => ({
+            propertyConfigId,
+            value,
+          })),
+          skipDuplicates: true,
+        });
+      }
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to update property config options", { cause: error })
       );
     }
   }
@@ -209,6 +267,8 @@ export class PropertyConfig {
               shortTextValue: true,
             },
           },
+          optionsShortText: true,
+          optionsInt: true,
         },
       });
 
@@ -544,6 +604,15 @@ export class PropertyConfig {
     data: PrismaPropertyConfig
   ): Entity.EntityPropertyConfig {
     //console.log("Mapping data to spec:", data);
+
+    let options: (string | number)[] = [];
+    if (data.optionsShortText.length) {
+      options = data.optionsShortText.map((option) => option.value);
+    }
+    if (data.optionsInt.length) {
+      options = data.optionsInt.map((option) => option.value);
+    }
+
     const commonConfig: CommonEntityPropertyConfig = {
       entityConfigId: data.entityConfigId,
       id: data.id,
@@ -555,7 +624,11 @@ export class PropertyConfig {
       prefix: data.prefix,
       suffix: data.suffix,
       hidden: data.hidden,
+      optionsOnly: data.optionsOnly,
+      options,
     };
+
+    //console.log("Common config:", commonConfig);
 
     switch (data.dataType) {
       case DataType.BOOLEAN:

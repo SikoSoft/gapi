@@ -4,6 +4,7 @@ import { Entity } from "api-spec/models";
 import {
   PrismaPropertyConfig,
   PropertyConfigCreateBody,
+  propertyConfigInclude,
   PropertyConfigUpdateBody,
 } from "../models/PropertyConfig";
 import {
@@ -27,41 +28,6 @@ export class PropertyConfig {
     const { defaultValue, timeZone, performDriftCheck, options, ...data } =
       propertyConfig;
 
-    const include = {
-      defaultBooleanValue: {
-        include: {
-          booleanValue: true,
-        },
-      },
-      defaultDateValue: {
-        include: {
-          dateValue: true,
-        },
-      },
-      defaultImageValue: {
-        include: {
-          imageValue: true,
-        },
-      },
-      defaultIntValue: {
-        include: {
-          intValue: true,
-        },
-      },
-      defaultLongTextValue: {
-        include: {
-          longTextValue: true,
-        },
-      },
-      defaultShortTextValue: {
-        include: {
-          shortTextValue: true,
-        },
-      },
-      optionsShortText: true,
-      optionsInt: true,
-    };
-
     try {
       const createdPropertyConfig = await prisma.propertyConfig.create({
         data: {
@@ -69,7 +35,7 @@ export class PropertyConfig {
           userId,
           entityConfigId,
         },
-        include,
+        include: propertyConfigInclude,
       });
 
       if (
@@ -89,7 +55,7 @@ export class PropertyConfig {
 
       const propertyConfig = await prisma.propertyConfig.findUnique({
         where: { userId, id: createdPropertyConfig.id },
-        include,
+        include: propertyConfigInclude,
       });
 
       if (!propertyConfig) {
@@ -148,40 +114,7 @@ export class PropertyConfig {
         data: {
           ...data,
         },
-        include: {
-          defaultBooleanValue: {
-            include: {
-              booleanValue: true,
-            },
-          },
-          defaultDateValue: {
-            include: {
-              dateValue: true,
-            },
-          },
-          defaultIntValue: {
-            include: {
-              intValue: true,
-            },
-          },
-          defaultImageValue: {
-            include: {
-              imageValue: true,
-            },
-          },
-          defaultLongTextValue: {
-            include: {
-              longTextValue: true,
-            },
-          },
-          defaultShortTextValue: {
-            include: {
-              shortTextValue: true,
-            },
-          },
-          optionsShortText: true,
-          optionsInt: true,
-        },
+        include: propertyConfigInclude,
       });
 
       const mappedConfig = PropertyConfig.mapDataToSpec(updatedPropertyConfig);
@@ -262,40 +195,7 @@ export class PropertyConfig {
     try {
       const propertyConfig = await prisma.propertyConfig.findUnique({
         where: { userId, id: propertyConfigId },
-        include: {
-          defaultBooleanValue: {
-            include: {
-              booleanValue: true,
-            },
-          },
-          defaultDateValue: {
-            include: {
-              dateValue: true,
-            },
-          },
-          defaultImageValue: {
-            include: {
-              imageValue: true,
-            },
-          },
-          defaultIntValue: {
-            include: {
-              intValue: true,
-            },
-          },
-          defaultLongTextValue: {
-            include: {
-              longTextValue: true,
-            },
-          },
-          defaultShortTextValue: {
-            include: {
-              shortTextValue: true,
-            },
-          },
-          optionsShortText: true,
-          optionsInt: true,
-        },
+        include: propertyConfigInclude,
       });
 
       if (!propertyConfig) {
@@ -626,11 +526,7 @@ export class PropertyConfig {
     }
   }
 
-  static mapDataToSpec(
-    data: PrismaPropertyConfig
-  ): Entity.EntityPropertyConfig {
-    //console.log("Mapping data to spec:", data);
-
+  static mapDataToOptions(data: PrismaPropertyConfig): (string | number)[] {
     let options: (string | number)[] = [];
     if (data.optionsShortText.length) {
       options = data.optionsShortText.map((option) => option.value);
@@ -638,6 +534,15 @@ export class PropertyConfig {
     if (data.optionsInt.length) {
       options = data.optionsInt.map((option) => option.value);
     }
+    return options;
+  }
+
+  static mapDataToSpec(
+    data: PrismaPropertyConfig
+  ): Entity.EntityPropertyConfig {
+    //console.log("Mapping data to spec:", data);
+
+    const options = PropertyConfig.mapDataToOptions(data);
 
     const commonConfig: CommonEntityPropertyConfig = {
       entityConfigId: data.entityConfigId,

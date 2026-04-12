@@ -18,6 +18,8 @@ import {
 import { Entity as EntitySpec } from "api-spec/models";
 import { EntityBodyPayload } from "../models/Entity";
 import { Entity } from "../lib/Entity";
+import { ValidationError } from "../errors/ValidationError";
+import { ErrorCode } from "../models/Error";
 
 export async function entity(
   request: HttpRequest,
@@ -56,6 +58,13 @@ export async function entity(
 
       if (entityRes.isErr()) {
         context.error(entityRes.error);
+
+        if (entityRes.error.name === ErrorCode.ValidationError) {
+          return {
+            status: 400,
+            body: JSON.stringify({ message: entityRes.error.message }),
+          };
+        }
 
         return {
           status: 500,

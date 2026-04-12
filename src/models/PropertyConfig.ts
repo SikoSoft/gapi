@@ -2,43 +2,45 @@ import * as t from "io-ts";
 import { Prisma } from "@prisma/client";
 import { Entity } from "api-spec/models";
 
+export const propertyConfigInclude = {
+    defaultBooleanValue: {
+      include: {
+        booleanValue: true,
+      },
+    },
+    defaultDateValue: {
+      include: {
+        dateValue: true,
+      },
+    },
+    defaultIntValue: {
+      include: {
+        intValue: true,
+      },
+    },
+    defaultImageValue: {
+      include: {
+        imageValue: true,
+      },
+    },
+    defaultLongTextValue: {
+      include: {
+        longTextValue: true,
+      },
+    },
+    defaultShortTextValue: {
+      include: {
+        shortTextValue: true,
+      },
+    },
+    optionsShortText: true,
+    optionsInt: true,
+  } satisfies Prisma.PropertyConfigFindUniqueArgs["include"];
+
 const prismaPropertyConfig =
   Prisma.validator<Prisma.PropertyConfigFindUniqueArgs>()({
     where: { id: 1, userId: "" },
-    include: {
-      defaultBooleanValue: {
-        include: {
-          booleanValue: true,
-        },
-      },
-      defaultDateValue: {
-        include: {
-          dateValue: true,
-        },
-      },
-      defaultIntValue: {
-        include: {
-          intValue: true,
-        },
-      },
-      defaultImageValue: {
-        include: {
-          imageValue: true,
-        },
-      },
-      defaultLongTextValue: {
-        include: {
-          longTextValue: true,
-        },
-      },
-      defaultShortTextValue: {
-        include: {
-          shortTextValue: true,
-        },
-      },
-      optionsShortText: true,
-      optionsInt: true,
-    },
+    include: propertyConfigInclude,
   });
 
 export type PrismaPropertyConfig = Prisma.PropertyConfigGetPayload<

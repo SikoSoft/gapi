@@ -26,6 +26,12 @@ import {
 import { Entity as EntitySpec } from "api-spec/models";
 import { Util } from "./Util";
 import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
+import { PropertyConfig } from "./PropertyConfig";
+import {
+  PrismaPropertyConfig,
+  propertyConfigInclude,
+} from "../models/PropertyConfig";
+import { ValidationError } from "../errors/ValidationError";
 
 export class Entity {
   static async getPropertySuggestions(
@@ -173,6 +179,23 @@ export class Entity {
     data: EntityBodyPayload
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
+      const propertyConfigIds = data.properties.map((p) => p.propertyConfigId);
+
+      const propertyConfigs = await Entity.getPropertyConfigs(
+        propertyConfigIds
+      );
+      if (propertyConfigs.isErr()) {
+        return err(propertyConfigs.error);
+      }
+
+      const validation = Entity.validateDataAgainstPropertyConfigs(
+        data,
+        propertyConfigs.value
+      );
+      if (validation.isErr()) {
+        return err(validation.error);
+      }
+
       Tagging.syncEntityTags(id, data.tags);
 
       await Entity.syncEntityProperties(
@@ -187,6 +210,65 @@ export class Entity {
         return err(entityRes.error);
       }
       return ok(entityRes.value);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  static validateDataAgainstPropertyConfigs(
+    data: EntityBodyPayload,
+    propertyConfigs: PrismaPropertyConfig[]
+  ): Result<null, ValidationError> {
+    for (const property of data.properties) {
+      const config = propertyConfigs.find(
+        (c) => c.id === property.propertyConfigId
+      );
+      if (!config) {
+        return err(
+          new ValidationError(
+            `No property config found for propertyConfigId ${property.propertyConfigId}`
+          )
+        );
+      }
+
+      if (
+        config.required &&
+        (property.value === null || property.value === "")
+      ) {
+        return err(
+          new ValidationError(
+            `Property with propertyConfigId ${property.propertyConfigId} is required`
+          )
+        );
+      }
+
+      if (
+        config.dataType === "shortText" &&
+        config.optionsOnly &&
+        PropertyConfig.mapDataToOptions(config).includes(
+          property.value as string
+        ) === false
+      ) {
+        return err(
+          new ValidationError(
+            `Property with propertyConfigId ${property.propertyConfigId} has an invalid value`
+          )
+        );
+      }
+    }
+    return ok(null);
+  }
+
+  static async getPropertyConfigs(
+    configIds: number[]
+  ): Promise<Result<PrismaPropertyConfig[], Error>> {
+    try {
+      const propertyConfigs = await prisma.propertyConfig.findMany({
+        where: { id: { in: configIds } },
+        include: propertyConfigInclude,
+      });
+
+      return ok(propertyConfigs);
     } catch (error) {
       return err(error);
     }

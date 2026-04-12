@@ -148,6 +148,23 @@ export class Entity {
     data: EntityBodyPayload
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
+      const propertyConfigIds = data.properties.map((p) => p.propertyConfigId);
+
+      const propertyConfigs = await Entity.getPropertyConfigs(
+        propertyConfigIds
+      );
+      if (propertyConfigs.isErr()) {
+        return err(propertyConfigs.error);
+      }
+
+      const validation = Entity.validateDataAgainstPropertyConfigs(
+        data,
+        propertyConfigs.value
+      );
+      if (validation.isErr()) {
+        return err(validation.error);
+      }
+
       const entity = await prisma.entity.create({
         data: {
           userId,

@@ -43,6 +43,13 @@ export async function entity(
       if (entityRes.isErr()) {
         context.error(entityRes.error);
 
+        if (entityRes.error.name === ErrorCode.ValidationError) {
+          return {
+            status: 400,
+            body: JSON.stringify({ message: entityRes.error.message }),
+          };
+        }
+
         return {
           status: 500,
         };

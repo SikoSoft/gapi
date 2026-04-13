@@ -18,7 +18,6 @@ import {
 import { Entity as EntitySpec } from "api-spec/models";
 import { EntityBodyPayload } from "../models/Entity";
 import { Entity } from "../lib/Entity";
-import { ValidationError } from "../errors/ValidationError";
 import { ErrorCode } from "../models/Error";
 
 export async function entity(

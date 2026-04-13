@@ -26,19 +26,16 @@ jobs:
         shell: bash
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          npm install
+          npm ci
           npm run build --if-present
+          npx prisma generate
           npx prisma migrate deploy
+          npm prune --production
           popd
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           AZURE_STORAGE_URL: ${{ secrets.AZURE_STORAGE_URL }}
-
-      - name: "Show deployment folder size and contents"
-        run: |
-          du -sh ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          ls -lR ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
 
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1

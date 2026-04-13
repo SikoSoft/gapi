@@ -10,7 +10,7 @@ import {
   ListSortDirection,
   ListSortNativeProperty,
 } from "api-spec/models/List";
-import { Introspection } from "./models/Introspection";
+import { Introspection } from "api-spec/models/Introspection";
 import { IdentityManager } from "./lib/IdentityManager";
 
 export const ENABLE_NUKE = process.env.ENABLE_NUKE === "1" || false;
@@ -67,12 +67,16 @@ export const introspect = async (
         isLoggedIn: true,
         user: {
           id: session.userId,
-          sessionId: authToken,
+          username: session.user.username,
+          firstName: session.user.firstName,
+          lastName: session.user.lastName,
+
           roles: session.user.roles.map((r) => r.role),
-          ...(session.user.googleAccount.length > 0
-            ? { googleLink: true, googleAccount: session.user.googleAccount[0] }
-            : { googleLink: false }),
         },
+        ...(session.user.googleAccount.length > 0
+          ? { googleLink: true, googleAccount: session.user.googleAccount[0] }
+          : { googleLink: false }),
+        sessionId: authToken,
         expiresAt: session.expiresAt,
       };
     }

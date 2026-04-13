@@ -1,4 +1,10 @@
-import { UserGoogleAccount } from "@prisma/client";
+export interface UserGoogleAccount {
+  userId: string;
+  googleId: string;
+  email: string;
+  refreshToken: string;
+  addedAt: Date;
+}
 
 export interface CommonUser {
   id: string;

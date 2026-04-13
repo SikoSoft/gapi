@@ -6,9 +6,10 @@ import {
 } from "@azure/functions";
 import { ENABLE_NUKE, forbiddenReply, introspect, jsonReply } from "..";
 import { Entity } from "../lib/Entity";
-import { IntrospectionUser } from "../models/Introspection";
+
 import { Data } from "../lib/Data";
 import { ExportDataContents, NukedDataType } from "api-spec/models/Data";
+import { IntrospectionUser } from "api-spec/models/Introspection";
 
 export interface ExportBody {
   entityConfigIds: number[];

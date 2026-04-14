@@ -32,7 +32,7 @@ export async function googleLink(
   }
   const userId = introspection.user.id;
 
-  if (!introspection.user.googleLink) {
+  if (!introspection.googleLink) {
     return jsonReply(
       {
         linked: false,
@@ -42,7 +42,7 @@ export async function googleLink(
   }
 
   const decryptedToken = IdentityManager.decryptToken(
-    introspection.user.googleAccount.refreshToken
+    introspection.googleAccount.refreshToken
   );
 
   switch (request.method) {

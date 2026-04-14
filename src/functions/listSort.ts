@@ -4,11 +4,9 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { forbiddenReply, introspect, jsonReply } from "..";
-import { ListFilter, ListSort } from "api-spec/models/List";
+import { forbiddenReply, introspect } from "..";
+import { ListSort } from "api-spec/models/List";
 import { ListConfig } from "../lib/ListConfig";
-import { List } from "api-spec/models";
-import { HttpMethod } from "../models/Endpoint";
 
 export type UpdateBody = ListSort;
 

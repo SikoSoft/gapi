@@ -578,6 +578,10 @@ export class Entity {
     id: number
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
+      const entityPolicy = await prisma.entityAccessPolicy.findUnique({
+        where: { entityId: id },
+      });
+
       const entity = await prisma.entity.delete({
         where: {
           userId,
@@ -605,6 +609,23 @@ export class Entity {
           },
         },
       });
+
+      if (entityPolicy) {
+        const [entityCount, listConfigCount] = await Promise.all([
+          prisma.entityAccessPolicy.count({
+            where: { accessPolicyId: entityPolicy.accessPolicyId },
+          }),
+          prisma.listConfigAccessPolicy.count({
+            where: { accessPolicyId: entityPolicy.accessPolicyId },
+          }),
+        ]);
+        if (entityCount === 0 && listConfigCount === 0) {
+          await prisma.accessPolicy.delete({
+            where: { id: entityPolicy.accessPolicyId },
+          });
+        }
+      }
+
       return ok(Entity.toSpec(entity));
     } catch (error) {
       return err(error);

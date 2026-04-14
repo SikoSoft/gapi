@@ -74,9 +74,30 @@ export class ListConfig {
     listConfigId: string
   ): Promise<Result<boolean, Error>> {
     try {
+      const listConfigPolicy = await prisma.listConfigAccessPolicy.findUnique({
+        where: { listConfigId },
+      });
+
       await prisma.listConfig.delete({
         where: { userId, id: listConfigId },
       });
+
+      if (listConfigPolicy) {
+        const [entityCount, listConfigCount] = await Promise.all([
+          prisma.entityAccessPolicy.count({
+            where: { accessPolicyId: listConfigPolicy.accessPolicyId },
+          }),
+          prisma.listConfigAccessPolicy.count({
+            where: { accessPolicyId: listConfigPolicy.accessPolicyId },
+          }),
+        ]);
+        if (entityCount === 0 && listConfigCount === 0) {
+          await prisma.accessPolicy.delete({
+            where: { id: listConfigPolicy.accessPolicyId },
+          });
+        }
+      }
+
       return ok(true);
     } catch (error) {
       return err(new Error("Failed to delete listConfig", { cause: error }));

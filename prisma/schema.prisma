@@ -220,7 +220,8 @@ model Entity {
   longTextProperties  EntityLongTextProperty[]
   shortTextProperties EntityShortTextProperty[]
 
-  entityConfig EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
+  entityConfig  EntityConfig        @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
+  accessPolicy  EntityAccessPolicy?
 
   @@index([userId, createdAt], map: "idx_entity_userid_createdat")
 }
@@ -351,14 +352,15 @@ model Leaderboard {
 }
 
 model ListConfig {
-  id                   String                @id @db.Uuid
-  name                 String                @db.VarChar(128)
-  userId               String?               @db.Uuid
+  id                   String                 @id @db.Uuid
+  name                 String                 @db.VarChar(128)
+  userId               String?                @db.Uuid
   sort                 ListSort?
   filter               ListFilter?
   setting              Setting?
   themes               ListConfigTheme[]
   workspaceListConfigs WorkspaceListConfig[]
+  accessPolicy         ListConfigAccessPolicy?
 }
 
 model ListConfigTheme {
@@ -524,4 +526,60 @@ model WorkspaceListConfig {
   listConfig   ListConfig @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, listConfigId])
+}
+
+model AccessPolicy {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(128)
+  description String   @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rules              AccessPolicyRule[]
+  entityPolicies     EntityAccessPolicy[]
+  listConfigPolicies ListConfigAccessPolicy[]
+}
+
+model EntityAccessPolicy {
+  entityId       Int @unique
+  accessPolicyId Int
+
+  entity       Entity       @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  accessPolicy AccessPolicy @relation(fields: [accessPolicyId], references: [id], onDelete: Cascade)
+}
+
+model ListConfigAccessPolicy {
+  listConfigId   String @unique @db.Uuid
+  accessPolicyId Int
+
+  listConfig   ListConfig   @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+  accessPolicy AccessPolicy @relation(fields: [accessPolicyId], references: [id], onDelete: Cascade)
+}
+
+model AccessPolicyRule {
+  id             Int    @id @default(autoincrement())
+  accessPolicyId Int
+  type           String @db.VarChar(16)
+  partyId        String @db.VarChar(128)
+
+  accessPolicy AccessPolicy @relation(fields: [accessPolicyId], references: [id], onDelete: Cascade)
+}
+
+model AccessPolicyGroup {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(128)
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members AccessPolicyGroupMember[]
+}
+
+model AccessPolicyGroupMember {
+  groupId Int
+  userId  String @db.Uuid
+
+  group AccessPolicyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
 }

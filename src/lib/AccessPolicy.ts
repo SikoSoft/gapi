@@ -1,4 +1,5 @@
 import { Result, err, ok } from "neverthrow";
+import { Access } from "api-spec/models";
 import { prisma } from "..";
 
 export interface AccessPolicyRecord {
@@ -119,6 +120,46 @@ export class AccessPolicy {
           cause: error,
         })
       );
+    }
+  }
+
+  static async getParties(
+    userId: string,
+    query?: string
+  ): Promise<Result<Access.AccessPolicyParty[], Error>> {
+    try {
+      const [users, groups] = await Promise.all([
+        prisma.user.findMany({
+          where: query
+            ? { username: { startsWith: query, mode: 'insensitive' } }
+            : {},
+        }),
+        prisma.accessPolicyGroup.findMany({
+          where: {
+            userId,
+            ...(query
+              ? { name: { startsWith: query, mode: 'insensitive' } }
+              : {}),
+          },
+        }),
+      ]);
+
+      const parties: Access.AccessPolicyParty[] = [
+        ...users.map(u => ({
+          id: u.id,
+          type: Access.AccessPartyType.USER,
+          name: u.username,
+        })),
+        ...groups.map(g => ({
+          id: String(g.id),
+          type: Access.AccessPartyType.GROUP,
+          name: g.name,
+        })),
+      ];
+
+      return ok(parties);
+    } catch (error) {
+      return err(new Error('Failed to get access policy parties', { cause: error }));
     }
   }
 

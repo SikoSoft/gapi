@@ -535,7 +535,7 @@ model AccessPolicy {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  rules              AccessPolicyRule[]
+  rules              AccessPolicyParty[]
   entityPolicies     EntityAccessPolicy[]
   listConfigPolicies ListConfigAccessPolicy[]
 }
@@ -556,7 +556,7 @@ model ListConfigAccessPolicy {
   accessPolicy AccessPolicy @relation(fields: [accessPolicyId], references: [id], onDelete: Cascade)
 }
 
-model AccessPolicyRule {
+model AccessPolicyParty {
   id             Int    @id @default(autoincrement())
   accessPolicyId Int
   type           String @db.VarChar(16)
@@ -572,10 +572,10 @@ model AccessPolicyGroup {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members AccessPolicyGroupMember[]
+  members AccessPolicyGroupUser[]
 }
 
-model AccessPolicyGroupMember {
+model AccessPolicyGroupUser {
   groupId Int
   userId  String @db.Uuid
 

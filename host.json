@@ -3,9 +3,14 @@
   "logging": {
     "applicationInsights": {
       "samplingSettings": {
-        "isEnabled": true,
+        "isEnabled": false,
         "excludedTypes": "Request"
       }
+    },
+    "logLevel": {
+      "default": "Information",
+      "Function": "Information",
+      "Host.Aggregator": "Information"
     }
   },
   "extensionBundle": {

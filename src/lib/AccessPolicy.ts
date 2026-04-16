@@ -58,13 +58,35 @@ export class AccessPolicy {
     }
   }
 
+  static async getGroups(
+    userId: string
+  ): Promise<Result<AccessPolicyGroupRecord[], Error>> {
+    try {
+      const groups = await prisma.accessPolicyGroup.findMany({
+        where: { userId },
+      });
+      return ok(groups);
+    } catch (error) {
+      return err(
+        new Error("Failed to get access policy groups", { cause: error })
+      );
+    }
+  }
+
   static async createGroup(
     userId: string,
-    name: string
+    name: string,
+    users: string[]
   ): Promise<Result<AccessPolicyGroupRecord, Error>> {
     try {
       const group = await prisma.accessPolicyGroup.create({
-        data: { userId, name },
+        data: {
+          userId,
+          name,
+          members: {
+            createMany: { data: users.map(uid => ({ userId: uid })) },
+          },
+        },
       });
       return ok(group);
     } catch (error) {
@@ -77,12 +99,21 @@ export class AccessPolicy {
   static async updateGroup(
     userId: string,
     id: number,
-    name: string
+    name: string,
+    users: string[]
   ): Promise<Result<AccessPolicyGroupRecord, Error>> {
     try {
-      const group = await prisma.accessPolicyGroup.update({
-        where: { id, userId },
-        data: { name },
+      const group = await prisma.$transaction(async tx => {
+        await tx.accessPolicyGroupUser.deleteMany({ where: { groupId: id } });
+        return tx.accessPolicyGroup.update({
+          where: { id, userId },
+          data: {
+            name,
+            members: {
+              createMany: { data: users.map(uid => ({ userId: uid })) },
+            },
+          },
+        });
       });
       return ok(group);
     } catch (error) {

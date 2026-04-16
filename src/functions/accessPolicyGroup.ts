@@ -3,16 +3,16 @@ import {
   HttpRequest,
   HttpResponseInit,
   InvocationContext,
-} from '@azure/functions';
-import { forbiddenReply, introspect, jsonReply } from '..';
-import { AccessPolicy } from '../lib/AccessPolicy';
+} from "@azure/functions";
+import { forbiddenReply, introspect, jsonReply } from "..";
+import { AccessPolicy } from "../lib/AccessPolicy";
 
 interface GroupBody {
   name: string;
   users: string[];
 }
 
-export async function accessPartyGroup(
+export async function accessPolicyGroup(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
@@ -23,7 +23,7 @@ export async function accessPartyGroup(
   const idParam = request.params.id;
 
   switch (request.method) {
-    case 'GET': {
+    case "GET": {
       const result = await AccessPolicy.getGroups(userId);
       if (result.isErr()) {
         context.error(result.error);
@@ -32,9 +32,13 @@ export async function accessPartyGroup(
       return jsonReply({ groups: result.value });
     }
 
-    case 'POST': {
+    case "POST": {
       const body = (await request.json()) as GroupBody;
-      const result = await AccessPolicy.createGroup(userId, body.name, body.users);
+      const result = await AccessPolicy.createGroup(
+        userId,
+        body.name,
+        body.users
+      );
       if (result.isErr()) {
         context.error(result.error);
         return { status: 500 };
@@ -42,11 +46,16 @@ export async function accessPartyGroup(
       return jsonReply({ group: result.value });
     }
 
-    case 'PUT': {
+    case "PUT": {
       if (!idParam) return { status: 400 };
       const id = parseInt(idParam, 10);
       const body = (await request.json()) as GroupBody;
-      const result = await AccessPolicy.updateGroup(userId, id, body.name, body.users);
+      const result = await AccessPolicy.updateGroup(
+        userId,
+        id,
+        body.name,
+        body.users
+      );
       if (result.isErr()) {
         context.error(result.error);
         return { status: 500 };
@@ -54,7 +63,7 @@ export async function accessPartyGroup(
       return jsonReply({ group: result.value });
     }
 
-    case 'DELETE': {
+    case "DELETE": {
       if (!idParam) return { status: 400 };
       const id = parseInt(idParam, 10);
       const result = await AccessPolicy.deleteGroup(userId, id);
@@ -69,9 +78,9 @@ export async function accessPartyGroup(
   return { status: 405 };
 }
 
-app.http('accessPartyGroup', {
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  authLevel: 'anonymous',
-  handler: accessPartyGroup,
-  route: 'accessPartyGroup/{id?}',
+app.http("accessPolicyGroup", {
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  authLevel: "anonymous",
+  handler: accessPolicyGroup,
+  route: "accessPolicyGroup/{id?}",
 });

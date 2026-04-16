@@ -5,10 +5,8 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import { forbiddenReply, introspect, jsonReply } from "..";
-import { ListFilter, ListSort } from "api-spec/models/List";
+import { ListFilter } from "api-spec/models/List";
 import { ListConfig } from "../lib/ListConfig";
-import { List } from "api-spec/models";
-import { HttpMethod } from "../models/Endpoint";
 
 export type UpdateBody = ListFilter;
 
@@ -16,6 +14,7 @@ export async function listFilter(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  context.log("LIST FILTER", request.params.id);
   const introspection = await introspect(request);
   if (!introspection.isLoggedIn) {
     context.log("NOT LOGGED IN");
@@ -23,12 +22,16 @@ export async function listFilter(
   }
   const userId = introspection.user.id;
 
+  context.log("USER ID", userId);
+
   const listConfigRes = await ListConfig.getById(request.params.id);
   if (listConfigRes.isErr()) {
     context.log("IS FUCKING ERROR");
     context.error(listConfigRes.error);
     return forbiddenReply();
   }
+
+  context.log("LIST CONFIG", listConfigRes.value.userId);
 
   if (listConfigRes.value.userId !== userId) {
     return forbiddenReply();

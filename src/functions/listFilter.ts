@@ -18,13 +18,14 @@ export async function listFilter(
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
   if (!introspection.isLoggedIn) {
+    context.log("NOT LOGGED IN");
     return forbiddenReply();
   }
   const userId = introspection.user.id;
 
   const listConfigRes = await ListConfig.getById(request.params.id);
   if (listConfigRes.isErr()) {
-    console.log("IS FUCKING ERROR");
+    context.log("IS FUCKING ERROR");
     context.error(listConfigRes.error);
     return forbiddenReply();
   }
@@ -35,7 +36,7 @@ export async function listFilter(
 
   const updateBody = (await request.json()) as UpdateBody;
 
-  console.log("UPDATE BODY", updateBody);
+  context.log("UPDATE BODY", updateBody);
 
   await ListConfig.updateTags(request.params.id, updateBody.tagging);
   await ListConfig.updateTime(request.params.id, updateBody.time);
@@ -47,7 +48,7 @@ export async function listFilter(
     updateBody
   );
   if (updateRes.isErr()) {
-    console.log("IS FUCKING ERROR 2");
+    context.log("IS FUCKING ERROR 2");
     context.error(updateRes.error);
 
     return { status: 400 };

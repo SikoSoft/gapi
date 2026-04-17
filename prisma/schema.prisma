@@ -428,14 +428,15 @@ model ListFilter {
 }
 
 model User {
-  id            String              @id @db.Uuid
-  username      String              @unique @db.VarChar(64)
-  firstName     String              @db.VarChar(64)
-  lastName      String              @db.VarChar(64)
-  password      String              @db.VarChar(255)
-  roles         UserRole[]
-  sessions      Session[]
-  googleAccount UserGoogleAccount[]
+  id                 String                  @id @db.Uuid
+  username           String                  @unique @db.VarChar(64)
+  firstName          String                  @db.VarChar(64)
+  lastName           String                  @db.VarChar(64)
+  password           String                  @db.VarChar(255)
+  roles              UserRole[]
+  sessions           Session[]
+  googleAccount      UserGoogleAccount[]
+  accessPolicyGroups AccessPolicyGroupUser[]
 }
 
 model UserRole {
@@ -572,7 +573,7 @@ model AccessPolicyGroup {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members AccessPolicyGroupUser[]
+  users AccessPolicyGroupUser[]
 }
 
 model AccessPolicyGroupUser {
@@ -580,6 +581,7 @@ model AccessPolicyGroupUser {
   userId  String @db.Uuid
 
   group AccessPolicyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
 }

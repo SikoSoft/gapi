@@ -1,5 +1,16 @@
 import { Prisma } from "@prisma/client";
 
+const prismaAccessPolicy =
+  Prisma.validator<Prisma.AccessPolicyFindUniqueArgs>()({
+    where: { id: 1 },
+    include: { parties: true },
+  });
+
+export type PrismaAccessPolicy = Prisma.AccessPolicyGetPayload<
+  typeof prismaAccessPolicy
+>;
+
+
 const prismaAccessPolicyGroup =
   Prisma.validator<Prisma.AccessPolicyGroupFindUniqueArgs>()({
     where: { id: 1, userId: "" },

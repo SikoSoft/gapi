@@ -2,6 +2,7 @@ import { Result, err, ok } from "neverthrow";
 import { Access } from "api-spec/models";
 import { prisma } from "..";
 import {
+  PrismaAccessPolicy,
   PrismaAccessPolicyGroup,
   PrismaAccessPolicyGroupUser,
 } from "../models/Access";
@@ -24,15 +25,61 @@ export interface AccessPolicyGroupRecord {
 }
 
 export class AccessPolicy {
+  static mapPolicy(policy: PrismaAccessPolicy): Access.AccessPolicy {
+    return {
+      id: policy.id,
+      name: policy.name,
+      description: policy.description,
+      accessRules: policy.parties.map(p => ({
+        id: p.id,
+        type: p.type as Access.AccessPartyType,
+        partyId: p.partyId,
+      })),
+    };
+  }
+
+  static async get(): Promise<Result<Access.AccessPolicy[], Error>> {
+    try {
+      const policies = await prisma.accessPolicy.findMany({
+        include: { parties: true },
+      });
+      return ok(policies.map(p => AccessPolicy.mapPolicy(p)));
+    } catch (error) {
+      return err(new Error("Failed to get access policies", { cause: error }));
+    }
+  }
+
+  static async getById(id: number): Promise<Result<Access.AccessPolicy | null, Error>> {
+    try {
+      const policy = await prisma.accessPolicy.findUnique({
+        where: { id },
+        include: { parties: true },
+      });
+      return ok(policy ? AccessPolicy.mapPolicy(policy) : null);
+    } catch (error) {
+      return err(new Error("Failed to get access policy", { cause: error }));
+    }
+  }
+
   static async create(
     name: string,
-    description: string
-  ): Promise<Result<AccessPolicyRecord, Error>> {
+    description: string,
+    parties: Access.AccessPolicyParty[]
+  ): Promise<Result<Access.AccessPolicy, Error>> {
     try {
       const policy = await prisma.accessPolicy.create({
-        data: { name, description },
+        data: {
+          name,
+          description,
+          parties: {
+            createMany: {
+              data: parties.map(p => ({ type: p.type, partyId: p.id })),
+            },
+          },
+        },
+        include: { parties: true },
       });
-      return ok(policy);
+      return ok(AccessPolicy.mapPolicy(policy));
     } catch (error) {
       return err(new Error("Failed to create access policy", { cause: error }));
     }
@@ -41,14 +88,27 @@ export class AccessPolicy {
   static async update(
     id: number,
     name: string,
-    description: string
-  ): Promise<Result<AccessPolicyRecord, Error>> {
+    description: string,
+    parties: Access.AccessPolicyParty[]
+  ): Promise<Result<Access.AccessPolicy, Error>> {
     try {
-      const policy = await prisma.accessPolicy.update({
-        where: { id },
-        data: { name, description },
+      const policy = await prisma.$transaction(async tx => {
+        await tx.accessPolicyParty.deleteMany({ where: { accessPolicyId: id } });
+        return tx.accessPolicy.update({
+          where: { id },
+          data: {
+            name,
+            description,
+            parties: {
+              createMany: {
+                data: parties.map(p => ({ type: p.type, partyId: p.id })),
+              },
+            },
+          },
+          include: { parties: true },
+        });
       });
-      return ok(policy);
+      return ok(AccessPolicy.mapPolicy(policy));
     } catch (error) {
       return err(new Error("Failed to update access policy", { cause: error }));
     }

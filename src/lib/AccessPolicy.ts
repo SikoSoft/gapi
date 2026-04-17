@@ -1,6 +1,11 @@
 import { Result, err, ok } from "neverthrow";
 import { Access } from "api-spec/models";
 import { prisma } from "..";
+import {
+  PrismaAccessPolicyGroup,
+  PrismaAccessPolicyGroupUser,
+} from "../models/Access";
+import { AccessPolicyGroup } from "api-spec/models/Access";
 
 export interface AccessPolicyRecord {
   id: number;
@@ -60,17 +65,35 @@ export class AccessPolicy {
 
   static async getGroups(
     userId: string
-  ): Promise<Result<AccessPolicyGroupRecord[], Error>> {
+  ): Promise<Result<AccessPolicyGroup[], Error>> {
     try {
       const groups = await prisma.accessPolicyGroup.findMany({
         where: { userId },
+        include: { users: { include: { user: true } } },
       });
-      return ok(groups);
+      return ok(groups.map((g) => AccessPolicy.mapGroup(g)));
     } catch (error) {
       return err(
         new Error("Failed to get access policy groups", { cause: error })
       );
     }
+  }
+
+  static mapGroup(group: PrismaAccessPolicyGroup): Access.AccessPolicyGroup {
+    return {
+      id: String(group.id),
+      name: group.name,
+      users: group.users.map((ug) => AccessPolicy.mapGroupUser(ug)),
+    };
+  }
+
+  static mapGroupUser(
+    groupUser: PrismaAccessPolicyGroupUser
+  ): Access.AccessPolicyGroupUser {
+    return {
+      id: groupUser.user.id,
+      name: groupUser.user.username,
+    };
   }
 
   static async createGroup(
@@ -83,8 +106,8 @@ export class AccessPolicy {
         data: {
           userId,
           name,
-          members: {
-            createMany: { data: users.map(uid => ({ userId: uid })) },
+          users: {
+            createMany: { data: users.map((uid) => ({ userId: uid })) },
           },
         },
       });
@@ -103,14 +126,14 @@ export class AccessPolicy {
     users: string[]
   ): Promise<Result<AccessPolicyGroupRecord, Error>> {
     try {
-      const group = await prisma.$transaction(async tx => {
+      const group = await prisma.$transaction(async (tx) => {
         await tx.accessPolicyGroupUser.deleteMany({ where: { groupId: id } });
         return tx.accessPolicyGroup.update({
           where: { id, userId },
           data: {
             name,
             members: {
-              createMany: { data: users.map(uid => ({ userId: uid })) },
+              createMany: { data: users.map((uid) => ({ userId: uid })) },
             },
           },
         });
@@ -162,26 +185,26 @@ export class AccessPolicy {
       const [users, groups] = await Promise.all([
         prisma.user.findMany({
           where: query
-            ? { username: { startsWith: query, mode: 'insensitive' } }
+            ? { username: { startsWith: query, mode: "insensitive" } }
             : {},
         }),
         prisma.accessPolicyGroup.findMany({
           where: {
             userId,
             ...(query
-              ? { name: { startsWith: query, mode: 'insensitive' } }
+              ? { name: { startsWith: query, mode: "insensitive" } }
               : {}),
           },
         }),
       ]);
 
       const parties: Access.AccessPolicyParty[] = [
-        ...users.map(u => ({
+        ...users.map((u) => ({
           id: u.id,
           type: Access.AccessPartyType.USER,
           name: u.username,
         })),
-        ...groups.map(g => ({
+        ...groups.map((g) => ({
           id: String(g.id),
           type: Access.AccessPartyType.GROUP,
           name: g.name,
@@ -190,7 +213,9 @@ export class AccessPolicy {
 
       return ok(parties);
     } catch (error) {
-      return err(new Error('Failed to get access policy parties', { cause: error }));
+      return err(
+        new Error("Failed to get access policy parties", { cause: error })
+      );
     }
   }
 

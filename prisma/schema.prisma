@@ -536,7 +536,7 @@ model AccessPolicy {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  rules              AccessPolicyParty[]
+  parties            AccessPolicyParty[]
   entityPolicies     EntityAccessPolicy[]
   listConfigPolicies ListConfigAccessPolicy[]
 }

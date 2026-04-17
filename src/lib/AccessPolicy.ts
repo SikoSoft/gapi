@@ -132,7 +132,7 @@ export class AccessPolicy {
           where: { id, userId },
           data: {
             name,
-            members: {
+            users: {
               createMany: { data: users.map((uid) => ({ userId: uid })) },
             },
           },

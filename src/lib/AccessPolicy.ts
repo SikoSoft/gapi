@@ -220,6 +220,31 @@ export class AccessPolicy {
     }
   }
 
+  static async setEntityAccessPolicy(
+    userId: string,
+    entityId: number,
+    accessPolicyId: number
+  ): Promise<Result<boolean, Error>> {
+    try {
+      const entity = await prisma.entity.findUnique({
+        where: { id: entityId, userId },
+      });
+      if (!entity) {
+        return err(new Error("Entity not found or not owned by user"));
+      }
+      await prisma.entityAccessPolicy.upsert({
+        where: { entityId },
+        create: { entityId, accessPolicyId },
+        update: { accessPolicyId },
+      });
+      return ok(true);
+    } catch (error) {
+      return err(
+        new Error("Failed to set entity access policy", { cause: error })
+      );
+    }
+  }
+
   static async countUsingEntities(
     accessPolicyId: number
   ): Promise<Result<number, Error>> {

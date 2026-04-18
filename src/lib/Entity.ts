@@ -330,6 +330,11 @@ export class Entity {
               propertyValue: true,
             },
           },
+          accessPolicy: {
+            include: {
+              accessPolicy: true,
+            },
+          },
         },
       });
 
@@ -482,6 +487,9 @@ export class Entity {
       updatedAt: entity.updatedAt.toISOString(),
       properties,
       tags: entity.tags.map((tag) => tag.label),
+      accessPolicyId: entity.accessPolicy
+        ? entity.accessPolicy.accessPolicyId
+        : 0,
     };
   }
 
@@ -564,6 +572,11 @@ export class Entity {
             shortTextProperties: {
               include: { propertyValue: true },
             },
+            accessPolicy: {
+              include: {
+                accessPolicy: true,
+              },
+            },
           },
         })
       ).map((entity) => Entity.toSpec(entity));
@@ -606,6 +619,11 @@ export class Entity {
           },
           shortTextProperties: {
             include: { propertyValue: true },
+          },
+          accessPolicy: {
+            include: {
+              accessPolicy: true,
+            },
           },
         },
       });
@@ -692,6 +710,11 @@ export class Entity {
               },
               shortTextProperties: {
                 include: { propertyValue: true },
+              },
+              accessPolicy: {
+                include: {
+                  accessPolicy: true,
+                },
               },
             },
           });

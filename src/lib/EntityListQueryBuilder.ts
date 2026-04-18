@@ -60,7 +60,8 @@ export class EntityListQueryBuilder {
         tags,
        ${Object.values(DataType)
          .map((type) => `"${type}Properties"`)
-         .join(", ")}
+         .join(", ")},
+        "accessPolicy"
         ${this.isCustomSort ? `, sortPropRows."value" as sortValue` : ""}`
       }
       FROM
@@ -74,6 +75,7 @@ export class EntityListQueryBuilder {
       query += `
         ${this.getTagsFragment()}
         ${this.getPropTypesFragment()}
+        ${this.getAccessPolicyFragment()}
         ${this.getSortJoinFragment()}
         `;
     }
@@ -172,6 +174,45 @@ export class EntityListQueryBuilder {
 		  WHERE ${dataTypePascalCase}Prop."entityId" = e."id"
     ) ${dataTypePascalCase}Props ON true
    `;
+  }
+
+  getAccessPolicyFragment(): string {
+    return `
+      LEFT JOIN LATERAL (
+        SELECT json_build_object(
+          'entityId', eap."entityId",
+          'accessPolicyId', eap."accessPolicyId",
+          'accessPolicy', json_build_object(
+            'id', ap."id",
+            'name', ap."name",
+            'description', ap."description",
+            'parties', COALESCE((
+              SELECT json_agg(
+                json_build_object(
+                  'id', party."id",
+                  'accessPolicyId', party."accessPolicyId",
+                  'type', party."type",
+                  'partyId', party."partyId",
+                  'groupUsers', CASE
+                    WHEN party."type" = 'group' THEN (
+                      SELECT COALESCE(json_agg(gu."userId"), '[]'::json)
+                      FROM "AccessPolicyGroupUser" gu
+                      WHERE gu."groupId" = party."partyId"::int
+                    )
+                    ELSE NULL
+                  END
+                )
+              )
+              FROM "AccessPolicyParty" party
+              WHERE party."accessPolicyId" = ap."id"
+            ), '[]'::json)
+          )
+        ) AS "accessPolicy"
+        FROM "EntityAccessPolicy" eap
+        JOIN "AccessPolicy" ap ON ap."id" = eap."accessPolicyId"
+        WHERE eap."entityId" = e."id"
+      ) entityAccessPolicyData ON true
+    `;
   }
 
   getCustomSortJoinFragment(): string {

@@ -127,7 +127,10 @@ export class ListConfig {
 
   static async update(
     userId: string,
-    listConfig: Omit<List.ListConfig, "setting">
+    listConfig: Omit<
+      List.ListConfig,
+      "setting" | "viewAccessPolicyId" | "editAccessPolicyId"
+    >
   ): Promise<Result<List.ListConfig, Error>> {
     try {
       await prisma.listConfig.update({
@@ -400,7 +403,7 @@ export class ListConfig {
         where: { userId },
         select: { groupId: true },
       });
-      const groupIds = userGroups.map(g => String(g.groupId));
+      const groupIds = userGroups.map((g) => String(g.groupId));
 
       const listConfigs = await prisma.listConfig.findMany({
         where: {
@@ -410,7 +413,7 @@ export class ListConfig {
               accessPolicy: {
                 viewAccessPolicy: {
                   parties: {
-                    some: { type: 'user', partyId: userId },
+                    some: { type: "user", partyId: userId },
                   },
                 },
               },
@@ -419,7 +422,7 @@ export class ListConfig {
               accessPolicy: {
                 viewAccessPolicy: {
                   parties: {
-                    some: { type: 'group', partyId: { in: groupIds } },
+                    some: { type: "group", partyId: { in: groupIds } },
                   },
                 },
               },

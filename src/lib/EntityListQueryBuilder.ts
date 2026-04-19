@@ -177,39 +177,51 @@ export class EntityListQueryBuilder {
   }
 
   getAccessPolicyFragment(): string {
+    const partiesSubquery = (policyAlias: string) => `
+      COALESCE((
+        SELECT json_agg(
+          json_build_object(
+            'id', party."id",
+            'accessPolicyId', party."accessPolicyId",
+            'type', party."type",
+            'partyId', party."partyId",
+            'groupUsers', CASE
+              WHEN party."type" = 'group' THEN (
+                SELECT COALESCE(json_agg(gu."userId"), '[]'::json)
+                FROM "AccessPolicyGroupUser" gu
+                WHERE gu."groupId" = party."partyId"::int
+              )
+              ELSE NULL
+            END
+          )
+        )
+        FROM "AccessPolicyParty" party
+        WHERE party."accessPolicyId" = ${policyAlias}."id"
+      ), '[]'::json)
+    `;
+
     return `
       LEFT JOIN LATERAL (
         SELECT json_build_object(
           'entityId', eap."entityId",
-          'accessPolicyId', eap."accessPolicyId",
-          'accessPolicy', json_build_object(
-            'id', ap."id",
-            'name', ap."name",
-            'description', ap."description",
-            'parties', COALESCE((
-              SELECT json_agg(
-                json_build_object(
-                  'id', party."id",
-                  'accessPolicyId', party."accessPolicyId",
-                  'type', party."type",
-                  'partyId', party."partyId",
-                  'groupUsers', CASE
-                    WHEN party."type" = 'group' THEN (
-                      SELECT COALESCE(json_agg(gu."userId"), '[]'::json)
-                      FROM "AccessPolicyGroupUser" gu
-                      WHERE gu."groupId" = party."partyId"::int
-                    )
-                    ELSE NULL
-                  END
-                )
-              )
-              FROM "AccessPolicyParty" party
-              WHERE party."accessPolicyId" = ap."id"
-            ), '[]'::json)
-          )
+          'viewAccessPolicyId', eap."viewAccessPolicyId",
+          'editAccessPolicyId', eap."editAccessPolicyId",
+          'viewAccessPolicy', CASE WHEN vap."id" IS NOT NULL THEN json_build_object(
+            'id', vap."id",
+            'name', vap."name",
+            'description', vap."description",
+            'parties', ${partiesSubquery("vap")}
+          ) ELSE NULL END,
+          'editAccessPolicy', CASE WHEN editap."id" IS NOT NULL THEN json_build_object(
+            'id', editap."id",
+            'name', editap."name",
+            'description', editap."description",
+            'parties', ${partiesSubquery("editap")}
+          ) ELSE NULL END
         ) AS "accessPolicy"
         FROM "EntityAccessPolicy" eap
-        JOIN "AccessPolicy" ap ON ap."id" = eap."accessPolicyId"
+        LEFT JOIN "AccessPolicy" vap ON vap."id" = eap."viewAccessPolicyId"
+        LEFT JOIN "AccessPolicy" editap ON editap."id" = eap."editAccessPolicyId"
         WHERE eap."entityId" = e."id"
       ) entityAccessPolicyData ON true
     `;

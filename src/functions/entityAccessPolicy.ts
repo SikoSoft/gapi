@@ -8,7 +8,8 @@ import { forbiddenReply, introspect, jsonReply } from "..";
 import { AccessPolicy } from "../lib/AccessPolicy";
 
 interface EntityAccessPolicyBody {
-  accessPolicyId: number;
+  viewAccessPolicyId: number;
+  editAccessPolicyId: number;
 }
 
 export async function entityAccessPolicy(
@@ -27,7 +28,8 @@ export async function entityAccessPolicy(
   const result = await AccessPolicy.setEntityAccessPolicy(
     userId,
     entityId,
-    body.accessPolicyId
+    body.viewAccessPolicyId,
+    body.editAccessPolicyId
   );
 
   if (result.isErr()) {

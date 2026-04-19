@@ -332,7 +332,8 @@ export class Entity {
           },
           accessPolicy: {
             include: {
-              accessPolicy: true,
+              viewAccessPolicy: true,
+              editAccessPolicy: true,
             },
           },
         },
@@ -487,8 +488,11 @@ export class Entity {
       updatedAt: entity.updatedAt.toISOString(),
       properties,
       tags: entity.tags.map((tag) => tag.label),
-      accessPolicyId: entity.accessPolicy
-        ? entity.accessPolicy.accessPolicyId
+      viewAccessPolicyId: entity.accessPolicy
+        ? entity.accessPolicy.viewAccessPolicyId
+        : 0,
+      editAccessPolicyId: entity.accessPolicy
+        ? entity.accessPolicy.editAccessPolicyId
         : 0,
     };
   }
@@ -574,7 +578,8 @@ export class Entity {
             },
             accessPolicy: {
               include: {
-                accessPolicy: true,
+                viewAccessPolicy: true,
+                editAccessPolicy: true,
               },
             },
           },
@@ -622,7 +627,8 @@ export class Entity {
           },
           accessPolicy: {
             include: {
-              accessPolicy: true,
+              viewAccessPolicy: true,
+              editAccessPolicy: true,
             },
           },
         },
@@ -631,15 +637,20 @@ export class Entity {
       if (entityPolicy) {
         const [entityCount, listConfigCount] = await Promise.all([
           prisma.entityAccessPolicy.count({
-            where: { accessPolicyId: entityPolicy.accessPolicyId },
+            where: {
+              OR: [
+                { viewAccessPolicyId: entityPolicy.viewAccessPolicyId },
+                { editAccessPolicyId: entityPolicy.editAccessPolicyId },
+              ],
+            },
           }),
           prisma.listConfigAccessPolicy.count({
-            where: { accessPolicyId: entityPolicy.accessPolicyId },
+            where: { accessPolicyId: entityPolicy.viewAccessPolicyId },
           }),
         ]);
         if (entityCount === 0 && listConfigCount === 0) {
           await prisma.accessPolicy.delete({
-            where: { id: entityPolicy.accessPolicyId },
+            where: { id: entityPolicy.viewAccessPolicyId },
           });
         }
       }
@@ -713,7 +724,8 @@ export class Entity {
               },
               accessPolicy: {
                 include: {
-                  accessPolicy: true,
+                  viewAccessPolicy: true,
+                  editAccessPolicy: true,
                 },
               },
             },

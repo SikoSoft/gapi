@@ -537,16 +537,19 @@ model AccessPolicy {
   updatedAt   DateTime @updatedAt
 
   parties            AccessPolicyParty[]
-  entityPolicies     EntityAccessPolicy[]
+  entityViewPolicies EntityAccessPolicy[]     @relation("EntityViewAccessPolicy")
+  entityEditPolicies EntityAccessPolicy[]     @relation("EntityEditAccessPolicy")
   listConfigPolicies ListConfigAccessPolicy[]
 }
 
 model EntityAccessPolicy {
-  entityId       Int @unique
-  accessPolicyId Int
+  entityId           Int  @unique
+  viewAccessPolicyId Int?
+  editAccessPolicyId Int?
 
-  entity       Entity       @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  accessPolicy AccessPolicy @relation(fields: [accessPolicyId], references: [id], onDelete: Cascade)
+  entity           Entity        @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  viewAccessPolicy AccessPolicy? @relation("EntityViewAccessPolicy", fields: [viewAccessPolicyId], references: [id], onDelete: Cascade)
+  editAccessPolicy AccessPolicy? @relation("EntityEditAccessPolicy", fields: [editAccessPolicyId], references: [id], onDelete: Cascade)
 }
 
 model ListConfigAccessPolicy {

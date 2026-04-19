@@ -117,7 +117,8 @@ const prismaEntity = Prisma.validator<Prisma.EntityFindUniqueArgs>()({
     },
     accessPolicy: {
       include: {
-        accessPolicy: true,
+        viewAccessPolicy: true,
+        editAccessPolicy: true,
       },
     },
   },

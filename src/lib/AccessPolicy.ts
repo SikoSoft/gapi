@@ -30,7 +30,7 @@ export class AccessPolicy {
       id: policy.id,
       name: policy.name,
       description: policy.description,
-      accessRules: policy.parties.map(p => ({
+      parties: policy.parties.map((p) => ({
         id: p.id,
         type: p.type as Access.AccessPartyType,
         partyId: p.partyId,
@@ -43,13 +43,15 @@ export class AccessPolicy {
       const policies = await prisma.accessPolicy.findMany({
         include: { parties: true },
       });
-      return ok(policies.map(p => AccessPolicy.mapPolicy(p)));
+      return ok(policies.map((p) => AccessPolicy.mapPolicy(p)));
     } catch (error) {
       return err(new Error("Failed to get access policies", { cause: error }));
     }
   }
 
-  static async getById(id: number): Promise<Result<Access.AccessPolicy | null, Error>> {
+  static async getById(
+    id: number
+  ): Promise<Result<Access.AccessPolicy | null, Error>> {
     try {
       const policy = await prisma.accessPolicy.findUnique({
         where: { id },
@@ -73,7 +75,7 @@ export class AccessPolicy {
           description,
           parties: {
             createMany: {
-              data: parties.map(p => ({ type: p.type, partyId: p.id })),
+              data: parties.map((p) => ({ type: p.type, partyId: p.id })),
             },
           },
         },
@@ -92,8 +94,10 @@ export class AccessPolicy {
     parties: Access.AccessPolicyParty[]
   ): Promise<Result<Access.AccessPolicy, Error>> {
     try {
-      const policy = await prisma.$transaction(async tx => {
-        await tx.accessPolicyParty.deleteMany({ where: { accessPolicyId: id } });
+      const policy = await prisma.$transaction(async (tx) => {
+        await tx.accessPolicyParty.deleteMany({
+          where: { accessPolicyId: id },
+        });
         return tx.accessPolicy.update({
           where: { id },
           data: {
@@ -101,7 +105,7 @@ export class AccessPolicy {
             description,
             parties: {
               createMany: {
-                data: parties.map(p => ({ type: p.type, partyId: p.id })),
+                data: parties.map((p) => ({ type: p.type, partyId: p.id })),
               },
             },
           },
@@ -223,7 +227,8 @@ export class AccessPolicy {
   static async setEntityAccessPolicy(
     userId: string,
     entityId: number,
-    accessPolicyId: number
+    viewAccessPolicyId: number,
+    editAccessPolicyId: number
   ): Promise<Result<boolean, Error>> {
     try {
       const entity = await prisma.entity.findUnique({
@@ -234,8 +239,15 @@ export class AccessPolicy {
       }
       await prisma.entityAccessPolicy.upsert({
         where: { entityId },
-        create: { entityId, accessPolicyId },
-        update: { accessPolicyId },
+        create: {
+          entityId,
+          viewAccessPolicyId: viewAccessPolicyId || null,
+          editAccessPolicyId: editAccessPolicyId || null,
+        },
+        update: {
+          viewAccessPolicyId: viewAccessPolicyId || null,
+          editAccessPolicyId: editAccessPolicyId || null,
+        },
       });
       return ok(true);
     } catch (error) {
@@ -250,7 +262,12 @@ export class AccessPolicy {
   ): Promise<Result<number, Error>> {
     try {
       const count = await prisma.entityAccessPolicy.count({
-        where: { accessPolicyId },
+        where: {
+          OR: [
+            { viewAccessPolicyId: accessPolicyId },
+            { editAccessPolicyId: accessPolicyId },
+          ],
+        },
       });
       return ok(count);
     } catch (error) {

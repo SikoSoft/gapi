@@ -396,8 +396,36 @@ export class ListConfig {
     userId: string
   ): Promise<Result<List.ListConfig[], Error>> {
     try {
-      const listConfigs = await prisma.listConfig.findMany({
+      const userGroups = await prisma.accessPolicyGroupUser.findMany({
         where: { userId },
+        select: { groupId: true },
+      });
+      const groupIds = userGroups.map(g => String(g.groupId));
+
+      const listConfigs = await prisma.listConfig.findMany({
+        where: {
+          OR: [
+            { userId },
+            {
+              accessPolicy: {
+                viewAccessPolicy: {
+                  parties: {
+                    some: { type: 'user', partyId: userId },
+                  },
+                },
+              },
+            },
+            {
+              accessPolicy: {
+                viewAccessPolicy: {
+                  parties: {
+                    some: { type: 'group', partyId: { in: groupIds } },
+                  },
+                },
+              },
+            },
+          ],
+        },
         include: {
           filter: {
             include: {

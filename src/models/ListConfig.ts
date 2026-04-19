@@ -20,6 +20,12 @@ const prismaListConfig = Prisma.validator<Prisma.ListConfigFindManyArgs>()({
       },
     },
     themes: true,
+    accessPolicy: {
+      include: {
+        viewAccessPolicy: true,
+        editAccessPolicy: true,
+      },
+    },
   },
 });
 

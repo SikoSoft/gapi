@@ -326,7 +326,12 @@ export class AccessPolicy {
   ): Promise<Result<number, Error>> {
     try {
       const count = await prisma.listConfigAccessPolicy.count({
-        where: { accessPolicyId },
+        where: {
+          OR: [
+            { viewAccessPolicyId: accessPolicyId },
+            { editAccessPolicyId: accessPolicyId },
+          ],
+        },
       });
       return ok(count);
     } catch (error) {
@@ -334,6 +339,39 @@ export class AccessPolicy {
         new Error("Failed to count list configs using access policy", {
           cause: error,
         })
+      );
+    }
+  }
+
+  static async setListConfigAccessPolicy(
+    userId: string,
+    listConfigId: string,
+    viewAccessPolicyId: number,
+    editAccessPolicyId: number
+  ): Promise<Result<boolean, Error>> {
+    try {
+      const listConfig = await prisma.listConfig.findUnique({
+        where: { id: listConfigId, userId },
+      });
+      if (!listConfig) {
+        return err(new Error("List config not found or not owned by user"));
+      }
+      await prisma.listConfigAccessPolicy.upsert({
+        where: { listConfigId },
+        create: {
+          listConfigId,
+          viewAccessPolicyId: viewAccessPolicyId || null,
+          editAccessPolicyId: editAccessPolicyId || null,
+        },
+        update: {
+          viewAccessPolicyId: viewAccessPolicyId || null,
+          editAccessPolicyId: editAccessPolicyId || null,
+        },
+      });
+      return ok(true);
+    } catch (error) {
+      return err(
+        new Error("Failed to set list config access policy", { cause: error })
       );
     }
   }

@@ -60,6 +60,12 @@ export class ListConfig {
             },
           },
           themes: true,
+          accessPolicy: {
+            include: {
+              viewAccessPolicy: true,
+              editAccessPolicy: true,
+            },
+          },
         },
       });
 
@@ -83,18 +89,33 @@ export class ListConfig {
       });
 
       if (listConfigPolicy) {
-        const [entityCount, listConfigCount] = await Promise.all([
-          prisma.entityAccessPolicy.count({
-            where: { accessPolicyId: listConfigPolicy.accessPolicyId },
-          }),
-          prisma.listConfigAccessPolicy.count({
-            where: { accessPolicyId: listConfigPolicy.accessPolicyId },
-          }),
-        ]);
-        if (entityCount === 0 && listConfigCount === 0) {
-          await prisma.accessPolicy.delete({
-            where: { id: listConfigPolicy.accessPolicyId },
-          });
+        const policyIds = [
+          listConfigPolicy.viewAccessPolicyId,
+          listConfigPolicy.editAccessPolicyId,
+        ].filter((id): id is number => id !== null);
+
+        for (const policyId of [...new Set(policyIds)]) {
+          const [entityCount, listConfigCount] = await Promise.all([
+            prisma.entityAccessPolicy.count({
+              where: {
+                OR: [
+                  { viewAccessPolicyId: policyId },
+                  { editAccessPolicyId: policyId },
+                ],
+              },
+            }),
+            prisma.listConfigAccessPolicy.count({
+              where: {
+                OR: [
+                  { viewAccessPolicyId: policyId },
+                  { editAccessPolicyId: policyId },
+                ],
+              },
+            }),
+          ]);
+          if (entityCount === 0 && listConfigCount === 0) {
+            await prisma.accessPolicy.delete({ where: { id: policyId } });
+          }
         }
       }
 
@@ -335,6 +356,12 @@ export class ListConfig {
             },
           },
           themes: true,
+          accessPolicy: {
+            include: {
+              viewAccessPolicy: true,
+              editAccessPolicy: true,
+            },
+          },
         },
       });
 
@@ -389,6 +416,12 @@ export class ListConfig {
             },
           },
           themes: true,
+          accessPolicy: {
+            include: {
+              viewAccessPolicy: true,
+              editAccessPolicy: true,
+            },
+          },
         },
         orderBy: { name: "asc" },
       });
@@ -512,6 +545,8 @@ export class ListConfig {
       sort: ListConfig.mapSortDataToSpec(data.sort),
       setting: ListConfig.mapSettingDataToSpec(data.setting),
       themes: ListConfig.mapThemesDataToSpec(data.themes),
+      viewAccessPolicyId: data.accessPolicy?.viewAccessPolicy?.id || null,
+      editAccessPolicyId: data.accessPolicy?.editAccessPolicy?.id || null,
     };
   }
 }

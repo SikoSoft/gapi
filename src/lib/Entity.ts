@@ -645,7 +645,12 @@ export class Entity {
             },
           }),
           prisma.listConfigAccessPolicy.count({
-            where: { accessPolicyId: entityPolicy.viewAccessPolicyId },
+            where: {
+              OR: [
+                { viewAccessPolicyId: entityPolicy.viewAccessPolicyId },
+                { editAccessPolicyId: entityPolicy.editAccessPolicyId },
+              ],
+            },
           }),
         ]);
         if (entityCount === 0 && listConfigCount === 0) {

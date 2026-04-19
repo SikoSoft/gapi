@@ -536,10 +536,11 @@ model AccessPolicy {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  parties            AccessPolicyParty[]
-  entityViewPolicies EntityAccessPolicy[]     @relation("EntityViewAccessPolicy")
-  entityEditPolicies EntityAccessPolicy[]     @relation("EntityEditAccessPolicy")
-  listConfigPolicies ListConfigAccessPolicy[]
+  parties                AccessPolicyParty[]
+  entityViewPolicies     EntityAccessPolicy[]     @relation("EntityViewAccessPolicy")
+  entityEditPolicies     EntityAccessPolicy[]     @relation("EntityEditAccessPolicy")
+  listConfigViewPolicies ListConfigAccessPolicy[] @relation("ListConfigViewAccessPolicy")
+  listConfigEditPolicies ListConfigAccessPolicy[] @relation("ListConfigEditAccessPolicy")
 }
 
 model EntityAccessPolicy {
@@ -553,11 +554,13 @@ model EntityAccessPolicy {
 }
 
 model ListConfigAccessPolicy {
-  listConfigId   String @unique @db.Uuid
-  accessPolicyId Int
+  listConfigId       String @unique @db.Uuid
+  viewAccessPolicyId Int?
+  editAccessPolicyId Int?
 
-  listConfig   ListConfig   @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
-  accessPolicy AccessPolicy @relation(fields: [accessPolicyId], references: [id], onDelete: Cascade)
+  listConfig       ListConfig    @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+  viewAccessPolicy AccessPolicy? @relation("ListConfigViewAccessPolicy", fields: [viewAccessPolicyId], references: [id], onDelete: Cascade)
+  editAccessPolicy AccessPolicy? @relation("ListConfigEditAccessPolicy", fields: [editAccessPolicyId], references: [id], onDelete: Cascade)
 }
 
 model AccessPolicyParty {

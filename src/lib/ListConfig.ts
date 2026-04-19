@@ -2,7 +2,10 @@ import { Result, err, ok } from "neverthrow";
 import { v4 as uuidv4 } from "uuid";
 import { List } from "api-spec/models";
 import { prisma } from "..";
-import { PrismaListConfig } from "../models/ListConfig";
+import {
+  PrismaListConfig,
+  prismaListConfigInclude,
+} from "../models/ListConfig";
 import {
   ListFilterTimeType,
   ListFilterType,
@@ -13,6 +16,7 @@ import {
 } from "api-spec/models/List";
 import { Settings } from "api-spec/models/Setting";
 import { Setting } from "./Setting";
+import { AccessPolicy } from "./AccessPolicy";
 
 export class ListConfig {
   static async create(
@@ -42,31 +46,7 @@ export class ListConfig {
             },
           },
         },
-        include: {
-          filter: {
-            include: {
-              time: true,
-              text: true,
-              tagging: true,
-              includeTypes: true,
-            },
-          },
-          sort: true,
-          setting: {
-            include: {
-              numberSettings: true,
-              textSettings: true,
-              booleanSettings: true,
-            },
-          },
-          themes: true,
-          accessPolicy: {
-            include: {
-              viewAccessPolicy: true,
-              editAccessPolicy: true,
-            },
-          },
-        },
+        include: prismaListConfigInclude,
       });
 
       return ok(ListConfig.mapDataToSpec(created));
@@ -129,7 +109,7 @@ export class ListConfig {
     userId: string,
     listConfig: Omit<
       List.ListConfig,
-      "setting" | "viewAccessPolicyId" | "editAccessPolicyId"
+      "setting" | "viewAccessPolicy" | "editAccessPolicy"
     >
   ): Promise<Result<List.ListConfig, Error>> {
     try {
@@ -341,31 +321,7 @@ export class ListConfig {
     try {
       const listConfig = await prisma.listConfig.findFirstOrThrow({
         where: { id },
-        include: {
-          filter: {
-            include: {
-              time: true,
-              text: true,
-              tagging: true,
-              includeTypes: true,
-            },
-          },
-          sort: true,
-          setting: {
-            include: {
-              numberSettings: true,
-              textSettings: true,
-              booleanSettings: true,
-            },
-          },
-          themes: true,
-          accessPolicy: {
-            include: {
-              viewAccessPolicy: true,
-              editAccessPolicy: true,
-            },
-          },
-        },
+        include: prismaListConfigInclude,
       });
 
       return ok(ListConfig.mapDataToSpec(listConfig));
@@ -429,31 +385,7 @@ export class ListConfig {
             },
           ],
         },
-        include: {
-          filter: {
-            include: {
-              time: true,
-              text: true,
-              tagging: true,
-              includeTypes: true,
-            },
-          },
-          sort: true,
-          setting: {
-            include: {
-              numberSettings: true,
-              textSettings: true,
-              booleanSettings: true,
-            },
-          },
-          themes: true,
-          accessPolicy: {
-            include: {
-              viewAccessPolicy: true,
-              editAccessPolicy: true,
-            },
-          },
-        },
+        include: prismaListConfigInclude,
         orderBy: { name: "asc" },
       });
 
@@ -576,8 +508,10 @@ export class ListConfig {
       sort: ListConfig.mapSortDataToSpec(data.sort),
       setting: ListConfig.mapSettingDataToSpec(data.setting),
       themes: ListConfig.mapThemesDataToSpec(data.themes),
-      viewAccessPolicyId: data.accessPolicy?.viewAccessPolicy?.id || null,
-      editAccessPolicyId: data.accessPolicy?.editAccessPolicy?.id || null,
+      viewAccessPolicy:
+        AccessPolicy.mapDataToSpec(data.accessPolicy?.viewAccessPolicy) || null,
+      editAccessPolicy:
+        AccessPolicy.mapDataToSpec(data.accessPolicy?.editAccessPolicy) || null,
     };
   }
 }

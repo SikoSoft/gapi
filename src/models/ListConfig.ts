@@ -1,32 +1,38 @@
 import { Prisma } from "@prisma/client";
 
-const prismaListConfig = Prisma.validator<Prisma.ListConfigFindManyArgs>()({
-  where: { userId: "" },
-  include: {
-    filter: {
-      include: {
-        time: true,
-        text: true,
-        tagging: true,
-        includeTypes: true,
-      },
+export const prismaListConfigInclude = {
+  filter: {
+    include: {
+      time: true,
+      text: true,
+      tagging: true,
+      includeTypes: true,
     },
-    sort: true,
-    setting: {
-      include: {
-        numberSettings: true,
-        textSettings: true,
-        booleanSettings: true,
-      },
+  },
+  sort: true,
+  setting: {
+    include: {
+      numberSettings: true,
+      textSettings: true,
+      booleanSettings: true,
     },
-    themes: true,
-    accessPolicy: {
-      include: {
-        viewAccessPolicy: true,
-        editAccessPolicy: true,
+  },
+  themes: true,
+  accessPolicy: {
+    include: {
+      viewAccessPolicy: {
+        include: { parties: true },
+      },
+      editAccessPolicy: {
+        include: { parties: true },
       },
     },
   },
+} satisfies Prisma.ListConfigFindManyArgs["include"];
+
+const prismaListConfig = Prisma.validator<Prisma.ListConfigFindManyArgs>()({
+  where: { userId: "" },
+  include: prismaListConfigInclude,
 });
 
 export type PrismaListConfig = Prisma.ListConfigGetPayload<

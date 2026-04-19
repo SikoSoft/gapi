@@ -25,7 +25,17 @@ export interface AccessPolicyGroupRecord {
 }
 
 export class AccessPolicy {
-  static mapPolicy(policy: PrismaAccessPolicy): Access.AccessPolicy {
+  static mapDataToSpec(data: PrismaAccessPolicy | null): Access.AccessPolicy {
+    return AccessPolicy.mapPolicy(data);
+  }
+
+  static mapPolicy(
+    policy: PrismaAccessPolicy | null
+  ): Access.AccessPolicy | null {
+    if (!policy) {
+      return null;
+    }
+
     return {
       id: policy.id,
       name: policy.name,

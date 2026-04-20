@@ -19,6 +19,7 @@ npm run watch      # tsup in watch mode
 ```
 
 **Prisma migrations:**
+
 ```bash
 npx prisma migrate dev --name "migration-name"
 npx prisma generate        # Regenerate client after schema changes
@@ -27,6 +28,10 @@ npx prisma generate        # Regenerate client after schema changes
 No test suite exists in this project.
 
 ## Architecture
+
+### Guidelines
+
+- mapDataToSpec functions should never be async
 
 ### Request Flow
 

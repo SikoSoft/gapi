@@ -105,6 +105,66 @@ export class ListConfig {
     }
   }
 
+  static async isEditAllowed(
+    userId: string,
+    listConfigId: string
+  ): Promise<Result<boolean, Error>> {
+    try {
+      const listConfig = await prisma.listConfig.findUnique({
+        where: { id: listConfigId },
+        select: {
+          userId: true,
+          accessPolicy: {
+            select: {
+              editAccessPolicy: {
+                select: {
+                  parties: {
+                    select: { type: true, userId: true, groupId: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!listConfig) {
+        return ok(false);
+      }
+      if (listConfig.userId === userId) {
+        return ok(true);
+      }
+
+      const editPolicy = listConfig.accessPolicy?.editAccessPolicy;
+      if (!editPolicy) {
+        return ok(false);
+      }
+
+      const hasDirectAccess = editPolicy.parties.some(
+        (p) => p.type === "user" && p.userId === userId
+      );
+      if (hasDirectAccess) {
+        return ok(true);
+      }
+
+      const groupIds = editPolicy.parties
+        .filter((p) => p.type === "group" && p.groupId !== null)
+        .map((p) => p.groupId as number);
+
+      if (groupIds.length === 0) {
+        return ok(false);
+      }
+
+      const groupMembership = await prisma.accessPolicyGroupUser.count({
+        where: { userId, groupId: { in: groupIds } },
+      });
+
+      return ok(groupMembership > 0);
+    } catch (error) {
+      return err(new Error("Failed to check edit access", { cause: error }));
+    }
+  }
+
   static async update(
     userId: string,
     listConfig: Omit<
@@ -113,6 +173,15 @@ export class ListConfig {
     >
   ): Promise<Result<List.ListConfig, Error>> {
     try {
+      const isAllowed = await ListConfig.isEditAllowed(userId, listConfig.id);
+      if (isAllowed.isErr()) {
+        return err(isAllowed.error);
+      }
+
+      if (!isAllowed.value) {
+        return err(new Error("Not authorized to edit this list config"));
+      }
+
       await prisma.listConfig.update({
         data: {
           id: listConfig.id,
@@ -120,7 +189,6 @@ export class ListConfig {
         },
         where: {
           id: listConfig.id,
-          userId,
         },
       });
 

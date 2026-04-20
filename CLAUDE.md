@@ -29,10 +29,6 @@ No test suite exists in this project.
 
 ## Architecture
 
-### Guidelines
-
-- mapDataToSpec functions should never be async
-
 ### Request Flow
 
 Every endpoint follows the same pattern:
@@ -90,3 +86,8 @@ All queries are scoped by `userId`. No cross-user data access; `introspect()` pr
 ### Build
 
 tsup compiles all `src/**/*.ts` to ESM `.mjs` files in `dist/`. `api-spec` is bundled (not left as external) because Azure Functions runtime cannot resolve GitHub package URLs at runtime.
+
+### Guidelines
+
+- mapDataToSpec functions should never be async
+- Never make changes if a Prisma schema change is required, without asking for verification first

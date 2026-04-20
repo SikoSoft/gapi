@@ -91,3 +91,4 @@ tsup compiles all `src/**/*.ts` to ESM `.mjs` files in `dist/`. `api-spec` is bu
 
 - mapDataToSpec functions should never be async
 - Never make changes if a Prisma schema change is required, without asking for verification first
+- Always use the one-true-brace style of indentation; meaning that braces should always be used when possible

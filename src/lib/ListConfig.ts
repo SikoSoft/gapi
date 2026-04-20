@@ -1,6 +1,6 @@
 import { Result, err, ok } from "neverthrow";
 import { v4 as uuidv4 } from "uuid";
-import { List } from "api-spec/models";
+import { List, Access } from "api-spec/models";
 import { prisma } from "..";
 import {
   PrismaListConfig,
@@ -369,7 +369,7 @@ export class ListConfig {
               accessPolicy: {
                 viewAccessPolicy: {
                   parties: {
-                    some: { type: "user", partyId: userId },
+                    some: { type: "user", userId },
                   },
                 },
               },
@@ -378,7 +378,10 @@ export class ListConfig {
               accessPolicy: {
                 viewAccessPolicy: {
                   parties: {
-                    some: { type: "group", partyId: { in: groupIds } },
+                    some: {
+                      type: "group",
+                      groupId: { in: groupIds.map(Number) },
+                    },
                   },
                 },
               },
@@ -500,6 +503,20 @@ export class ListConfig {
   }
 
   static mapDataToSpec(data: PrismaListConfig): List.ListConfig {
+    let viewAccessPolicy: Access.AccessPolicy | null = null;
+    if (data.accessPolicy?.viewAccessPolicy) {
+      viewAccessPolicy = AccessPolicy.mapDataToSpec(
+        data.accessPolicy.viewAccessPolicy
+      );
+    }
+
+    let editAccessPolicy: Access.AccessPolicy | null = null;
+    if (data.accessPolicy?.editAccessPolicy) {
+      editAccessPolicy = AccessPolicy.mapDataToSpec(
+        data.accessPolicy.editAccessPolicy
+      );
+    }
+
     return {
       userId: data.userId,
       id: data.id,
@@ -508,10 +525,8 @@ export class ListConfig {
       sort: ListConfig.mapSortDataToSpec(data.sort),
       setting: ListConfig.mapSettingDataToSpec(data.setting),
       themes: ListConfig.mapThemesDataToSpec(data.themes),
-      viewAccessPolicy:
-        AccessPolicy.mapDataToSpec(data.accessPolicy?.viewAccessPolicy) || null,
-      editAccessPolicy:
-        AccessPolicy.mapDataToSpec(data.accessPolicy?.editAccessPolicy) || null,
+      viewAccessPolicy,
+      editAccessPolicy,
     };
   }
 }

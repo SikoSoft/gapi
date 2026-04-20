@@ -3,7 +3,14 @@ import { Prisma } from "@prisma/client";
 const prismaAccessPolicy =
   Prisma.validator<Prisma.AccessPolicyFindUniqueArgs>()({
     where: { id: 1 },
-    include: { parties: true },
+    include: {
+      parties: {
+        include: {
+          user: true,
+          group: { include: { users: { include: { user: true } } } },
+        },
+      },
+    },
   });
 
 export type PrismaAccessPolicy = Prisma.AccessPolicyGetPayload<

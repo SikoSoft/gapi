@@ -21,10 +21,24 @@ export const prismaListConfigInclude = {
   accessPolicy: {
     include: {
       viewAccessPolicy: {
-        include: { parties: true },
+        include: {
+          parties: {
+            include: {
+              user: true,
+              group: { include: { users: { include: { user: true } } } },
+            },
+          },
+        },
       },
       editAccessPolicy: {
-        include: { parties: true },
+        include: {
+          parties: {
+            include: {
+              user: true,
+              group: { include: { users: { include: { user: true } } } },
+            },
+          },
+        },
       },
     },
   },

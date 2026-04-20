@@ -182,20 +182,28 @@ export class EntityListQueryBuilder {
         SELECT json_agg(
           json_build_object(
             'id', party."id",
-            'accessPolicyId', party."accessPolicyId",
             'type', party."type",
-            'partyId', party."partyId",
-            'groupUsers', CASE
+            'name', CASE
+              WHEN party."type" = 'user' THEN u."username"
+              WHEN party."type" = 'group' THEN grp."name"
+              ELSE ''
+            END,
+            'userId', party."userId",
+            'groupId', party."groupId"::text,
+            'users', CASE
               WHEN party."type" = 'group' THEN (
-                SELECT COALESCE(json_agg(gu."userId"), '[]'::json)
+                SELECT COALESCE(json_agg(json_build_object('id', gu."userId", 'name', guu."username")), '[]'::json)
                 FROM "AccessPolicyGroupUser" gu
-                WHERE gu."groupId" = party."partyId"::int
+                JOIN "User" guu ON guu."id" = gu."userId"
+                WHERE gu."groupId" = party."groupId"
               )
               ELSE NULL
             END
           )
         )
         FROM "AccessPolicyParty" party
+        LEFT JOIN "User" u ON u."id" = party."userId"
+        LEFT JOIN "AccessPolicyGroup" grp ON grp."id" = party."groupId"
         WHERE party."accessPolicyId" = ${policyAlias}."id"
       ), '[]'::json)
     `;

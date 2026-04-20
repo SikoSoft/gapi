@@ -25,7 +25,9 @@ export interface AccessPolicyGroupRecord {
 }
 
 export class AccessPolicy {
-  static mapDataToSpec(data: PrismaAccessPolicy | null): Access.AccessPolicy {
+  static mapDataToSpec(
+    data: PrismaAccessPolicy | null
+  ): Access.AccessPolicy | null {
     return AccessPolicy.mapPolicy(data);
   }
 
@@ -40,18 +42,59 @@ export class AccessPolicy {
       id: policy.id,
       name: policy.name,
       description: policy.description,
-      parties: policy.parties.map((p) => ({
-        id: p.id,
-        type: p.type as Access.AccessPartyType,
-        partyId: p.partyId,
-      })),
+      parties: policy.parties.map((p) => {
+        if (p.type === Access.AccessPartyType.USER) {
+          return {
+            type: Access.AccessPartyType.USER,
+            id: String(p.id),
+            name: p.user?.username ?? "",
+            userId: p.userId ?? "",
+          } as Access.AccessPolicyUserParty;
+        } else {
+          return {
+            type: Access.AccessPartyType.GROUP,
+            id: String(p.id),
+            name: p.group?.name ?? "",
+            groupId: String(p.groupId ?? ""),
+            users: p.group
+              ? p.group.users.map((ug) => AccessPolicy.mapGroupUser(ug))
+              : [],
+          } as Access.AccessPolicyGroupParty;
+        }
+      }),
+    };
+  }
+
+  static mapGroup(group: PrismaAccessPolicyGroup): Access.AccessPolicyGroup {
+    return {
+      id: String(group.id),
+      name: group.name,
+      users: group.users.map((ug) => AccessPolicy.mapGroupUser(ug)),
+    };
+  }
+
+  static mapGroupUser(
+    groupUser: PrismaAccessPolicyGroupUser
+  ): Access.AccessPolicyUserParty {
+    return {
+      type: Access.AccessPartyType.USER,
+      id: String(groupUser.userId),
+      name: groupUser.user?.username ?? "",
+      userId: groupUser.userId,
     };
   }
 
   static async get(): Promise<Result<Access.AccessPolicy[], Error>> {
     try {
       const policies = await prisma.accessPolicy.findMany({
-        include: { parties: true },
+        include: {
+          parties: {
+            include: {
+              user: true,
+              group: { include: { users: { include: { user: true } } } },
+            },
+          },
+        },
       });
       return ok(policies.map((p) => AccessPolicy.mapPolicy(p)));
     } catch (error) {
@@ -65,7 +108,14 @@ export class AccessPolicy {
     try {
       const policy = await prisma.accessPolicy.findUnique({
         where: { id },
-        include: { parties: true },
+        include: {
+          parties: {
+            include: {
+              user: true,
+              group: { include: { users: { include: { user: true } } } },
+            },
+          },
+        },
       });
       return ok(policy ? AccessPolicy.mapPolicy(policy) : null);
     } catch (error) {
@@ -85,11 +135,22 @@ export class AccessPolicy {
           description,
           parties: {
             createMany: {
-              data: parties.map((p) => ({ type: p.type, partyId: p.id })),
+              data: parties.map((p) =>
+                p.type === Access.AccessPartyType.USER
+                  ? { type: p.type, userId: p.userId }
+                  : { type: p.type, groupId: parseInt(p.groupId, 10) }
+              ),
             },
           },
         },
-        include: { parties: true },
+        include: {
+          parties: {
+            include: {
+              user: true,
+              group: { include: { users: { include: { user: true } } } },
+            },
+          },
+        },
       });
       return ok(AccessPolicy.mapPolicy(policy));
     } catch (error) {
@@ -115,11 +176,22 @@ export class AccessPolicy {
             description,
             parties: {
               createMany: {
-                data: parties.map((p) => ({ type: p.type, partyId: p.id })),
+                data: parties.map((p) =>
+                  p.type === Access.AccessPartyType.USER
+                    ? { type: p.type, userId: p.userId }
+                    : { type: p.type, groupId: parseInt(p.groupId, 10) }
+                ),
               },
             },
           },
-          include: { parties: true },
+          include: {
+            parties: {
+              include: {
+                user: true,
+                group: { include: { users: { include: { user: true } } } },
+              },
+            },
+          },
         });
       });
       return ok(AccessPolicy.mapPolicy(policy));
@@ -151,23 +223,6 @@ export class AccessPolicy {
         new Error("Failed to get access policy groups", { cause: error })
       );
     }
-  }
-
-  static mapGroup(group: PrismaAccessPolicyGroup): Access.AccessPolicyGroup {
-    return {
-      id: String(group.id),
-      name: group.name,
-      users: group.users.map((ug) => AccessPolicy.mapGroupUser(ug)),
-    };
-  }
-
-  static mapGroupUser(
-    groupUser: PrismaAccessPolicyGroupUser
-  ): Access.AccessPolicyGroupUser {
-    return {
-      id: groupUser.user.id,
-      name: groupUser.user.username,
-    };
   }
 
   static async createGroup(
@@ -307,19 +362,23 @@ export class AccessPolicy {
               ? { name: { startsWith: query, mode: "insensitive" } }
               : {}),
           },
+          include: { users: { include: { user: true } } },
         }),
       ]);
 
       const parties: Access.AccessPolicyParty[] = [
         ...users.map((u) => ({
+          type: Access.AccessPartyType.USER as const,
           id: u.id,
-          type: Access.AccessPartyType.USER,
           name: u.username,
+          userId: u.id,
         })),
         ...groups.map((g) => ({
+          type: Access.AccessPartyType.GROUP as const,
           id: String(g.id),
-          type: Access.AccessPartyType.GROUP,
           name: g.name,
+          groupId: String(g.id),
+          users: g.users.map((ug) => AccessPolicy.mapGroupUser(ug)),
         })),
       ];
 

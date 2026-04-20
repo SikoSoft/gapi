@@ -436,7 +436,8 @@ model User {
   roles              UserRole[]
   sessions           Session[]
   googleAccount      UserGoogleAccount[]
-  accessPolicyGroups AccessPolicyGroupUser[]
+  accessPolicyGroups   AccessPolicyGroupUser[]
+  accessPolicyParties  AccessPolicyParty[]
 }
 
 model UserRole {
@@ -564,12 +565,15 @@ model ListConfigAccessPolicy {
 }
 
 model AccessPolicyParty {
-  id             Int    @id @default(autoincrement())
+  id             Int     @id @default(autoincrement())
   accessPolicyId Int
-  type           String @db.VarChar(16)
-  partyId        String @db.VarChar(128)
+  type           String  @db.VarChar(16)
+  userId         String? @db.Uuid
+  groupId        Int?
 
-  accessPolicy AccessPolicy @relation(fields: [accessPolicyId], references: [id], onDelete: Cascade)
+  accessPolicy AccessPolicy       @relation(fields: [accessPolicyId], references: [id], onDelete: Cascade)
+  user         User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group        AccessPolicyGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }
 
 model AccessPolicyGroup {
@@ -579,7 +583,8 @@ model AccessPolicyGroup {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users AccessPolicyGroupUser[]
+  users   AccessPolicyGroupUser[]
+  parties AccessPolicyParty[]
 }
 
 model AccessPolicyGroupUser {

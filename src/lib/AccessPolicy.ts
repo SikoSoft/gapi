@@ -80,7 +80,6 @@ export class AccessPolicy {
       type: Access.AccessPartyType.USER,
       id: String(groupUser.userId),
       name: groupUser.user?.username ?? "",
-      userId: groupUser.userId,
     };
   }
 
@@ -137,8 +136,8 @@ export class AccessPolicy {
             createMany: {
               data: parties.map((p) =>
                 p.type === Access.AccessPartyType.USER
-                  ? { type: p.type, userId: p.userId }
-                  : { type: p.type, groupId: parseInt(p.groupId, 10) }
+                  ? { type: p.type, userId: p.id }
+                  : { type: p.type, groupId: parseInt(p.id, 10) }
               ),
             },
           },
@@ -178,8 +177,8 @@ export class AccessPolicy {
               createMany: {
                 data: parties.map((p) =>
                   p.type === Access.AccessPartyType.USER
-                    ? { type: p.type, userId: p.userId }
-                    : { type: p.type, groupId: parseInt(p.groupId, 10) }
+                    ? { type: p.type, userId: p.id }
+                    : { type: p.type, groupId: parseInt(p.id, 10) }
                 ),
               },
             },

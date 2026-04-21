@@ -11,6 +11,8 @@ import {
   ControlType,
   SettingConfig,
 } from "api-spec/models/Setting";
+import { ListConfig } from "./ListConfig";
+import { AccessError } from "../errors/AccessError";
 
 export type SettingConfigPart = Partial<SettingConfig>;
 
@@ -35,37 +37,50 @@ export class Setting {
   }
 
   static async update(
+    userId: string,
     listConfigId: string,
     setting: SettingSpec
   ): Promise<Result<boolean, Error>> {
-    if (!settingsConfig[setting.name]) {
-      return err(new Error("Setting not found"));
+    try {
+      const isAllowed = await ListConfig.isEditAllowed(userId, listConfigId);
+      if (isAllowed.isErr()) {
+        return err(isAllowed.error);
+      }
+
+      if (!isAllowed.value) {
+        return err(new AccessError("Not authorized to edit this list config"));
+      }
+
+      if (!settingsConfig[setting.name]) {
+        return err(new Error("Setting not found"));
+      }
+
+      const settingControlType = settingsConfig[setting.name].control.type;
+      const settingType =
+        Setting.getDataTypeFromControlType(settingControlType);
+
+      const id = uuidv4();
+
+      const settingRecord = await prisma.setting.upsert({
+        where: { listConfigId },
+        create: {
+          id,
+          listConfigId,
+        },
+        update: {},
+      });
+
+      switch (settingType) {
+        case SettingDataName.BOOLEAN:
+          return await Setting.updateBooleanSetting(settingRecord.id, setting);
+        case SettingDataName.NUMBER:
+          return await Setting.updateNumberSetting(settingRecord.id, setting);
+        case SettingDataName.TEXT:
+          return await Setting.updateTextSetting(settingRecord.id, setting);
+      }
+    } catch (error) {
+      return err(new Error("Setting type not supported"));
     }
-
-    const settingControlType = settingsConfig[setting.name].control.type;
-    const settingType = Setting.getDataTypeFromControlType(settingControlType);
-
-    const id = uuidv4();
-
-    const settingRecord = await prisma.setting.upsert({
-      where: { listConfigId },
-      create: {
-        id,
-        listConfigId,
-      },
-      update: {},
-    });
-
-    switch (settingType) {
-      case SettingDataName.BOOLEAN:
-        return await Setting.updateBooleanSetting(settingRecord.id, setting);
-      case SettingDataName.NUMBER:
-        return await Setting.updateNumberSetting(settingRecord.id, setting);
-      case SettingDataName.TEXT:
-        return await Setting.updateTextSetting(settingRecord.id, setting);
-    }
-
-    return err(new Error("Setting type not supported"));
   }
 
   static async updateBooleanSetting(

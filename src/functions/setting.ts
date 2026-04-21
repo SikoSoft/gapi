@@ -20,7 +20,11 @@ export async function setting(
   const settingBody = (await request.json()) as SettingSpec;
   context.log("settingBody", settingBody);
 
-  const result = await Setting.update(request.params.listConfigId, settingBody);
+  const result = await Setting.update(
+    introspection.user.id,
+    request.params.listConfigId,
+    settingBody
+  );
 
   if (result.isErr()) {
     context.error(result.error);

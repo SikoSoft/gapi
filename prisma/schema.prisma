@@ -312,6 +312,7 @@ model EntityConfig {
   revision                   EntityConfig?               @relation("EntityConfigRevisions", fields: [revisionOf], references: [id])
   revisions                  EntityConfig[]              @relation("EntityConfigRevisions")
   ListFilterType             ListFilterType[]
+  accessPolicy               EntityConfigAccessPolicy?
 
   @@unique([id, name])
 }
@@ -537,11 +538,13 @@ model AccessPolicy {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  parties                AccessPolicyParty[]
-  entityViewPolicies     EntityAccessPolicy[]     @relation("EntityViewAccessPolicy")
-  entityEditPolicies     EntityAccessPolicy[]     @relation("EntityEditAccessPolicy")
-  listConfigViewPolicies ListConfigAccessPolicy[] @relation("ListConfigViewAccessPolicy")
-  listConfigEditPolicies ListConfigAccessPolicy[] @relation("ListConfigEditAccessPolicy")
+  parties                    AccessPolicyParty[]
+  entityViewPolicies         EntityAccessPolicy[]       @relation("EntityViewAccessPolicy")
+  entityEditPolicies         EntityAccessPolicy[]       @relation("EntityEditAccessPolicy")
+  listConfigViewPolicies     ListConfigAccessPolicy[]   @relation("ListConfigViewAccessPolicy")
+  listConfigEditPolicies     ListConfigAccessPolicy[]   @relation("ListConfigEditAccessPolicy")
+  entityConfigViewPolicies   EntityConfigAccessPolicy[] @relation("EntityConfigViewAccessPolicy")
+  entityConfigEditPolicies   EntityConfigAccessPolicy[] @relation("EntityConfigEditAccessPolicy")
 }
 
 model EntityAccessPolicy {
@@ -562,6 +565,16 @@ model ListConfigAccessPolicy {
   listConfig       ListConfig    @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
   viewAccessPolicy AccessPolicy? @relation("ListConfigViewAccessPolicy", fields: [viewAccessPolicyId], references: [id], onDelete: Cascade)
   editAccessPolicy AccessPolicy? @relation("ListConfigEditAccessPolicy", fields: [editAccessPolicyId], references: [id], onDelete: Cascade)
+}
+
+model EntityConfigAccessPolicy {
+  entityConfigId     Int  @unique
+  viewAccessPolicyId Int?
+  editAccessPolicyId Int?
+
+  entityConfig     EntityConfig  @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
+  viewAccessPolicy AccessPolicy? @relation("EntityConfigViewAccessPolicy", fields: [viewAccessPolicyId], references: [id], onDelete: Cascade)
+  editAccessPolicy AccessPolicy? @relation("EntityConfigEditAccessPolicy", fields: [editAccessPolicyId], references: [id], onDelete: Cascade)
 }
 
 model AccessPolicyParty {

@@ -443,4 +443,39 @@ export class AccessPolicy {
       );
     }
   }
+
+  static async setEntityConfigAccessPolicy(
+    userId: string,
+    entityConfigId: number,
+    viewAccessPolicyId: number,
+    editAccessPolicyId: number
+  ): Promise<Result<boolean, Error>> {
+    try {
+      const entityConfig = await prisma.entityConfig.findUnique({
+        where: { id: entityConfigId, userId },
+      });
+      if (!entityConfig) {
+        return err(
+          new Error("Entity config not found or not owned by user")
+        );
+      }
+      await prisma.entityConfigAccessPolicy.upsert({
+        where: { entityConfigId },
+        create: {
+          entityConfigId,
+          viewAccessPolicyId: viewAccessPolicyId || null,
+          editAccessPolicyId: editAccessPolicyId || null,
+        },
+        update: {
+          viewAccessPolicyId: viewAccessPolicyId || null,
+          editAccessPolicyId: editAccessPolicyId || null,
+        },
+      });
+      return ok(true);
+    } catch (error) {
+      return err(
+        new Error("Failed to set entity config access policy", { cause: error })
+      );
+    }
+  }
 }

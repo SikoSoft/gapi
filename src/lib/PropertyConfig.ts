@@ -7,6 +7,7 @@ import {
   propertyConfigInclude,
   PropertyConfigUpdateBody,
 } from "../models/PropertyConfig";
+import { EntityConfig } from "./EntityConfig";
 import {
   BooleanDataValue,
   CommonEntityPropertyConfig,
@@ -25,6 +26,14 @@ export class PropertyConfig {
     entityConfigId: number,
     propertyConfig: PropertyConfigCreateBody
   ): Promise<Result<Entity.EntityPropertyConfig, Error>> {
+    const isAllowed = await EntityConfig.isEditAllowed(userId, entityConfigId);
+    if (isAllowed.isErr()) {
+      return err(isAllowed.error);
+    }
+    if (!isAllowed.value) {
+      return err(new Error("Not authorized to edit this entity config"));
+    }
+
     const { defaultValue, timeZone, performDriftCheck, options, ...data } =
       propertyConfig;
 
@@ -90,6 +99,15 @@ export class PropertyConfig {
       id,
       propertyConfig,
     });
+
+    const isAllowed = await EntityConfig.isEditAllowed(userId, entityConfigId);
+    if (isAllowed.isErr()) {
+      return err(isAllowed.error);
+    }
+    if (!isAllowed.value) {
+      return err(new Error("Not authorized to edit this entity config"));
+    }
+
     try {
       const { defaultValue, timeZone, performDriftCheck, options, ...data } =
         propertyConfig;
@@ -110,7 +128,7 @@ export class PropertyConfig {
       }
 
       const updatedPropertyConfig = await prisma.propertyConfig.update({
-        where: { userId, id, entityConfigId },
+        where: { id, entityConfigId },
         data: {
           ...data,
         },

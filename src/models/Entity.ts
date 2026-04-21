@@ -74,6 +74,30 @@ const prismaEntityConfig =
           optionsInt: true,
         },
       },
+      accessPolicy: {
+        include: {
+          viewAccessPolicy: {
+            include: {
+              parties: {
+                include: {
+                  user: true,
+                  group: { include: { users: { include: { user: true } } } },
+                },
+              },
+            },
+          },
+          editAccessPolicy: {
+            include: {
+              parties: {
+                include: {
+                  user: true,
+                  group: { include: { users: { include: { user: true } } } },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -117,8 +141,26 @@ const prismaEntity = Prisma.validator<Prisma.EntityFindUniqueArgs>()({
     },
     accessPolicy: {
       include: {
-        viewAccessPolicy: true,
-        editAccessPolicy: true,
+        viewAccessPolicy: {
+          include: {
+            parties: {
+              include: {
+                user: true,
+                group: { include: { users: { include: { user: true } } } },
+              },
+            },
+          },
+        },
+        editAccessPolicy: {
+          include: {
+            parties: {
+              include: {
+                user: true,
+                group: { include: { users: { include: { user: true } } } },
+              },
+            },
+          },
+        },
       },
     },
   },

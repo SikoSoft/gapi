@@ -7,6 +7,7 @@ import {
 import { forbiddenReply, introspect } from "..";
 import { ListSort } from "api-spec/models/List";
 import { ListConfig } from "../lib/ListConfig";
+import { ErrorCode } from "../models/Error";
 
 export type UpdateBody = ListSort;
 
@@ -22,20 +23,22 @@ export async function listSort(
 
   const listConfigRes = await ListConfig.getById(request.params.id);
   if (listConfigRes.isErr()) {
-    console.log("IS FUCKING ERROR");
     context.error(listConfigRes.error);
     return forbiddenReply();
   }
 
-  if (listConfigRes.value.userId !== userId) {
-    return forbiddenReply();
-  }
-
   const updateBody = (await request.json()) as UpdateBody;
-  const updateRes = await ListConfig.updateSort(request.params.id, updateBody);
+  const updateRes = await ListConfig.updateSort(
+    userId,
+    request.params.id,
+    updateBody
+  );
   if (updateRes.isErr()) {
-    console.log("IS FUCKING ERROR 2");
     context.error(updateRes.error);
+
+    if (updateRes.error.name === ErrorCode.AccessError) {
+      return { status: 403 };
+    }
 
     return { status: 400 };
   }

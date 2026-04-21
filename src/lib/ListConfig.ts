@@ -17,6 +17,7 @@ import {
 import { Settings } from "api-spec/models/Setting";
 import { Setting } from "./Setting";
 import { AccessPolicy } from "./AccessPolicy";
+import { AccessError } from "../errors/AccessError";
 
 export class ListConfig {
   static async create(
@@ -192,7 +193,7 @@ export class ListConfig {
         },
       });
 
-      await ListConfig.updateSort(listConfig.id, listConfig.sort);
+      await ListConfig.updateSort(userId, listConfig.id, listConfig.sort);
       await ListConfig.updateTags(listConfig.id, listConfig.filter.tagging);
       await ListConfig.updateTime(listConfig.id, listConfig.filter.time);
       await ListConfig.updateText(listConfig.id, listConfig.filter.text);
@@ -214,10 +215,20 @@ export class ListConfig {
   }
 
   static async updateSort(
+    userId: string,
     listConfigId: string,
     sort: List.ListSort
   ): Promise<Result<null, Error>> {
     try {
+      const isAllowed = await ListConfig.isEditAllowed(userId, listConfigId);
+      if (isAllowed.isErr()) {
+        return err(isAllowed.error);
+      }
+
+      if (!isAllowed.value) {
+        return err(new AccessError("Not authorized to edit this list config"));
+      }
+
       if ((sort.property as ListSortCustomProperty).propertyId !== undefined) {
         const property = sort.property as ListSortCustomProperty;
         await prisma.listSort.update({
@@ -399,10 +410,20 @@ export class ListConfig {
   }
 
   static async updateThemes(
+    userId: string,
     listConfigId: string,
     themes: string[]
   ): Promise<Result<null, Error>> {
     try {
+      const isAllowed = await ListConfig.isEditAllowed(userId, listConfigId);
+      if (isAllowed.isErr()) {
+        return err(isAllowed.error);
+      }
+
+      if (!isAllowed.value) {
+        return err(new AccessError("Not authorized to edit this list config"));
+      }
+
       await prisma.listConfigTheme.deleteMany({ where: { listConfigId } });
       await prisma.listConfigTheme.createMany({
         data: themes.map((theme, index) => ({

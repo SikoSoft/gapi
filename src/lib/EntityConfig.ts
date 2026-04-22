@@ -10,6 +10,7 @@ import { CommonEntityPropertyConfig, DataType } from "api-spec/models/Entity";
 import { PrismaPropertyConfig } from "../models/PropertyConfig";
 import { PropertyConfig } from "./PropertyConfig";
 import { AccessPolicy } from "./AccessPolicy";
+import { AccessError } from "../errors/AccessError";
 
 const entityConfigInclude = {
   properties: {
@@ -146,7 +147,9 @@ export class EntityConfig {
         return err(isAllowed.error);
       }
       if (!isAllowed.value) {
-        return err(new Error("Not authorized to edit this entity config"));
+        return err(
+          new AccessError("Not authorized to edit this entity config")
+        );
       }
 
       const updatedEntityConfig = await prisma.entityConfig.update({

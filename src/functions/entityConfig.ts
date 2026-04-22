@@ -12,6 +12,7 @@ import {
   EntityConfigUpdateBody,
 } from "../models/Entity";
 import { EndpointConfig, EndpointName, HttpMethod } from "../models/Endpoint";
+import { AccessError } from "../errors/AccessError";
 
 export async function listConfig(
   request: HttpRequest,
@@ -60,8 +61,21 @@ export async function listConfig(
       return jsonReply({ ...entityConfigRes.value });
     case HttpMethod.PUT:
       const updateBody = (await request.json()) as EntityConfigUpdateBody;
-      await EntityConfig.update(userId, updateBody);
-      return jsonReply({ ...updateBody });
+      const result = await EntityConfig.update(userId, updateBody);
+      if (result.isErr()) {
+        context.error(result.error);
+
+        if (result.error instanceof AccessError) {
+          return {
+            status: 403,
+          };
+        }
+
+        return {
+          status: 500,
+        };
+      }
+      return jsonReply({ ...result.value });
     case HttpMethod.DELETE:
       let id: number;
       if (!request.params.id) {

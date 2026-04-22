@@ -306,6 +306,7 @@ model EntityConfig {
   revisionOf            Int?
   aiEnabled             Boolean          @default(false)
   aiIdentifyPrompt      String?          @db.VarChar(255)
+  public                Boolean          @default(false)
 
   entityPropertyConfigOrders EntityPropertyConfigOrder[]
   entities                   Entity[]

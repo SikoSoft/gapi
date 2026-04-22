@@ -13,11 +13,13 @@ import {
 import { Tagging } from "./Tagging";
 import { Entity } from "./Entity";
 import { ListConfig } from "./ListConfig";
+import { PropertyConfig } from "./PropertyConfig";
 import {
   ListFilterTimeType,
   ListSortNativeProperty,
   ListSortDirection,
 } from "api-spec/models/List";
+import { DataType } from "api-spec/models/Entity";
 import { Revision } from "api-spec/lib/Revision";
 import { EntityConfig } from "./EntityConfig";
 
@@ -135,9 +137,18 @@ export class Data {
               prefix: property.prefix,
               suffix: property.suffix,
               hidden: property.hidden,
+              optionsOnly: property.optionsOnly,
               entityConfigId: entityConfig.id,
             },
           });
+
+          if (property.options && property.options.length > 0) {
+            await PropertyConfig.updateOptions(
+              entityProperty.id,
+              property.dataType as DataType,
+              property.options as string[] | number[]
+            );
+          }
 
           entityPropertyConfigMap[property.id] = entityProperty.id;
         }

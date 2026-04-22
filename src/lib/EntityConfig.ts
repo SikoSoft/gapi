@@ -106,6 +106,7 @@ export class EntityConfig {
           userId,
           aiEnabled: entityConfig.aiEnabled ?? false,
           aiIdentifyPrompt: entityConfig.aiIdentifyPrompt,
+          public: entityConfig.public ?? false,
           ...(entityConfig.revisionOf
             ? { revision: { connect: { id: entityConfig.revisionOf } } }
             : {}),
@@ -155,6 +156,7 @@ export class EntityConfig {
           allowPropertyOrdering: entityConfig.allowPropertyOrdering,
           aiEnabled: entityConfig.aiEnabled,
           aiIdentifyPrompt: entityConfig.aiIdentifyPrompt,
+          public: entityConfig.public,
         },
         where: { id: entityConfig.id },
         include: entityConfigInclude,
@@ -213,6 +215,7 @@ export class EntityConfig {
         where: {
           OR: [
             { userId },
+            { public: true },
             {
               accessPolicy: {
                 viewAccessPolicy: {
@@ -307,6 +310,7 @@ export class EntityConfig {
       allowPropertyOrdering: data.allowPropertyOrdering,
       aiEnabled: data.aiEnabled,
       aiIdentifyPrompt: data.aiIdentifyPrompt,
+      public: data.public,
       viewAccessPolicy,
       editAccessPolicy,
     };

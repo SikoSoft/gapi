@@ -46,6 +46,9 @@ export async function listConfig(
         allowPropertyOrdering: createBody.allowPropertyOrdering,
         aiEnabled: createBody.aiEnabled,
         aiIdentifyPrompt: createBody.aiIdentifyPrompt,
+        viewAccessPolicy: null,
+        editAccessPolicy: null,
+        public: createBody.public,
       });
 
       if (entityConfigRes.isErr()) {

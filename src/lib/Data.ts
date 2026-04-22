@@ -191,7 +191,11 @@ export class Data {
           },
         });
 
-        await ListConfig.updateSort(prismaListConfig.id, listConfig.sort);
+        await ListConfig.updateSort(
+          userId,
+          prismaListConfig.id,
+          listConfig.sort
+        );
         await ListConfig.updateTags(
           prismaListConfig.id,
           listConfig.filter.tagging

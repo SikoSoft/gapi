@@ -34,136 +34,140 @@ export interface EntityList {
   total: number;
 }
 
-const prismaEntityConfig =
-  Prisma.validator<Prisma.EntityConfigFindUniqueArgs>()({
-    where: { id: 1, userId: "" },
+export const entityConfigInclude = {
+  properties: {
     include: {
-      properties: {
+      defaultBooleanValue: {
         include: {
-          defaultBooleanValue: {
-            include: {
-              booleanValue: true,
-            },
-          },
-          defaultDateValue: {
-            include: {
-              dateValue: true,
-            },
-          },
-          defaultIntValue: {
-            include: {
-              intValue: true,
-            },
-          },
-          defaultImageValue: {
-            include: {
-              imageValue: true,
-            },
-          },
-          defaultLongTextValue: {
-            include: {
-              longTextValue: true,
-            },
-          },
-          defaultShortTextValue: {
-            include: {
-              shortTextValue: true,
-            },
-          },
-          optionsShortText: true,
-          optionsInt: true,
+          booleanValue: true,
         },
       },
-      accessPolicy: {
+      defaultDateValue: {
         include: {
-          viewAccessPolicy: {
+          dateValue: true,
+        },
+      },
+      defaultIntValue: {
+        include: {
+          intValue: true,
+        },
+      },
+      defaultImageValue: {
+        include: {
+          imageValue: true,
+        },
+      },
+      defaultLongTextValue: {
+        include: {
+          longTextValue: true,
+        },
+      },
+      defaultShortTextValue: {
+        include: {
+          shortTextValue: true,
+        },
+      },
+      optionsShortText: true,
+      optionsInt: true,
+    },
+  },
+  accessPolicy: {
+    include: {
+      viewAccessPolicy: {
+        include: {
+          parties: {
             include: {
-              parties: {
-                include: {
-                  user: true,
-                  group: { include: { users: { include: { user: true } } } },
-                },
-              },
-            },
-          },
-          editAccessPolicy: {
-            include: {
-              parties: {
-                include: {
-                  user: true,
-                  group: { include: { users: { include: { user: true } } } },
-                },
-              },
+              user: true,
+              group: { include: { users: { include: { user: true } } } },
             },
           },
         },
       },
-    },
-  });
-
-export type PrismaEntityConfig = Prisma.EntityConfigGetPayload<
-  typeof prismaEntityConfig
->;
-
-const prismaEntity = Prisma.validator<Prisma.EntityFindUniqueArgs>()({
-  where: { id: 1, userId: "" },
-  include: {
-    tags: true,
-    booleanProperties: {
-      include: {
-        propertyValue: true,
-      },
-    },
-    dateProperties: {
-      include: {
-        propertyValue: true,
-      },
-    },
-    intProperties: {
-      include: {
-        propertyValue: true,
-      },
-    },
-    imageProperties: {
-      include: {
-        propertyValue: true,
-      },
-    },
-    longTextProperties: {
-      include: {
-        propertyValue: true,
-      },
-    },
-    shortTextProperties: {
-      include: {
-        propertyValue: true,
-      },
-    },
-    accessPolicy: {
-      include: {
-        viewAccessPolicy: {
-          include: {
-            parties: {
-              include: {
-                user: true,
-                group: { include: { users: { include: { user: true } } } },
-              },
-            },
-          },
-        },
-        editAccessPolicy: {
-          include: {
-            parties: {
-              include: {
-                user: true,
-                group: { include: { users: { include: { user: true } } } },
-              },
+      editAccessPolicy: {
+        include: {
+          parties: {
+            include: {
+              user: true,
+              group: { include: { users: { include: { user: true } } } },
             },
           },
         },
       },
     },
   },
+} satisfies Prisma.EntityConfigFindUniqueArgs["include"];
+
+const prismaEntityConfig =
+  Prisma.validator<Prisma.EntityConfigFindUniqueArgs>()({
+    where: { id: 1, userId: "" },
+    include: entityConfigInclude,
+  });
+
+export type PrismaEntityConfig = Prisma.EntityConfigGetPayload<
+  typeof prismaEntityConfig
+>;
+
+export const entityInclude = {
+  tags: true,
+  booleanProperties: {
+    include: {
+      propertyValue: true,
+    },
+  },
+  dateProperties: {
+    include: {
+      propertyValue: true,
+    },
+  },
+  intProperties: {
+    include: {
+      propertyValue: true,
+    },
+  },
+  imageProperties: {
+    include: {
+      propertyValue: true,
+    },
+  },
+  longTextProperties: {
+    include: {
+      propertyValue: true,
+    },
+  },
+  shortTextProperties: {
+    include: {
+      propertyValue: true,
+    },
+  },
+  accessPolicy: {
+    include: {
+      viewAccessPolicy: {
+        include: {
+          parties: {
+            include: {
+              user: true,
+              group: { include: { users: { include: { user: true } } } },
+            },
+          },
+        },
+      },
+      editAccessPolicy: {
+        include: {
+          parties: {
+            include: {
+              user: true,
+              group: { include: { users: { include: { user: true } } } },
+            },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.EntityFindUniqueArgs["include"];
+
+const prismaEntity = Prisma.validator<Prisma.EntityFindUniqueArgs>()({
+  where: { id: 1, userId: "" },
+  include: entityInclude,
 });
 
 export type PrismaEntity = Prisma.EntityGetPayload<typeof prismaEntity>;

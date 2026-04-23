@@ -8,6 +8,8 @@ import { forbiddenReply, introspect, jsonReply, prisma } from "..";
 import { BulkOperation, OperationType } from "api-spec/models/Operation";
 import { Tagging } from "../lib/Tagging";
 import { Action } from "../lib/Action";
+import { Entity } from "../lib/Entity";
+import { ValidationError } from "../errors/ValidationError";
 
 export type RequestBody = BulkOperation;
 
@@ -24,7 +26,7 @@ export async function operation(
 
   switch (body.operation.type) {
     case OperationType.DELETE:
-      for (const actionId of body.actions) {
+      for (const actionId of body.entities) {
         const deleteAllTagsRes = await Tagging.deleteAllEntityTags(actionId);
         if (deleteAllTagsRes.isErr()) {
           context.error(deleteAllTagsRes.error);
@@ -41,7 +43,7 @@ export async function operation(
       }
       break;
     case OperationType.ADD_TAGS:
-      for (const actionId of body.actions) {
+      for (const actionId of body.entities) {
         const saveTagsRes = await Tagging.saveTags(body.operation.tags);
         if (saveTagsRes.isErr()) {
           context.error(saveTagsRes.error);
@@ -61,7 +63,7 @@ export async function operation(
       }
       break;
     case OperationType.REMOVE_TAGS:
-      for (const actionId of body.actions) {
+      for (const actionId of body.entities) {
         const deleteEntityTagsRes = await Tagging.deleteEntityTags(
           actionId,
           body.operation.tags
@@ -74,7 +76,7 @@ export async function operation(
       }
       break;
     case OperationType.REPLACE_TAGS:
-      for (const actionId of body.actions) {
+      for (const actionId of body.entities) {
         const deleteAllTagsRes = await Tagging.deleteAllEntityTags(actionId);
         if (deleteAllTagsRes.isErr()) {
           context.error(deleteAllTagsRes.error);
@@ -97,6 +99,50 @@ export async function operation(
           context.error(addActionTagsRes.error);
 
           return { status: 500 };
+        }
+      }
+      break;
+    case OperationType.ADD_PROPERTIES:
+      for (const entityId of body.entities) {
+        const addPropertiesRes = await Entity.addProperties(
+          entityId,
+          body.operation.properties,
+          0
+        );
+        if (addPropertiesRes.isErr()) {
+          context.error(addPropertiesRes.error);
+          return {
+            status:
+              addPropertiesRes.error instanceof ValidationError ? 400 : 500,
+          };
+        }
+      }
+      break;
+    case OperationType.REMOVE_PROPERTIES:
+      for (const entityId of body.entities) {
+        const removePropertiesRes = await Entity.removeProperties(
+          entityId,
+          body.operation.properties
+        );
+        if (removePropertiesRes.isErr()) {
+          context.error(removePropertiesRes.error);
+          return { status: 500 };
+        }
+      }
+      break;
+    case OperationType.REPLACE_PROPERTIES:
+      for (const entityId of body.entities) {
+        const replacePropertiesRes = await Entity.replaceProperties(
+          entityId,
+          body.operation.properties,
+          0
+        );
+        if (replacePropertiesRes.isErr()) {
+          context.error(replacePropertiesRes.error);
+          return {
+            status:
+              replacePropertiesRes.error instanceof ValidationError ? 400 : 500,
+          };
         }
       }
       break;

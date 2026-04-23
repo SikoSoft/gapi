@@ -17,6 +17,7 @@ import {
   EntityListParams,
   ContextEntities,
   PropertyReference,
+  entityInclude,
 } from "../models/Entity";
 import {
   DataType,
@@ -297,46 +298,7 @@ export class Entity {
     try {
       const entity = await prisma.entity.findUnique({
         where: { id },
-        include: {
-          tags: true,
-          booleanProperties: {
-            include: {
-              propertyValue: true,
-            },
-          },
-          dateProperties: {
-            include: {
-              propertyValue: true,
-            },
-          },
-          imageProperties: {
-            include: {
-              propertyValue: true,
-            },
-          },
-          intProperties: {
-            include: {
-              propertyValue: true,
-            },
-          },
-
-          longTextProperties: {
-            include: {
-              propertyValue: true,
-            },
-          },
-          shortTextProperties: {
-            include: {
-              propertyValue: true,
-            },
-          },
-          accessPolicy: {
-            include: {
-              viewAccessPolicy: true,
-              editAccessPolicy: true,
-            },
-          },
-        },
+        include: entityInclude,
       });
 
       if (!entity) {
@@ -1189,6 +1151,236 @@ export class Entity {
       return ok(null);
     } catch (error) {
       console.error("Error syncing long text property:", error);
+      return err(error);
+    }
+  }
+
+  static async countExistingProperties(
+    entityId: number,
+    propertyConfigId: number,
+    dataType: DataType
+  ): Promise<number> {
+    switch (dataType) {
+      case DataType.BOOLEAN:
+        return prisma.entityBooleanProperty.count({
+          where: { entityId, propertyConfigId },
+        });
+      case DataType.DATE:
+        return prisma.entityDateProperty.count({
+          where: { entityId, propertyConfigId },
+        });
+      case DataType.IMAGE:
+        return prisma.entityImageProperty.count({
+          where: { entityId, propertyConfigId },
+        });
+      case DataType.INT:
+        return prisma.entityIntProperty.count({
+          where: { entityId, propertyConfigId },
+        });
+      case DataType.SHORT_TEXT:
+        return prisma.entityShortTextProperty.count({
+          where: { entityId, propertyConfigId },
+        });
+      case DataType.LONG_TEXT:
+        return prisma.entityLongTextProperty.count({
+          where: { entityId, propertyConfigId },
+        });
+      default:
+        return 0;
+    }
+  }
+
+  static async deletePropertiesByConfigIds(
+    entityId: number,
+    propertyConfigIds: number[],
+    dataTypes: Record<number, DataType>
+  ): Promise<void> {
+    for (const propertyConfigId of propertyConfigIds) {
+      switch (dataTypes[propertyConfigId]) {
+        case DataType.BOOLEAN:
+          await prisma.entityBooleanProperty.deleteMany({
+            where: { entityId, propertyConfigId },
+          });
+          break;
+        case DataType.DATE:
+          await prisma.entityDateProperty.deleteMany({
+            where: { entityId, propertyConfigId },
+          });
+          break;
+        case DataType.IMAGE:
+          await prisma.entityImageProperty.deleteMany({
+            where: { entityId, propertyConfigId },
+          });
+          break;
+        case DataType.INT:
+          await prisma.entityIntProperty.deleteMany({
+            where: { entityId, propertyConfigId },
+          });
+          break;
+        case DataType.SHORT_TEXT:
+          await prisma.entityShortTextProperty.deleteMany({
+            where: { entityId, propertyConfigId },
+          });
+          break;
+        case DataType.LONG_TEXT:
+          await prisma.entityLongTextProperty.deleteMany({
+            where: { entityId, propertyConfigId },
+          });
+          break;
+      }
+    }
+  }
+
+  static async addProperties(
+    entityId: number,
+    properties: EntityProperty[],
+    timeZone: number
+  ): Promise<Result<null, Error>> {
+    try {
+      const entity = await prisma.entity.findUnique({
+        where: { id: entityId },
+        select: { entityConfigId: true },
+      });
+      if (!entity) {
+        return err(new Error(`Entity ${entityId} not found`));
+      }
+
+      const uniqueConfigIds = [
+        ...new Set(properties.map((p) => p.propertyConfigId)),
+      ];
+      const propertyConfigsRes = await Entity.getPropertyConfigs(
+        uniqueConfigIds
+      );
+      if (propertyConfigsRes.isErr()) {
+        return err(propertyConfigsRes.error);
+      }
+      const propertyConfigs = propertyConfigsRes.value;
+
+      for (const config of propertyConfigs) {
+        if (config.entityConfigId !== entity.entityConfigId) {
+          return err(
+            new ValidationError(
+              `Property config ${config.id} does not belong to entity config ${entity.entityConfigId}`
+            )
+          );
+        }
+
+        if (config.allowed > 0) {
+          const incomingCount = properties.filter(
+            (p) => p.propertyConfigId === config.id
+          ).length;
+          const existingCount = await Entity.countExistingProperties(
+            entityId,
+            config.id,
+            config.dataType as DataType
+          );
+          if (existingCount + incomingCount > config.allowed) {
+            return err(
+              new ValidationError(
+                `Adding properties for config ${config.id} would exceed the allowed limit of ${config.allowed}`
+              )
+            );
+          }
+        }
+      }
+
+      const newProperties = properties.map((p) => ({ ...p, id: 0 }));
+      await Entity.syncEntityProperties(entityId, newProperties, [], timeZone);
+      return ok(null);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  static async removeProperties(
+    entityId: number,
+    properties: EntityProperty[]
+  ): Promise<Result<null, Error>> {
+    try {
+      const dataTypesRes = await Entity.getDataTypesForProperties(properties);
+      if (dataTypesRes.isErr()) {
+        return err(dataTypesRes.error);
+      }
+
+      const uniqueConfigIds = [
+        ...new Set(properties.map((p) => p.propertyConfigId)),
+      ];
+      await Entity.deletePropertiesByConfigIds(
+        entityId,
+        uniqueConfigIds,
+        dataTypesRes.value
+      );
+      return ok(null);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  static async replaceProperties(
+    entityId: number,
+    properties: EntityProperty[],
+    timeZone: number
+  ): Promise<Result<null, Error>> {
+    try {
+      const entity = await prisma.entity.findUnique({
+        where: { id: entityId },
+        select: { entityConfigId: true },
+      });
+      if (!entity) {
+        return err(new Error(`Entity ${entityId} not found`));
+      }
+
+      const uniqueConfigIds = [
+        ...new Set(properties.map((p) => p.propertyConfigId)),
+      ];
+      if (uniqueConfigIds.length === 0) {
+        return ok(null);
+      }
+
+      const propertyConfigsRes = await Entity.getPropertyConfigs(
+        uniqueConfigIds
+      );
+      if (propertyConfigsRes.isErr()) {
+        return err(propertyConfigsRes.error);
+      }
+      const propertyConfigs = propertyConfigsRes.value;
+
+      const dataTypes: Record<number, DataType> = {};
+      for (const config of propertyConfigs) {
+        dataTypes[config.id] = config.dataType as DataType;
+
+        if (config.entityConfigId !== entity.entityConfigId) {
+          return err(
+            new ValidationError(
+              `Property config ${config.id} does not belong to entity config ${entity.entityConfigId}`
+            )
+          );
+        }
+
+        if (config.allowed > 0) {
+          const incomingCount = properties.filter(
+            (p) => p.propertyConfigId === config.id
+          ).length;
+          if (incomingCount > config.allowed) {
+            return err(
+              new ValidationError(
+                `Properties for config ${config.id} exceed the allowed limit of ${config.allowed}`
+              )
+            );
+          }
+        }
+      }
+
+      await Entity.deletePropertiesByConfigIds(
+        entityId,
+        uniqueConfigIds,
+        dataTypes
+      );
+
+      const newProperties = properties.map((p) => ({ ...p, id: 0 }));
+      await Entity.syncEntityProperties(entityId, newProperties, [], timeZone);
+      return ok(null);
+    } catch (error) {
       return err(error);
     }
   }

@@ -45,18 +45,6 @@ export class Action {
         ? {
             AND: [
               {
-                ...(filter.text.length === 0
-                  ? { desc: { not: "" } }
-                  : {
-                      AND: filter.text.map((textFilter) => ({
-                        desc: {
-                          [textFilter.type]: textFilter.subStr,
-                          mode: "insensitive",
-                        },
-                      })),
-                    }),
-              },
-              {
                 ...(filter.time.type === ListFilterTimeType.ALL_TIME
                   ? { occurredAt: { lte: new Date() } }
                   : {

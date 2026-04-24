@@ -100,7 +100,7 @@ export function getDefaultFilter(): ListFilter {
     time: {
       type: ListFilterTimeType.ALL_TIME,
     },
-    text: [],
+    properties: [],
     includeUntagged: true,
     includeAll: true,
     includeAllTagging: true,

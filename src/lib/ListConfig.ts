@@ -196,7 +196,6 @@ export class ListConfig {
       await ListConfig.updateSort(userId, listConfig.id, listConfig.sort);
       await ListConfig.updateTags(listConfig.id, listConfig.filter.tagging);
       await ListConfig.updateTime(listConfig.id, listConfig.filter.time);
-      await ListConfig.updateText(listConfig.id, listConfig.filter.text);
       await ListConfig.updateTypes(
         listConfig.id,
         listConfig.filter.includeTypes
@@ -529,7 +528,7 @@ export class ListConfig {
       includeAllTagging: data.includeAllTagging,
       includeTypes: ListConfig.mapFilterTypesDataToSpec(data.includeTypes),
       tagging: ListConfig.mapFilterTagsDataToSpec(data.tagging),
-      text: ListConfig.mapTextDataToSpec(data.text),
+      properties: [],
       time: ListConfig.mapTimeDataToSpec(data.time),
     };
   }

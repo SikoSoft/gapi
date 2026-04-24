@@ -215,10 +215,6 @@ export class Data {
           prismaListConfig.id,
           listConfig.filter.time
         );
-        await ListConfig.updateText(
-          prismaListConfig.id,
-          listConfig.filter.text
-        );
         await ListConfig.updateTypes(
           prismaListConfig.id,
           listConfig.filter.includeTypes

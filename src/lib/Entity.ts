@@ -1292,24 +1292,179 @@ export class Entity {
     }
   }
 
+  static async findMatchingPropertyValueIds(
+    entityId: number,
+    propertyConfigId: number,
+    dataType: DataType,
+    properties: EntityProperty[]
+  ): Promise<number[]> {
+    switch (dataType) {
+      case DataType.BOOLEAN: {
+        const rows = await prisma.entityBooleanProperty.findMany({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return rows
+          .filter((r) =>
+            properties.some((p) => p.value === r.propertyValue?.value)
+          )
+          .map((r) => r.propertyValueId);
+      }
+      case DataType.DATE: {
+        const rows = await prisma.entityDateProperty.findMany({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return rows
+          .filter((r) =>
+            properties.some(
+              (p) =>
+                p.value !== null &&
+                r.propertyValue !== null &&
+                new Date(p.value as Date).toISOString() ===
+                  new Date(r.propertyValue.value).toISOString()
+            )
+          )
+          .map((r) => r.propertyValueId);
+      }
+      case DataType.IMAGE: {
+        const rows = await prisma.entityImageProperty.findMany({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return rows
+          .filter((r) =>
+            properties.some((p) => {
+              const v = p.value as { src: string; alt: string };
+              return (
+                v.src === r.propertyValue?.url &&
+                v.alt === r.propertyValue?.altText
+              );
+            })
+          )
+          .map((r) => r.propertyValueId);
+      }
+      case DataType.INT: {
+        const rows = await prisma.entityIntProperty.findMany({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return rows
+          .filter((r) =>
+            properties.some((p) => p.value === r.propertyValue?.value)
+          )
+          .map((r) => r.propertyValueId);
+      }
+      case DataType.SHORT_TEXT: {
+        const rows = await prisma.entityShortTextProperty.findMany({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return rows
+          .filter((r) =>
+            properties.some((p) => p.value === r.propertyValue?.value)
+          )
+          .map((r) => r.propertyValueId);
+      }
+      case DataType.LONG_TEXT: {
+        const rows = await prisma.entityLongTextProperty.findMany({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return rows
+          .filter((r) =>
+            properties.some((p) => p.value === r.propertyValue?.value)
+          )
+          .map((r) => r.propertyValueId);
+      }
+      default:
+        return [];
+    }
+  }
+
+  static async deleteEntityPropertiesByValueIds(
+    entityId: number,
+    propertyConfigId: number,
+    dataType: DataType,
+    propertyValueIds: number[]
+  ): Promise<void> {
+    const where = {
+      entityId,
+      propertyConfigId,
+      propertyValueId: { in: propertyValueIds },
+    };
+    switch (dataType) {
+      case DataType.BOOLEAN:
+        await prisma.entityBooleanProperty.deleteMany({ where });
+        break;
+      case DataType.DATE:
+        await prisma.entityDateProperty.deleteMany({ where });
+        break;
+      case DataType.IMAGE:
+        await prisma.entityImageProperty.deleteMany({ where });
+        break;
+      case DataType.INT:
+        await prisma.entityIntProperty.deleteMany({ where });
+        break;
+      case DataType.SHORT_TEXT:
+        await prisma.entityShortTextProperty.deleteMany({ where });
+        break;
+      case DataType.LONG_TEXT:
+        await prisma.entityLongTextProperty.deleteMany({ where });
+        break;
+    }
+  }
+
   static async removeProperties(
     entityId: number,
     properties: EntityProperty[]
   ): Promise<Result<null, Error>> {
     try {
-      const dataTypesRes = await Entity.getDataTypesForProperties(properties);
-      if (dataTypesRes.isErr()) {
-        return err(dataTypesRes.error);
-      }
-
       const uniqueConfigIds = [
         ...new Set(properties.map((p) => p.propertyConfigId)),
       ];
-      await Entity.deletePropertiesByConfigIds(
-        entityId,
-        uniqueConfigIds,
-        dataTypesRes.value
-      );
+
+      const propertyConfigsRes = await Entity.getPropertyConfigs(uniqueConfigIds);
+      if (propertyConfigsRes.isErr()) {
+        return err(propertyConfigsRes.error);
+      }
+
+      for (const config of propertyConfigsRes.value) {
+        const dataType = config.dataType as DataType;
+        const propsForConfig = properties.filter(
+          (p) => p.propertyConfigId === config.id
+        );
+
+        const matchingValueIds = await Entity.findMatchingPropertyValueIds(
+          entityId,
+          config.id,
+          dataType,
+          propsForConfig
+        );
+
+        if (matchingValueIds.length === 0) {
+          continue;
+        }
+
+        if (config.required > 0) {
+          const existingCount = await Entity.countExistingProperties(
+            entityId,
+            config.id,
+            dataType
+          );
+          if (existingCount - matchingValueIds.length < config.required) {
+            continue;
+          }
+        }
+
+        await Entity.deleteEntityPropertiesByValueIds(
+          entityId,
+          config.id,
+          dataType,
+          matchingValueIds
+        );
+      }
+
       return ok(null);
     } catch (error) {
       return err(error);

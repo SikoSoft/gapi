@@ -7,7 +7,6 @@ import {
 import { forbiddenReply, introspect, jsonReply, prisma } from "..";
 import { BulkOperation, OperationType } from "api-spec/models/Operation";
 import { Tagging } from "../lib/Tagging";
-import { Action } from "../lib/Action";
 import { Entity } from "../lib/Entity";
 import { ValidationError } from "../errors/ValidationError";
 
@@ -34,7 +33,7 @@ export async function operation(
           return { status: 500 };
         }
 
-        const deleteRes = await Action.delete(userId, actionId);
+        const deleteRes = await Entity.delete(userId, actionId);
         if (deleteRes.isErr()) {
           context.error(deleteRes.error);
 

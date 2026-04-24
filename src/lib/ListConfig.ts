@@ -1,6 +1,6 @@
 import { Result, err, ok } from "neverthrow";
 import { v4 as uuidv4 } from "uuid";
-import { List, Access } from "api-spec/models";
+import { List, Access, Entity } from "api-spec/models";
 import { prisma } from "..";
 import {
   PrismaListConfig,
@@ -201,6 +201,10 @@ export class ListConfig {
         listConfig.filter.includeTypes
       );
       await ListConfig.updateFilter(listConfig.id, listConfig.filter);
+      await ListConfig.updateProperties(
+        listConfig.id,
+        listConfig.filter.properties
+      );
       const updatedRes = await ListConfig.getById(listConfig.id);
       if (updatedRes.isErr()) {
         return err(
@@ -395,6 +399,116 @@ export class ListConfig {
     }
   }
 
+  static async updateProperties(
+    listConfigId: string,
+    properties: List.FilterProperty[]
+  ): Promise<Result<null, Error>> {
+    try {
+      const [existingBoolean, existingDate, existingImage, existingInt, existingLongText, existingShortText] =
+        await Promise.all([
+          prisma.listFilterBooleanProperty.findMany({ where: { listConfigId }, select: { propertyValueId: true } }),
+          prisma.listFilterDateProperty.findMany({ where: { listConfigId }, select: { propertyValueId: true } }),
+          prisma.listFilterImageProperty.findMany({ where: { listConfigId }, select: { propertyValueId: true } }),
+          prisma.listFilterIntProperty.findMany({ where: { listConfigId }, select: { propertyValueId: true } }),
+          prisma.listFilterLongTextProperty.findMany({ where: { listConfigId }, select: { propertyValueId: true } }),
+          prisma.listFilterShortTextProperty.findMany({ where: { listConfigId }, select: { propertyValueId: true } }),
+        ]);
+
+      await Promise.all([
+        prisma.listFilterBooleanProperty.deleteMany({ where: { listConfigId } }),
+        prisma.listFilterDateProperty.deleteMany({ where: { listConfigId } }),
+        prisma.listFilterImageProperty.deleteMany({ where: { listConfigId } }),
+        prisma.listFilterIntProperty.deleteMany({ where: { listConfigId } }),
+        prisma.listFilterLongTextProperty.deleteMany({ where: { listConfigId } }),
+        prisma.listFilterShortTextProperty.deleteMany({ where: { listConfigId } }),
+      ]);
+
+      const booleanValueIds = existingBoolean.map(p => p.propertyValueId);
+      const dateValueIds = existingDate.map(p => p.propertyValueId);
+      const imageValueIds = existingImage.map(p => p.propertyValueId);
+      const intValueIds = existingInt.map(p => p.propertyValueId);
+      const longTextValueIds = existingLongText.map(p => p.propertyValueId);
+      const shortTextValueIds = existingShortText.map(p => p.propertyValueId);
+
+      await Promise.all([
+        booleanValueIds.length > 0 && prisma.booleanPropertyValue.deleteMany({ where: { id: { in: booleanValueIds } } }),
+        dateValueIds.length > 0 && prisma.datePropertyValue.deleteMany({ where: { id: { in: dateValueIds } } }),
+        imageValueIds.length > 0 && prisma.imagePropertyValue.deleteMany({ where: { id: { in: imageValueIds } } }),
+        intValueIds.length > 0 && prisma.intPropertyValue.deleteMany({ where: { id: { in: intValueIds } } }),
+        longTextValueIds.length > 0 && prisma.longTextPropertyValue.deleteMany({ where: { id: { in: longTextValueIds } } }),
+        shortTextValueIds.length > 0 && prisma.shortTextPropertyValue.deleteMany({ where: { id: { in: shortTextValueIds } } }),
+      ]);
+
+      if (properties.length === 0) {
+        return ok(null);
+      }
+
+      const propertyConfigIds = [...new Set(properties.map(p => p.propertyId))];
+      const propertyConfigs = await prisma.propertyConfig.findMany({
+        where: { id: { in: propertyConfigIds } },
+        select: { id: true, dataType: true },
+      });
+      const propertyConfigMap = new Map(propertyConfigs.map(pc => [pc.id, pc.dataType]));
+
+      for (const property of properties) {
+        const dataType = propertyConfigMap.get(property.propertyId);
+        if (!dataType) {
+          continue;
+        }
+
+        switch (dataType) {
+          case Entity.DataType.BOOLEAN: {
+            const booleanValue = await prisma.booleanPropertyValue.create({ data: { value: property.value as boolean } });
+            await prisma.listFilterBooleanProperty.create({
+              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: booleanValue.id },
+            });
+            break;
+          }
+          case Entity.DataType.DATE: {
+            const dateValue = await prisma.datePropertyValue.create({ data: { value: property.value as Date } });
+            await prisma.listFilterDateProperty.create({
+              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: dateValue.id },
+            });
+            break;
+          }
+          case Entity.DataType.IMAGE: {
+            const imgVal = property.value as Entity.ImageDataValue;
+            const imageValue = await prisma.imagePropertyValue.create({ data: { url: imgVal.src, altText: imgVal.alt } });
+            await prisma.listFilterImageProperty.create({
+              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: imageValue.id },
+            });
+            break;
+          }
+          case Entity.DataType.INT: {
+            const intValue = await prisma.intPropertyValue.create({ data: { value: property.value as number } });
+            await prisma.listFilterIntProperty.create({
+              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: intValue.id },
+            });
+            break;
+          }
+          case Entity.DataType.LONG_TEXT: {
+            const longTextValue = await prisma.longTextPropertyValue.create({ data: { value: property.value as string } });
+            await prisma.listFilterLongTextProperty.create({
+              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: longTextValue.id },
+            });
+            break;
+          }
+          case Entity.DataType.SHORT_TEXT: {
+            const shortTextValue = await prisma.shortTextPropertyValue.create({ data: { value: property.value as string } });
+            await prisma.listFilterShortTextProperty.create({
+              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: shortTextValue.id },
+            });
+            break;
+          }
+        }
+      }
+
+      return ok(null);
+    } catch (error) {
+      return err(new Error("Failed to update listConfig properties", { cause: error }));
+    }
+  }
+
   static async getById(id: string): Promise<Result<List.ListConfig, Error>> {
     try {
       const listConfig = await prisma.listConfig.findFirstOrThrow({
@@ -519,6 +633,33 @@ export class ListConfig {
     return includeTypes;
   }
 
+  static mapFilterPropertiesDataToSpec(
+    data: PrismaListConfig["filter"]
+  ): List.FilterProperty[] {
+    const properties: List.FilterProperty[] = [];
+
+    data.booleanProperties.forEach(p => {
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+    });
+    data.dateProperties.forEach(p => {
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+    });
+    data.imageProperties.forEach(p => {
+      properties.push({ propertyId: p.propertyConfigId, value: { src: p.propertyValue.url, alt: p.propertyValue.altText } });
+    });
+    data.intProperties.forEach(p => {
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+    });
+    data.longTextProperties.forEach(p => {
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+    });
+    data.shortTextProperties.forEach(p => {
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+    });
+
+    return properties;
+  }
+
   static mapFilterDataToSpec(
     data: PrismaListConfig["filter"]
   ): List.ListFilter {
@@ -528,7 +669,7 @@ export class ListConfig {
       includeAllTagging: data.includeAllTagging,
       includeTypes: ListConfig.mapFilterTypesDataToSpec(data.includeTypes),
       tagging: ListConfig.mapFilterTagsDataToSpec(data.tagging),
-      properties: [],
+      properties: ListConfig.mapFilterPropertiesDataToSpec(data),
       time: ListConfig.mapTimeDataToSpec(data.time),
     };
   }

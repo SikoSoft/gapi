@@ -516,16 +516,16 @@ model ListFilterShortTextProperty {
 }
 
 model User {
-  id                 String                  @id @db.Uuid
-  username           String                  @unique @db.VarChar(64)
-  firstName          String                  @db.VarChar(64)
-  lastName           String                  @db.VarChar(64)
-  password           String                  @db.VarChar(255)
-  roles              UserRole[]
-  sessions           Session[]
-  googleAccount      UserGoogleAccount[]
-  accessPolicyGroups   AccessPolicyGroupUser[]
-  accessPolicyParties  AccessPolicyParty[]
+  id                  String                  @id @db.Uuid
+  username            String                  @unique @db.VarChar(64)
+  firstName           String                  @db.VarChar(64)
+  lastName            String                  @db.VarChar(64)
+  password            String                  @db.VarChar(255)
+  roles               UserRole[]
+  sessions            Session[]
+  googleAccount       UserGoogleAccount[]
+  accessPolicyGroups  AccessPolicyGroupUser[]
+  accessPolicyParties AccessPolicyParty[]
 }
 
 model UserRole {
@@ -625,13 +625,13 @@ model AccessPolicy {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  parties                    AccessPolicyParty[]
-  entityViewPolicies         EntityAccessPolicy[]       @relation("EntityViewAccessPolicy")
-  entityEditPolicies         EntityAccessPolicy[]       @relation("EntityEditAccessPolicy")
-  listConfigViewPolicies     ListConfigAccessPolicy[]   @relation("ListConfigViewAccessPolicy")
-  listConfigEditPolicies     ListConfigAccessPolicy[]   @relation("ListConfigEditAccessPolicy")
-  entityConfigViewPolicies   EntityConfigAccessPolicy[] @relation("EntityConfigViewAccessPolicy")
-  entityConfigEditPolicies   EntityConfigAccessPolicy[] @relation("EntityConfigEditAccessPolicy")
+  parties                  AccessPolicyParty[]
+  entityViewPolicies       EntityAccessPolicy[]       @relation("EntityViewAccessPolicy")
+  entityEditPolicies       EntityAccessPolicy[]       @relation("EntityEditAccessPolicy")
+  listConfigViewPolicies   ListConfigAccessPolicy[]   @relation("ListConfigViewAccessPolicy")
+  listConfigEditPolicies   ListConfigAccessPolicy[]   @relation("ListConfigEditAccessPolicy")
+  entityConfigViewPolicies EntityConfigAccessPolicy[] @relation("EntityConfigViewAccessPolicy")
+  entityConfigEditPolicies EntityConfigAccessPolicy[] @relation("EntityConfigEditAccessPolicy")
 }
 
 model EntityAccessPolicy {
@@ -695,4 +695,11 @@ model AccessPolicyGroupUser {
   user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
+}
+
+model MapLocation {
+  id        Int    @id @default(autoincrement())
+  name      String @db.VarChar(128)
+  latitude  Float
+  longitude Float
 }

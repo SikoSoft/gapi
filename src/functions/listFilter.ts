@@ -43,8 +43,8 @@ export async function listFilter(
 
   await ListConfig.updateTags(request.params.id, updateBody.tagging);
   await ListConfig.updateTime(request.params.id, updateBody.time);
-  await ListConfig.updateText(request.params.id, updateBody.text);
   await ListConfig.updateTypes(request.params.id, updateBody.includeTypes);
+  await ListConfig.updateProperties(request.params.id, updateBody.properties);
 
   const updateRes = await ListConfig.updateFilter(
     request.params.id,

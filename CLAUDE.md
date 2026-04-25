@@ -93,3 +93,4 @@ tsup compiles all `src/**/*.ts` to ESM `.mjs` files in `dist/`. `api-spec` is bu
 - Never make changes if a Prisma schema change is required, without asking for verification first
 - Always use the one-true-brace style of indentation; meaning that braces should always be used when possible
 - Keep all edits, reads and and shell commands confined to this projects root directory or its subdirectories. Do not traverse into directories outside of this projects root
+- Do not place interfaces, types or enum definitions within library files, but store them separately in models files

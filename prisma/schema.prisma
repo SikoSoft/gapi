@@ -698,8 +698,32 @@ model AccessPolicyGroupUser {
 }
 
 model MapLocation {
-  id        Int    @id @default(autoincrement())
-  name      String @db.VarChar(128)
-  latitude  Float
-  longitude Float
+  id               Int               @id @default(autoincrement())
+  name             String            @db.VarChar(128)
+  latitude         Float
+  longitude        Float
+  weatherForecasts WeatherForecast[]
+}
+
+/**
+ * "air_temperature": 9.7,
+ * "wind_from_direction": 304,
+ * "wind_speed": 8.6,
+ * "wind_speed_of_gust": 13.5,
+ * "relative_humidity": 64,
+ */
+
+model WeatherForecast {
+  id            Int      @id @default(autoincrement())
+  locationId    Int
+  snapshotTime  DateTime @default(now())
+  forecastTime  DateTime
+  temperature   Float
+  precipitation Float
+  windDirection Float
+  windSpeed     Float
+  windGust      Float
+  humidity      Float
+
+  location MapLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
 }

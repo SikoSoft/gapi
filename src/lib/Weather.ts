@@ -1,37 +1,10 @@
 import { err, ok, Result } from "neverthrow";
 import { prisma } from "..";
-
-export interface SmhiParameter {
-  name: string;
-  levelType: string;
-  level: number;
-  unit: string;
-  values: number[];
-}
-
-export interface SmhiTimeSeries {
-  validTime: string;
-  parameters: SmhiParameter[];
-}
-
-export interface SmhiWeatherData {
-  approvedTime: string;
-  referenceTime: string;
-  timeSeries: SmhiTimeSeries[];
-}
-
-export interface LocationWeather {
-  id: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-  weather: SmhiWeatherData | null;
-  error?: string;
-}
-
-export interface AllLocationsWeather {
-  locations: LocationWeather[];
-}
+import {
+  SmhiWeatherData,
+  AllLocationsWeather,
+  LocationWeather,
+} from "../models/Weather";
 
 export class Weather {
   static async getWeatherForLocation(
@@ -55,7 +28,9 @@ export class Weather {
       const data = (await response.json()) as SmhiWeatherData;
       return ok(data);
     } catch (error) {
-      return err(new Error(`Failed to fetch weather data: ${error}`, { cause: error }));
+      return err(
+        new Error(`Failed to fetch weather data: ${error}`, { cause: error })
+      );
     }
   }
 
@@ -95,7 +70,9 @@ export class Weather {
 
       return ok({ locations: results });
     } catch (error) {
-      return err(new Error("Failed to retrieve map locations", { cause: error }));
+      return err(
+        new Error("Failed to retrieve map locations", { cause: error })
+      );
     }
   }
 }

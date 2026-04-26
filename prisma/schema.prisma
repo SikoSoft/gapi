@@ -515,6 +515,14 @@ model ListFilterShortTextProperty {
   propertyValue  ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
+model OneTimeToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @db.VarChar(255)
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
 model User {
   id                  String                  @id @db.Uuid
   username            String                  @unique @db.VarChar(64)

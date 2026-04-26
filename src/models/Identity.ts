@@ -37,7 +37,18 @@ export interface UserCreateBody {
   firstName: string;
   lastName: string;
   password: string;
+  ott: string;
 }
+
+const prismaOneTimeToken = Prisma.validator<Prisma.OneTimeTokenFindUniqueArgs>()(
+  {
+    where: { id: 0 },
+  }
+);
+
+export type PrismaOneTimeToken = Prisma.OneTimeTokenGetPayload<
+  typeof prismaOneTimeToken
+>;
 
 export interface UserUpdateBody {
   userId: string;

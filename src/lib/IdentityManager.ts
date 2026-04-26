@@ -4,6 +4,7 @@ import Crypto from "crypto";
 import * as argon2 from "argon2";
 import { prisma } from "..";
 import {
+  PrismaOneTimeToken,
   PrismaSession,
   PrismaUser,
   User,
@@ -323,6 +324,43 @@ export class IdentityManager {
     decrypted += decipher.final("utf8");
 
     return decrypted;
+  }
+
+  static async createOtt(): Promise<Result<string, Error>> {
+    try {
+      const token = IdentityManager.generateRandomToken();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+      await prisma.oneTimeToken.create({ data: { token, expiresAt } });
+      return ok(token);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  static async verifyOtt(token: string = ""): Promise<Result<boolean, Error>> {
+    try {
+      const ott = await prisma.oneTimeToken.findUnique({
+        where: {
+          token,
+          consumed: false,
+          expiresAt: { gt: new Date() },
+        },
+      });
+
+      if (!ott) {
+        return ok(false);
+      }
+
+      await prisma.oneTimeToken.update({
+        where: { id: ott.id },
+        data: { consumed: true },
+      });
+
+      return ok(true);
+    } catch (error) {
+      return err(error);
+    }
   }
 
   static async saveGoogleAccount(

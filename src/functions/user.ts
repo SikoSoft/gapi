@@ -18,8 +18,18 @@ export async function user(
   console.log("introspection", introspection);
 
   switch (request.method) {
-    case "POST":
+    case "POST": {
       const body = (await request.json()) as UserCreateBody;
+
+      const ottRes = await IdentityManager.verifyOtt(body.ott);
+      if (ottRes.isErr()) {
+        context.error(ottRes.error);
+        return { status: 500 };
+      }
+      if (!ottRes.value) {
+        return forbiddenReply();
+      }
+
       const res = await IdentityManager.createUser(
         body.username,
         body.firstName,
@@ -34,6 +44,7 @@ export async function user(
       }
 
       return jsonReply({ id: res.value });
+    }
     case "PUT":
       let success = false;
       const updateBody = (await request.json()) as UserUpdateBody;

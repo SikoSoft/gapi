@@ -6,9 +6,9 @@ on:
       - "master"
 
 env:
-  AZURE_FUNCTIONAPP_NAME: blog-server
+  AZURE_FUNCTIONAPP_NAME: gapi
   AZURE_FUNCTIONAPP_PACKAGE_PATH: "."
-  NODE_VERSION: "20.x"
+  NODE_VERSION: "22.x"
 
 jobs:
   build-and-deploy:

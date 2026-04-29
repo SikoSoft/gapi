@@ -6,7 +6,7 @@ import {
 } from "@azure/functions";
 import { IdentityManager } from "../lib/IdentityManager";
 import { forbiddenReply, introspect, jsonReply } from "..";
-import { UserCreateBody, UserUpdateBody } from "../models/Identity";
+import { UserCreateBody, UserSelfUpdateBody, UserUpdateBody } from "../models/Identity";
 
 export async function user(
   request: HttpRequest,
@@ -45,12 +45,11 @@ export async function user(
 
       return jsonReply({ id: res.value });
     }
-    case "PUT":
-      let success = false;
-      const updateBody = (await request.json()) as UserUpdateBody;
+    case "PUT": {
+      const updateBody = (await request.json()) as UserUpdateBody | UserSelfUpdateBody;
       context.log("updateBody", updateBody);
 
-      if (updateBody.roles) {
+      if ("roles" in updateBody) {
         if (
           !introspection.isLoggedIn ||
           !introspection.user.roles.includes("admin")
@@ -62,10 +61,27 @@ export async function user(
           updateBody.userId,
           updateBody.roles
         );
-        success = updateRes.isOk();
+        if (updateRes.isErr()) {
+          context.error(updateRes.error);
+          return { status: 500 };
+        }
+        return jsonReply({ success: true });
       }
 
-      return jsonReply({ success });
+      if (!introspection.isLoggedIn) {
+        return forbiddenReply();
+      }
+
+      const selfUpdateRes = await IdentityManager.updateUser(
+        introspection.user.id,
+        updateBody
+      );
+      if (selfUpdateRes.isErr()) {
+        context.error(selfUpdateRes.error);
+        return { status: 500 };
+      }
+      return jsonReply({ success: true });
+    }
     case "GET":
       const userId = request.params.id;
 

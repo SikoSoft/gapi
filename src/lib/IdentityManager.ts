@@ -272,6 +272,28 @@ export class IdentityManager {
     return { ...user, roles: user.roles.map((r) => r.role) };
   }
 
+  static async updateUser(
+    userId: string,
+    updates: { firstName?: string; lastName?: string; password?: string; username?: string }
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(updates.firstName !== undefined && { firstName: updates.firstName }),
+          ...(updates.lastName !== undefined && { lastName: updates.lastName }),
+          ...(updates.username !== undefined && { username: updates.username }),
+          ...(updates.password !== undefined && {
+            password: await IdentityManager.hashPassword(updates.password),
+          }),
+        },
+      });
+      return ok(null);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
   static async updateUserRoles(
     userId: string,
     roles: string[]

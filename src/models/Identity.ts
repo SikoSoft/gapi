@@ -53,6 +53,13 @@ export interface UserUpdateBody {
   roles: string[];
 }
 
+export interface UserSelfUpdateBody {
+  firstName?: string;
+  lastName?: string;
+  password?: string;
+  username?: string;
+}
+
 export const userSchema = t.exact(
   t.type({
     id: t.string,

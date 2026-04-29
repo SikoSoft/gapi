@@ -119,10 +119,7 @@ export class Setting {
   ): Promise<Result<boolean, Error>> {
     const settingControlType = settingsConfig[setting.name].control.type;
 
-    if (
-      settingControlType !== ControlType.TEXT &&
-      settingControlType !== ControlType.SELECT
-    ) {
+    if (settingControlType !== ControlType.SELECT) {
       throw new Error("Setting is not a text setting");
     }
 

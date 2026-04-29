@@ -57,6 +57,7 @@ export interface UserSelfUpdateBody {
   firstName?: string;
   lastName?: string;
   password?: string;
+  currentPassword?: string;
   username?: string;
 }
 

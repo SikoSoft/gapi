@@ -7,6 +7,7 @@ import {
 import { IdentityManager } from "../lib/IdentityManager";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { UserCreateBody, UserSelfUpdateBody, UserUpdateBody } from "../models/Identity";
+import { AuthError } from "../errors/AuthError";
 
 export async function user(
   request: HttpRequest,
@@ -77,6 +78,9 @@ export async function user(
         updateBody
       );
       if (selfUpdateRes.isErr()) {
+        if (selfUpdateRes.error instanceof AuthError) {
+          return jsonReply({ success: false, error: selfUpdateRes.error.message }, 400);
+        }
         context.error(selfUpdateRes.error);
         return { status: 500 };
       }

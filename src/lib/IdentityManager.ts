@@ -1,4 +1,5 @@
 import { err, ok, Result } from "neverthrow";
+import { AuthError } from "../errors/AuthError";
 import { v4 as uuidv4 } from "uuid";
 import Crypto from "crypto";
 import * as argon2 from "argon2";
@@ -274,18 +275,32 @@ export class IdentityManager {
 
   static async updateUser(
     userId: string,
-    updates: { firstName?: string; lastName?: string; password?: string; username?: string }
+    updates: { firstName?: string; lastName?: string; password?: string; currentPassword?: string; username?: string }
   ): Promise<Result<null, Error>> {
     try {
+      let newPasswordHash: string | undefined;
+
+      if (updates.password !== undefined) {
+        if (!updates.currentPassword) {
+          return err(new AuthError("currentPassword is required to update password"));
+        }
+        const verifyRes = await IdentityManager.verifyPassword(userId, updates.currentPassword);
+        if (verifyRes.isErr()) {
+          return err(verifyRes.error);
+        }
+        if (!verifyRes.value) {
+          return err(new AuthError("currentPassword is incorrect"));
+        }
+        newPasswordHash = await IdentityManager.hashPassword(updates.password);
+      }
+
       await prisma.user.update({
         where: { id: userId },
         data: {
           ...(updates.firstName !== undefined && { firstName: updates.firstName }),
           ...(updates.lastName !== undefined && { lastName: updates.lastName }),
           ...(updates.username !== undefined && { username: updates.username }),
-          ...(updates.password !== undefined && {
-            password: await IdentityManager.hashPassword(updates.password),
-          }),
+          ...(newPasswordHash !== undefined && { password: newPasswordHash }),
         },
       });
       return ok(null);

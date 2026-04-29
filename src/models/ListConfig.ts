@@ -18,8 +18,8 @@ export const prismaListConfigInclude = {
   sort: true,
   setting: {
     include: {
-      numberSettings: true,
-      textSettings: true,
+      intSettings: true,
+      shortTextSettings: true,
       booleanSettings: true,
     },
   },

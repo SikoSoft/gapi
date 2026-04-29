@@ -23,8 +23,8 @@ export class Setting {
     const res = await prisma.setting.findFirst({
       where: { listConfigId },
       include: {
-        numberSettings: true,
-        textSettings: true,
+        intSettings: true,
+        shortTextSettings: true,
         booleanSettings: true,
       },
     });
@@ -73,9 +73,9 @@ export class Setting {
       switch (settingType) {
         case SettingDataName.BOOLEAN:
           return await Setting.updateBooleanSetting(settingRecord.id, setting);
-        case SettingDataName.NUMBER:
+        case SettingDataName.INT:
           return await Setting.updateNumberSetting(settingRecord.id, setting);
-        case SettingDataName.TEXT:
+        case SettingDataName.SHORT_TEXT:
           return await Setting.updateTextSetting(settingRecord.id, setting);
       }
     } catch (error) {
@@ -129,8 +129,8 @@ export class Setting {
     const value = setting.value as SettingTypeConfig[typeof settingControlType];
 
     try {
-      await prisma.textSetting.upsert({
-        where: { textSettingId: { settingId, name: setting.name } },
+      await prisma.shortTextSetting.upsert({
+        where: { shortTextSettingId: { settingId, name: setting.name } },
         create: {
           settingId,
           name: setting.name,
@@ -160,8 +160,8 @@ export class Setting {
     const value = setting.value as SettingTypeConfig[typeof settingControlType];
 
     try {
-      await prisma.numberSetting.upsert({
-        where: { numberSettingId: { settingId, name: setting.name } },
+      await prisma.intSetting.upsert({
+        where: { intSettingId: { settingId, name: setting.name } },
         create: {
           settingId,
           name: setting.name,
@@ -182,18 +182,18 @@ export class Setting {
       case "boolean":
         return SettingDataName.BOOLEAN;
       case "number":
-        return SettingDataName.NUMBER;
+        return SettingDataName.INT;
       case "text":
-        return SettingDataName.TEXT;
+        return SettingDataName.SHORT_TEXT;
       default:
-        return SettingDataName.TEXT;
+        return SettingDataName.SHORT_TEXT;
     }
   }
 
   static mapDataToSpec(data: PrismaSetting): Settings {
     const booleanSettings: Partial<SettingSpec> = {};
-    const numberSettings: Partial<SettingSpec> = {};
-    const textSettings: Partial<SettingSpec> = {};
+    const intSettings: Partial<SettingSpec> = {};
+    const shortTextSettings: Partial<SettingSpec> = {};
 
     if (data?.booleanSettings?.length) {
       data.booleanSettings.forEach((setting) => {
@@ -201,23 +201,23 @@ export class Setting {
       });
     }
 
-    if (data?.numberSettings?.length) {
-      data.numberSettings.forEach((setting) => {
-        numberSettings[setting.name] = setting.value;
+    if (data?.intSettings?.length) {
+      data.intSettings.forEach((setting) => {
+        intSettings[setting.name] = setting.value;
       });
     }
 
-    if (data?.textSettings?.length) {
-      data.textSettings.forEach((setting) => {
-        textSettings[setting.name] = setting.value;
+    if (data?.shortTextSettings?.length) {
+      data.shortTextSettings.forEach((setting) => {
+        shortTextSettings[setting.name] = setting.value;
       });
     }
 
     return {
       ...defaultSettings,
       ...booleanSettings,
-      ...numberSettings,
-      ...textSettings,
+      ...intSettings,
+      ...shortTextSettings,
     };
   }
 }

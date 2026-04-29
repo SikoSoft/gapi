@@ -40,10 +40,8 @@ export interface UserCreateBody {
   ott: string;
 }
 
-const prismaOneTimeToken = Prisma.validator<Prisma.OneTimeTokenFindUniqueArgs>()(
-  {
-    where: { id: 0 },
-  }
+const prismaOneTimeToken = Prisma.validator<Prisma.OneTimeTokenDefaultArgs>()(
+  {}
 );
 
 export type PrismaOneTimeToken = Prisma.OneTimeTokenGetPayload<

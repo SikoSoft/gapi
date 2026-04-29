@@ -92,7 +92,7 @@ export class IdentityManager {
         include: { roles: true },
       });
 
-      return ok(IdentityManager.mapUser(user));
+      return ok(user ? IdentityManager.mapUser(user) : null);
     } catch (error) {
       return err(error);
     }
@@ -360,6 +360,38 @@ export class IdentityManager {
       return ok(true);
     } catch (error) {
       return err(error);
+    }
+  }
+
+  static async setupAdmin(): Promise<Result<string, Error>> {
+    try {
+      const existingRes = await IdentityManager.getUserByUserName("admin");
+      if (existingRes.isErr()) {
+        return err(existingRes.error);
+      }
+      if (existingRes.value) {
+        return err(new Error("Admin user already exists"));
+      }
+
+      const createRes = await IdentityManager.createUser(
+        "admin",
+        "",
+        "",
+        "admin"
+      );
+      if (createRes.isErr()) {
+        return err(createRes.error);
+      }
+
+      const userId = createRes.value;
+      const rolesRes = await IdentityManager.updateUserRoles(userId, ["admin"]);
+      if (rolesRes.isErr()) {
+        return err(rolesRes.error);
+      }
+
+      return ok(userId);
+    } catch (error) {
+      return err(new Error("Failed to setup admin user", { cause: error }));
     }
   }
 

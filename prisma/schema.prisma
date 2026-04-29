@@ -581,31 +581,32 @@ model BooleanSetting {
   @@unique(name: "booleanSettingId", fields: [settingId, name])
 }
 
-model NumberSetting {
+model IntSetting {
   settingId String  @db.Uuid
   name      String  @db.VarChar(128)
   value     Int
   setting   Setting @relation(fields: [settingId], references: [id], onDelete: Cascade)
 
-  @@unique(name: "numberSettingId", fields: [settingId, name])
+  @@unique(name: "intSettingId", fields: [settingId, name])
 }
 
-model TextSetting {
+model ShortTextSetting {
   settingId String  @db.Uuid
   name      String  @db.VarChar(128)
   value     String  @db.VarChar(255)
   setting   Setting @relation(fields: [settingId], references: [id], onDelete: Cascade)
 
-  @@unique(name: "textSettingId", fields: [settingId, name])
+  @@unique(name: "shortTextSettingId", fields: [settingId, name])
 }
 
 model Setting {
-  id              String           @unique @db.Uuid
-  listConfigId    String           @id @db.Uuid
-  booleanSettings BooleanSetting[]
-  numberSettings  NumberSetting[]
-  textSettings    TextSetting[]
-  listConfig      ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+  id                String             @id @db.Uuid
+  userId            String?            @db.Uuid
+  listConfigId      String?            @unique @db.Uuid
+  booleanSettings   BooleanSetting[]
+  intSettings       IntSetting[]
+  shortTextSettings ShortTextSetting[]
+  listConfig        ListConfig?        @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 }
 
 model Workspace {

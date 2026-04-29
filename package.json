@@ -11,7 +11,8 @@
     "watch": "tsup --watch",
     "prestart": "npm run clean && npm run build && func extensions install",
     "start:host": "func start --port 9999",
-    "start": "npm-run-all --parallel start:host watch"
+    "start": "npm-run-all --parallel start:host watch",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -26,7 +27,8 @@
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.2",
     "tsup": "^8.0.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^2.1.9"
   },
   "dependencies": {
     "@azure/functions": "^4.4.0",

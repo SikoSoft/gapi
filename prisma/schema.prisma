@@ -498,6 +498,7 @@ model ListFilterLongTextProperty {
   listConfigId     String @db.Uuid
   propertyConfigId Int
   propertyValueId  Int    @unique
+  operation        String @default("contains")
 
   listFilter     ListFilter            @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
   propertyConfig PropertyConfig        @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
@@ -509,6 +510,7 @@ model ListFilterShortTextProperty {
   listConfigId     String @db.Uuid
   propertyConfigId Int
   propertyValueId  Int    @unique
+  operation        String @default("contains")
 
   listFilter     ListFilter             @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
   propertyConfig PropertyConfig         @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)

@@ -489,14 +489,14 @@ export class ListConfig {
           case Entity.DataType.LONG_TEXT: {
             const longTextValue = await prisma.longTextPropertyValue.create({ data: { value: property.value as string } });
             await prisma.listFilterLongTextProperty.create({
-              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: longTextValue.id },
+              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: longTextValue.id, operation: property.operation },
             });
             break;
           }
           case Entity.DataType.SHORT_TEXT: {
             const shortTextValue = await prisma.shortTextPropertyValue.create({ data: { value: property.value as string } });
             await prisma.listFilterShortTextProperty.create({
-              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: shortTextValue.id },
+              data: { listConfigId, propertyConfigId: property.propertyId, propertyValueId: shortTextValue.id, operation: property.operation },
             });
             break;
           }
@@ -639,22 +639,22 @@ export class ListConfig {
     const properties: List.FilterProperty[] = [];
 
     data.booleanProperties.forEach(p => {
-      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value, operation: List.TextType.CONTAINS });
     });
     data.dateProperties.forEach(p => {
-      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value, operation: List.TextType.CONTAINS });
     });
     data.imageProperties.forEach(p => {
-      properties.push({ propertyId: p.propertyConfigId, value: { src: p.propertyValue.url, alt: p.propertyValue.altText } });
+      properties.push({ propertyId: p.propertyConfigId, value: { src: p.propertyValue.url, alt: p.propertyValue.altText }, operation: List.TextType.CONTAINS });
     });
     data.intProperties.forEach(p => {
-      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value, operation: List.TextType.CONTAINS });
     });
     data.longTextProperties.forEach(p => {
-      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value, operation: p.operation as List.TextType });
     });
     data.shortTextProperties.forEach(p => {
-      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value });
+      properties.push({ propertyId: p.propertyConfigId, value: p.propertyValue.value, operation: p.operation as List.TextType });
     });
 
     return properties;

@@ -6,6 +6,7 @@ import {
   ListSortDirection,
   ListSortNativeProperty,
   ListSortProperty,
+  TextType,
 } from "api-spec/models/List";
 import { getDefaultFilter, prisma } from "..";
 import { PrismaEntity } from "../models/Entity";
@@ -310,6 +311,25 @@ export class EntityListQueryBuilder {
     return fragment;
   }
 
+  buildTextCondition(
+    operation: TextType,
+    value: string,
+    propValParam: string
+  ): (column: string) => string {
+    switch (operation) {
+      case TextType.STARTS_WITH:
+        this.registerParam(propValParam, `${value}%`);
+        return (col) => `${col} ILIKE {${propValParam}}::text`;
+      case TextType.ENDS_WITH:
+        this.registerParam(propValParam, `%${value}`);
+        return (col) => `${col} ILIKE {${propValParam}}::text`;
+      case TextType.CONTAINS:
+      default:
+        this.registerParam(propValParam, `%${value}%`);
+        return (col) => `${col} ILIKE {${propValParam}}::text`;
+    }
+  }
+
   getFilterPropertyFragment(prop: FilterProperty, index: number): string {
     const propIdParam = `filterPropId${index}`;
     const propValParam = `filterPropVal${index}`;
@@ -346,7 +366,7 @@ export class EntityListQueryBuilder {
     }
 
     if (typeof value === "string") {
-      this.registerParam(propValParam, value);
+      const textCondition = this.buildTextCondition(prop.operation, value, propValParam);
       return `
         AND (
           EXISTS (
@@ -355,7 +375,7 @@ export class EntityListQueryBuilder {
             JOIN "ShortTextPropertyValue" stpv ON estp."propertyValueId" = stpv."id"
             WHERE estp."entityId" = e."id"
             AND estp."propertyConfigId" = {${propIdParam}}::int
-            AND stpv."value" = {${propValParam}}::text
+            AND ${textCondition('stpv."value"')}
           )
           OR EXISTS (
             SELECT 1
@@ -363,7 +383,7 @@ export class EntityListQueryBuilder {
             JOIN "LongTextPropertyValue" ltpv ON eltp."propertyValueId" = ltpv."id"
             WHERE eltp."entityId" = e."id"
             AND eltp."propertyConfigId" = {${propIdParam}}::int
-            AND ltpv."value" = {${propValParam}}::text
+            AND ${textCondition('ltpv."value"')}
           )
         )
       `;

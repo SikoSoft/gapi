@@ -22,9 +22,15 @@ export class Setting {
     try {
       const record = await prisma.setting.findFirst({
         where: { userId, listConfigId: null },
-        include: { intSettings: true, shortTextSettings: true, booleanSettings: true },
+        include: {
+          intSettings: true,
+          shortTextSettings: true,
+          booleanSettings: true,
+        },
       });
-      return ok(record ? Setting.mapDataToSpec(record) : { ...defaultSettings });
+      return ok(
+        record ? Setting.mapDataToSpec(record) : { ...defaultSettings }
+      );
     } catch (error) {
       return err(new Error("Failed to get user settings", { cause: error }));
     }
@@ -34,9 +40,15 @@ export class Setting {
     try {
       const record = await prisma.setting.findFirst({
         where: { userId: null, listConfigId: null },
-        include: { intSettings: true, shortTextSettings: true, booleanSettings: true },
+        include: {
+          intSettings: true,
+          shortTextSettings: true,
+          booleanSettings: true,
+        },
       });
-      return ok(record ? Setting.mapDataToSpec(record) : { ...defaultSettings });
+      return ok(
+        record ? Setting.mapDataToSpec(record) : { ...defaultSettings }
+      );
     } catch (error) {
       return err(new Error("Failed to get system settings", { cause: error }));
     }
@@ -75,8 +87,8 @@ export class Setting {
       const context = isSystem
         ? SettingContextType.APP
         : listConfigId
-          ? SettingContextType.LIST
-          : SettingContextType.USER;
+        ? SettingContextType.LIST
+        : SettingContextType.USER;
 
       if (!settingsConfig[setting.name].context.includes(context)) {
         return err(
@@ -100,14 +112,15 @@ export class Setting {
       }
 
       const settingControlType = settingsConfig[setting.name].control.type;
-      const settingType = Setting.getDataTypeFromControlType(settingControlType);
+      const settingType =
+        Setting.getDataTypeFromControlType(settingControlType);
 
       let settingRecord = await prisma.setting.findFirst({
         where: isSystem
           ? { userId: null, listConfigId: null }
           : listConfigId
-            ? { listConfigId }
-            : { userId, listConfigId: null },
+          ? { listConfigId }
+          : { userId, listConfigId: null },
       });
 
       if (!settingRecord) {
@@ -115,8 +128,8 @@ export class Setting {
           data: isSystem
             ? { id: uuidv4() }
             : listConfigId
-              ? { id: uuidv4(), listConfigId }
-              : { id: uuidv4(), userId },
+            ? { id: uuidv4(), listConfigId }
+            : { id: uuidv4(), userId },
         });
       }
 
@@ -169,7 +182,10 @@ export class Setting {
   ): Promise<Result<boolean, Error>> {
     const settingControlType = settingsConfig[setting.name].control.type;
 
-    if (settingControlType !== ControlType.SELECT) {
+    if (
+      settingControlType !== ControlType.SELECT &&
+      settingControlType !== ControlType.TEXT
+    ) {
       throw new Error("Setting is not a text setting");
     }
 

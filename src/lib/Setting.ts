@@ -10,6 +10,7 @@ import {
   SettingTypeConfig,
   ControlType,
   SettingConfig,
+  SettingContextType,
 } from "api-spec/models/Setting";
 import { ListConfig } from "./ListConfig";
 import { AccessError } from "../errors/AccessError";
@@ -17,6 +18,30 @@ import { AccessError } from "../errors/AccessError";
 export type SettingConfigPart = Partial<SettingConfig>;
 
 export class Setting {
+  static async getForUser(userId: string): Promise<Result<Settings, Error>> {
+    try {
+      const record = await prisma.setting.findFirst({
+        where: { userId, listConfigId: null },
+        include: { intSettings: true, shortTextSettings: true, booleanSettings: true },
+      });
+      return ok(record ? Setting.mapDataToSpec(record) : { ...defaultSettings });
+    } catch (error) {
+      return err(new Error("Failed to get user settings", { cause: error }));
+    }
+  }
+
+  static async getForSystem(): Promise<Result<Settings, Error>> {
+    try {
+      const record = await prisma.setting.findFirst({
+        where: { userId: null, listConfigId: null },
+        include: { intSettings: true, shortTextSettings: true, booleanSettings: true },
+      });
+      return ok(record ? Setting.mapDataToSpec(record) : { ...defaultSettings });
+    } catch (error) {
+      return err(new Error("Failed to get system settings", { cause: error }));
+    }
+  }
+
   static async getByListConfigId(
     listConfigId: string
   ): Promise<Result<PrismaSetting, Error>> {
@@ -38,37 +63,62 @@ export class Setting {
 
   static async update(
     userId: string,
-    listConfigId: string,
-    setting: SettingSpec
+    listConfigId: string | undefined,
+    setting: SettingSpec,
+    isSystem: boolean = false
   ): Promise<Result<boolean, Error>> {
     try {
-      const isAllowed = await ListConfig.isEditAllowed(userId, listConfigId);
-      if (isAllowed.isErr()) {
-        return err(isAllowed.error);
-      }
-
-      if (!isAllowed.value) {
-        return err(new AccessError("Not authorized to edit this list config"));
-      }
-
       if (!settingsConfig[setting.name]) {
         return err(new Error("Setting not found"));
       }
 
+      const context = isSystem
+        ? SettingContextType.APP
+        : listConfigId
+          ? SettingContextType.LIST
+          : SettingContextType.USER;
+
+      if (!settingsConfig[setting.name].context.includes(context)) {
+        return err(
+          new Error(
+            `Setting '${setting.name}' is not valid for ${context} context`
+          )
+        );
+      }
+
+      if (context === SettingContextType.LIST) {
+        const isAllowed = await ListConfig.isEditAllowed(userId, listConfigId!);
+        if (isAllowed.isErr()) {
+          return err(isAllowed.error);
+        }
+
+        if (!isAllowed.value) {
+          return err(
+            new AccessError("Not authorized to edit this list config")
+          );
+        }
+      }
+
       const settingControlType = settingsConfig[setting.name].control.type;
-      const settingType =
-        Setting.getDataTypeFromControlType(settingControlType);
+      const settingType = Setting.getDataTypeFromControlType(settingControlType);
 
-      const id = uuidv4();
-
-      const settingRecord = await prisma.setting.upsert({
-        where: { listConfigId },
-        create: {
-          id,
-          listConfigId,
-        },
-        update: {},
+      let settingRecord = await prisma.setting.findFirst({
+        where: isSystem
+          ? { userId: null, listConfigId: null }
+          : listConfigId
+            ? { listConfigId }
+            : { userId, listConfigId: null },
       });
+
+      if (!settingRecord) {
+        settingRecord = await prisma.setting.create({
+          data: isSystem
+            ? { id: uuidv4() }
+            : listConfigId
+              ? { id: uuidv4(), listConfigId }
+              : { id: uuidv4(), userId },
+        });
+      }
 
       switch (settingType) {
         case SettingDataName.BOOLEAN:
@@ -79,7 +129,7 @@ export class Setting {
           return await Setting.updateTextSetting(settingRecord.id, setting);
       }
     } catch (error) {
-      return err(new Error("Setting type not supported"));
+      return err(new Error("Failed to update setting", { cause: error }));
     }
   }
 

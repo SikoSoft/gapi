@@ -1,6 +1,7 @@
 import {
   FilterProperty,
   ListFilter,
+  ListFilterTimeType,
   ListSort,
   ListSortCustomProperty,
   ListSortDirection,
@@ -338,6 +339,8 @@ export class EntityListQueryBuilder {
       this.registerParam("types", this.filter.includeTypes);
     }
 
+    fragment += this.getFilterTimeFragment();
+
     if (this.filter.tagging.containsAllOf.length) {
       fragment += this.getFilterTagsContainsAllOfFragment();
     }
@@ -353,6 +356,32 @@ export class EntityListQueryBuilder {
     }
 
     return fragment;
+  }
+
+  getFilterTimeFragment(): string {
+    const time = this.filter.time;
+
+    if (time.type === ListFilterTimeType.ALL_TIME) {
+      return "";
+    }
+
+    if (time.type === ListFilterTimeType.EXACT_DATE) {
+      const startTime = new Date(time.date);
+      const endTime = new Date(startTime.getTime() + 86400000);
+      this.registerParam("timeStart", startTime);
+      this.registerParam("timeEnd", endTime);
+      return ` AND e."createdAt" >= {timeStart}::timestamptz AND e."createdAt" <= {timeEnd}::timestamptz `;
+    }
+
+    if (time.type === ListFilterTimeType.RANGE) {
+      const startTime = new Date(time.start);
+      const endTime = new Date(new Date(time.end).getTime() + 86400000);
+      this.registerParam("timeStart", startTime);
+      this.registerParam("timeEnd", endTime);
+      return ` AND e."createdAt" >= {timeStart}::timestamptz AND e."createdAt" <= {timeEnd}::timestamptz `;
+    }
+
+    return "";
   }
 
   buildTextCondition(

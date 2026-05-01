@@ -64,7 +64,10 @@ export async function listConfig(
 
       return jsonReply<List.ListConfig>({ ...updateRes.value });
     case HttpMethod.DELETE:
-      const deleteRes = await ListConfig.delete(userId, request.params.id);
+      const deleteItems = request.query.get("deleteItems") === "1";
+      const deleteRes = deleteItems
+        ? await ListConfig.deleteWithItems(userId, request.params.id)
+        : await ListConfig.delete(userId, request.params.id);
       if (deleteRes.isErr()) {
         context.error(deleteRes.error);
 

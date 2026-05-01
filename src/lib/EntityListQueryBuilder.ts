@@ -119,6 +119,33 @@ export class EntityListQueryBuilder {
     return result;
   }
 
+  buildIdsQuery(): string {
+    return `
+      SELECT e."id"
+      FROM "Entity" e
+      WHERE
+        e."userId" = {userId}::uuid
+        ${this.getFilterFragment()}
+    `;
+  }
+
+  async runIdsQuery(): Promise<number[]> {
+    let query = this.buildIdsQuery();
+
+    for (const key in this.params) {
+      query = query.replace(
+        new RegExp(`\\{${key}\\}`, "g"),
+        `$${Object.keys(this.params).indexOf(key) + 1}`
+      );
+    }
+
+    const result = (await prisma.$queryRawUnsafe(
+      query,
+      ...Object.values(this.params)
+    )) as { id: number }[];
+    return result.map(r => r.id);
+  }
+
   registerParam(placeholder: string, value: any) {
     this.params[placeholder] = value;
   }

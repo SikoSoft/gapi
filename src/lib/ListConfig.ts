@@ -18,6 +18,7 @@ import { Settings } from "api-spec/models/Setting";
 import { Setting } from "./Setting";
 import { AccessPolicy } from "./AccessPolicy";
 import { AccessError } from "../errors/AccessError";
+import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
 
 export class ListConfig {
   static async create(
@@ -103,6 +104,96 @@ export class ListConfig {
       return ok(true);
     } catch (error) {
       return err(new Error("Failed to delete listConfig", { cause: error }));
+    }
+  }
+
+  static async deleteWithItems(
+    userId: string,
+    listConfigId: string
+  ): Promise<Result<boolean, Error>> {
+    try {
+      const listConfigRes = await ListConfig.getById(listConfigId);
+      if (listConfigRes.isErr()) {
+        return err(listConfigRes.error);
+      }
+      const listConfig = listConfigRes.value;
+
+      const thisQuery = new EntityListQueryBuilder();
+      thisQuery.setUserId(userId);
+      thisQuery.setFilter(listConfig.filter);
+      const thisListIds = await thisQuery.runIdsQuery();
+
+      if (thisListIds.length > 0) {
+        const allListConfigsRes = await ListConfig.getByUser(userId);
+        if (allListConfigsRes.isErr()) {
+          return err(allListConfigsRes.error);
+        }
+
+        const otherListConfigs = allListConfigsRes.value.filter(
+          lc => lc.id !== listConfigId
+        );
+
+        const otherEntityIds = new Set<number>();
+        for (const otherListConfig of otherListConfigs) {
+          const otherQuery = new EntityListQueryBuilder();
+          otherQuery.setUserId(userId);
+          otherQuery.setFilter(otherListConfig.filter);
+          const otherIds = await otherQuery.runIdsQuery();
+          otherIds.forEach(id => otherEntityIds.add(id));
+        }
+
+        const idsToDelete = thisListIds.filter(id => !otherEntityIds.has(id));
+
+        if (idsToDelete.length > 0) {
+          const entityPolicies = await prisma.entityAccessPolicy.findMany({
+            where: { entityId: { in: idsToDelete } },
+          });
+
+          await prisma.entity.deleteMany({
+            where: { userId, id: { in: idsToDelete } },
+          });
+
+          const policyIds = [
+            ...new Set(
+              entityPolicies.flatMap(ep =>
+                [ep.viewAccessPolicyId, ep.editAccessPolicyId].filter(
+                  (id): id is number => id !== null
+                )
+              )
+            ),
+          ];
+
+          for (const policyId of policyIds) {
+            const [entityCount, listConfigCount] = await Promise.all([
+              prisma.entityAccessPolicy.count({
+                where: {
+                  OR: [
+                    { viewAccessPolicyId: policyId },
+                    { editAccessPolicyId: policyId },
+                  ],
+                },
+              }),
+              prisma.listConfigAccessPolicy.count({
+                where: {
+                  OR: [
+                    { viewAccessPolicyId: policyId },
+                    { editAccessPolicyId: policyId },
+                  ],
+                },
+              }),
+            ]);
+            if (entityCount === 0 && listConfigCount === 0) {
+              await prisma.accessPolicy.delete({ where: { id: policyId } });
+            }
+          }
+        }
+      }
+
+      return await ListConfig.delete(userId, listConfigId);
+    } catch (error) {
+      return err(
+        new Error("Failed to delete listConfig with items", { cause: error })
+      );
     }
   }
 

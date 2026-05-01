@@ -22,7 +22,6 @@ export type ContextEntities = Record<number, PrismaEntity[]>;
 export interface EntityListParams {
   userId: string;
   filter: ListFilter;
-  context: ListContext;
   sort: ListSort;
   start: number;
   perPage: number;
@@ -30,7 +29,6 @@ export interface EntityListParams {
 
 export interface EntityList {
   entities: Entity.Entity[];
-  context: ContextEntities;
   total: number;
 }
 

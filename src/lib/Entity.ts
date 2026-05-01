@@ -462,45 +462,24 @@ export class Entity {
   static async getList({
     userId,
     filter,
-    context,
     sort,
     start,
     perPage,
   }: EntityListParams): Promise<Result<EntityList, Error>> {
-    const where = Entity.getFilteredConditions(userId, filter);
-
-    let entities: EntitySpec.Entity[];
-
     const listQuery = new EntityListQueryBuilder();
     listQuery.setUserId(userId);
     listQuery.setFilter(filter);
     listQuery.setSort(sort);
     listQuery.setPagination(start, perPage);
-    //console.log("Built list query:", listQuery.getQuery());
 
     try {
-      entities = (await listQuery.runQuery()).map((entity) =>
+      const total = await listQuery.runCountQuery();
+      const entities = (await listQuery.runQuery()).map((entity) =>
         Entity.toSpec(entity)
       );
 
-      /*
-      const contextEntitiesRes = await Entity.getContextEntities(
-        context,
-        entities,
-        sort
-      );
-      
-
-      if (contextEntitiesRes.isErr()) {
-        return err(contextEntitiesRes.error);
-      }
-        */
-
-      const total = await prisma.entity.count({ where });
-
       return ok({
         entities,
-        context: [], // contextEntitiesRes.value,
         total,
       });
     } catch (error) {
@@ -1424,7 +1403,9 @@ export class Entity {
         ...new Set(properties.map((p) => p.propertyConfigId)),
       ];
 
-      const propertyConfigsRes = await Entity.getPropertyConfigs(uniqueConfigIds);
+      const propertyConfigsRes = await Entity.getPropertyConfigs(
+        uniqueConfigIds
+      );
       if (propertyConfigsRes.isErr()) {
         return err(propertyConfigsRes.error);
       }

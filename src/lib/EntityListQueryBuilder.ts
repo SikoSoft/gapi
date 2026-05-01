@@ -119,6 +119,23 @@ export class EntityListQueryBuilder {
     return result;
   }
 
+  async runCountQuery(): Promise<number> {
+    let query = this.getCountQuery();
+
+    for (const key in this.params) {
+      query = query.replace(
+        new RegExp(`\\{${key}\\}`, "g"),
+        `$${Object.keys(this.params).indexOf(key) + 1}`
+      );
+    }
+
+    const result = (await prisma.$queryRawUnsafe(
+      query,
+      ...Object.values(this.params)
+    )) as [{ count: bigint }];
+    return Number(result[0].count);
+  }
+
   buildIdsQuery(): string {
     return `
       SELECT e."id"

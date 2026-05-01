@@ -93,11 +93,9 @@ export async function entity(
       const perPage = getPerPage(request);
       const filter = getFilter(request);
       const sort = getSort(request);
-      const listContext = getContext(request);
       const entityListRes = await Entity.getList({
         userId,
         filter,
-        context: listContext,
         sort,
         start,
         perPage,
@@ -110,6 +108,7 @@ export async function entity(
           status: 500,
         };
       }
+
       return jsonReply(entityListRes.value);
   }
 }

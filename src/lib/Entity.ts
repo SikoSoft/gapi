@@ -171,6 +171,7 @@ export class Entity {
         data: {
           userId,
           entityConfigId: data.entityConfigId,
+          published: data.published ?? false,
         },
       });
 

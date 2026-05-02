@@ -86,6 +86,7 @@ export class EntityListQueryBuilder {
     query += `
       WHERE
         e."userId" = {userId}::uuid
+        AND e."published" = true
         ${this.getFilterFragment()}
     `;
 
@@ -143,6 +144,7 @@ export class EntityListQueryBuilder {
       FROM "Entity" e
       WHERE
         e."userId" = {userId}::uuid
+        AND e."published" = true
         ${this.getFilterFragment()}
     `;
   }

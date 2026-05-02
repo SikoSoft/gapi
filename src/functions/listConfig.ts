@@ -34,6 +34,18 @@ export async function listConfig(
 
   switch (request.method) {
     case HttpMethod.GET:
+      if (request.params.id) {
+        const listConfigRes = await ListConfig.getById(request.params.id);
+        if (listConfigRes.isErr()) {
+          context.error(listConfigRes.error);
+          return { status: 404 };
+        }
+
+        return jsonReply<List.ListConfig>({
+          ...listConfigRes.value,
+        });
+      }
+
       const listConfigsRes = await ListConfig.getByUser(userId);
       if (listConfigsRes.isErr()) {
         context.error(listConfigsRes.error);

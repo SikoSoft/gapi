@@ -9,12 +9,13 @@ export type PropertyReference = {
 };
 
 export interface EntityBodyPayload {
-  entityConfigId: number;
-  desc: string;
-  timeZone: number;
-  tags: string[];
-  properties: Entity.EntityProperty[];
-  propertyReferences: PropertyReference[];
+  entityConfigId?: number;
+  desc?: string;
+  timeZone?: number;
+  tags?: string[];
+  properties?: Entity.EntityProperty[];
+  propertyReferences?: PropertyReference[];
+  published?: boolean;
 }
 
 export type ContextEntities = Record<number, PrismaEntity[]>;

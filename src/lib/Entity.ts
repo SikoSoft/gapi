@@ -149,7 +149,8 @@ export class Entity {
     data: EntityBodyPayload
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
-      const propertyConfigIds = data.properties.map((p) => p.propertyConfigId);
+      const properties = data.properties ?? [];
+      const propertyConfigIds = properties.map((p) => p.propertyConfigId);
 
       const propertyConfigs = await Entity.getPropertyConfigs(
         propertyConfigIds
@@ -159,7 +160,7 @@ export class Entity {
       }
 
       const validation = Entity.validateDataAgainstPropertyConfigs(
-        data,
+        properties,
         propertyConfigs.value
       );
       if (validation.isErr()) {
@@ -173,12 +174,12 @@ export class Entity {
         },
       });
 
-      Tagging.syncEntityTags(entity.id, data.tags);
+      Tagging.syncEntityTags(entity.id, data.tags ?? []);
       await Entity.syncEntityProperties(
         entity.id,
-        data.properties,
+        properties,
         [],
-        data.timeZone
+        data.timeZone ?? 0
       );
 
       const entityRes = await Entity.getEntity(entity.id);
@@ -197,31 +198,44 @@ export class Entity {
     data: EntityBodyPayload
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
-      const propertyConfigIds = data.properties.map((p) => p.propertyConfigId);
+      const properties = data.properties ?? [];
 
-      const propertyConfigs = await Entity.getPropertyConfigs(
-        propertyConfigIds
-      );
-      if (propertyConfigs.isErr()) {
-        return err(propertyConfigs.error);
+      if (properties.length > 0) {
+        const propertyConfigIds = properties.map((p) => p.propertyConfigId);
+
+        const propertyConfigs = await Entity.getPropertyConfigs(
+          propertyConfigIds
+        );
+        if (propertyConfigs.isErr()) {
+          return err(propertyConfigs.error);
+        }
+
+        const validation = Entity.validateDataAgainstPropertyConfigs(
+          properties,
+          propertyConfigs.value
+        );
+        if (validation.isErr()) {
+          return err(validation.error);
+        }
+
+        await Entity.syncEntityProperties(
+          id,
+          properties,
+          data.propertyReferences ?? [],
+          data.timeZone ?? 0
+        );
       }
 
-      const validation = Entity.validateDataAgainstPropertyConfigs(
-        data,
-        propertyConfigs.value
-      );
-      if (validation.isErr()) {
-        return err(validation.error);
+      if (data.tags !== undefined) {
+        Tagging.syncEntityTags(id, data.tags);
       }
 
-      Tagging.syncEntityTags(id, data.tags);
-
-      await Entity.syncEntityProperties(
-        id,
-        data.properties,
-        data.propertyReferences,
-        data.timeZone
-      );
+      if (data.published !== undefined) {
+        await prisma.entity.update({
+          where: { id, userId },
+          data: { published: data.published },
+        });
+      }
 
       const entityRes = await Entity.getEntity(id);
       if (entityRes.isErr()) {
@@ -234,10 +248,10 @@ export class Entity {
   }
 
   static validateDataAgainstPropertyConfigs(
-    data: EntityBodyPayload,
+    properties: EntityProperty[],
     propertyConfigs: PrismaPropertyConfig[]
   ): Result<null, ValidationError> {
-    for (const property of data.properties) {
+    for (const property of properties) {
       const config = propertyConfigs.find(
         (c) => c.id === property.propertyConfigId
       );
@@ -456,6 +470,8 @@ export class Entity {
       editAccessPolicyId: entity.accessPolicy
         ? entity.accessPolicy.editAccessPolicyId
         : 0,
+      suggestion: entity.suggestion,
+      published: entity.published,
     };
   }
 

@@ -5,7 +5,7 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import { forbiddenReply, introspect } from "..";
-import { AssistSuggestion } from "../lib/AssistSuggestion";
+import { Assist } from "../lib/Assist";
 
 export async function assist(
   request: HttpRequest,
@@ -16,11 +16,9 @@ export async function assist(
     return forbiddenReply();
   }
 
-  const authorizationHeader =
-    request.headers.get("authorization") ?? undefined;
+  const authorizationHeader = request.headers.get("authorization") ?? undefined;
 
-  const result =
-    await AssistSuggestion.runForAllListConfigs(authorizationHeader);
+  const result = await Assist.getListConfigSuggestions(authorizationHeader);
 
   if (result.isErr()) {
     context.error(result.error);

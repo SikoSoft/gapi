@@ -506,14 +506,27 @@ export class Entity {
 
   static async export(
     userId: string,
-    entityConfigIds: number[]
+    entityConfigIds: number[],
+    startDate?: Date,
+    endDate?: Date
   ): Promise<Result<EntitySpec.Entity[], Error>> {
     let entities: EntitySpec.Entity[];
 
     try {
       entities = (
         await prisma.entity.findMany({
-          where: { userId, entityConfigId: { in: entityConfigIds } },
+          where: {
+            userId,
+            entityConfigId: { in: entityConfigIds },
+            ...(startDate || endDate
+              ? {
+                  createdAt: {
+                    ...(startDate ? { gte: startDate } : {}),
+                    ...(endDate ? { lte: endDate } : {}),
+                  },
+                }
+              : {}),
+          },
           include: {
             tags: true,
             booleanProperties: {

@@ -13,6 +13,8 @@ import { IntrospectionUser } from "api-spec/models/Introspection";
 
 export interface ExportBody {
   entityConfigIds: number[];
+  startDate?: string;
+  endDate?: string;
 }
 
 async function handleExport(
@@ -23,7 +25,10 @@ async function handleExport(
 
   let body: ExportBody = (await request.json()) as ExportBody;
 
-  const res = await Entity.export(userId, body.entityConfigIds);
+  const startDate = body.startDate ? new Date(body.startDate) : undefined;
+  const endDate = body.endDate ? new Date(body.endDate) : undefined;
+
+  const res = await Entity.export(userId, body.entityConfigIds, startDate, endDate);
 
   if (res.isErr()) {
     return {

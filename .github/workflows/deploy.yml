@@ -46,7 +46,7 @@ jobs:
           # googleapis alone is ~194MB; after tree-shaking it is a few KB in dist/.
           node -e "
             const pkg = require('./package.json');
-            const nativePkgs = new Set(['argon2', '@prisma/client']);
+            const nativePkgs = new Set(['argon2', '@prisma/client', '@azure/functions']);
             const {execSync} = require('child_process');
             for (const name of Object.keys(pkg.dependencies)) {
               if (!nativePkgs.has(name)) {

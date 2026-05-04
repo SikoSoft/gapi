@@ -7,6 +7,6 @@ export default defineConfig({
   // argon2 and @prisma/client are excluded because they contain native binaries
   // that must remain in node_modules as platform-specific files.
   noExternal: [/.*/],
-  external: ["argon2", "@prisma/client"],
+  external: ["argon2", "@prisma/client", "@azure/functions"],
   clean: true,
 });

@@ -15,27 +15,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout GitHub Action"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4 # Updated to v4 for better performance
 
       - name: Setup Node ${{ env.NODE_VERSION }} Environment
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: "Resolve Project Dependencies Using Npm"
+      - name: "Prepare Source and Prisma"
         shell: bash
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          npm ci
-          npm run build --if-present
+          npm install # We need this only to run Prisma locally on the runner
           npx prisma generate
           npx prisma migrate deploy
-          npm prune --production
+          # We DO NOT run 'npm prune' or keep node_modules for the zip
+          rm -rf node_modules 
           popd
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-          AZURE_STORAGE_URL: ${{ secrets.AZURE_STORAGE_URL }}
 
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1
@@ -44,5 +42,6 @@ jobs:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-          scm-do-build-during-deployment: false
-          enable-oryx-build: false
+          # ENABLE REMOTE BUILD BELOW:
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true

@@ -76,6 +76,8 @@ jobs:
           zip -r deploy.zip dist/ node_modules/ host.json package.json
           echo "=== Final zip size ==="
           du -sh deploy.zip
+          echo "=== @phc in zip ==="
+          unzip -l deploy.zip | grep "@phc" | head -10
 
       - name: "Deploy to Azure Functions"
         uses: Azure/functions-action@v1

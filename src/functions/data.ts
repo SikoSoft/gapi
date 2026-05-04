@@ -64,6 +64,8 @@ async function handleImport(
     timeZone: number;
   };
 
+  context.log("Importing data with body:", body.timeZone);
+
   const res = await Data.import(userId, body, body.timeZone);
 
   if (res.isErr()) {

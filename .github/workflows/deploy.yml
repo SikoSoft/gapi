@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout GitHub Action"
-        uses: actions/checkout@v4 # Updated to v4 for better performance
+        uses: actions/checkout@v4
 
       - name: Setup Node ${{ env.NODE_VERSION }} Environment
         uses: actions/setup-node@v3
@@ -26,11 +26,19 @@ jobs:
         shell: bash
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          npm install # We need this only to run Prisma locally on the runner
+          npm install
           npx prisma generate
           npx prisma migrate deploy
-          # We DO NOT run 'npm prune' or keep node_modules for the zip
-          rm -rf node_modules 
+
+          # Remove node_modules so Azure can build its own (Remote Build)
+          rm -rf node_modules
+
+          # CRITICAL: Ensure the Prisma engine has execute permissions 
+          # before it gets zipped, otherwise the zip extraction on Azure can fail.
+          if [ -d "node_modules/.prisma" ]; then
+            chmod -R 755 node_modules/.prisma
+          fi
+
           popd
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -42,6 +50,7 @@ jobs:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-          # ENABLE REMOTE BUILD BELOW:
+          # The holy trinity of Remote Build settings:
           scm-do-build-during-deployment: true
           enable-oryx-build: true
+          remote-build: true

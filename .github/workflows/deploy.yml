@@ -22,43 +22,51 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: "Full Build on GitHub"
+      - name: "Full Build and Prisma Optimization"
         run: |
           npm install
           npx prisma migrate deploy
+
+          # Force Prisma to generate only the Linux engine to save ~50MB
+          export PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
           npx prisma generate
+
+          # Prune dev dependencies
           npm prune --production
+
+          # Delete heavy Prisma engines that aren't for Linux
+          # This is the "Magic" step to get under the 100MB limit
+          find node_modules/@prisma/engines -name "*windows*" -delete
+          find node_modules/@prisma/engines -name "*darwin*" -delete
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: "Zip Application"
-        run: zip -r deploy.zip . -x "*.git*"
+        run: |
+          zip -r deploy.zip . -x "*.git*"
+          echo "ZIP SIZE:"
+          du -sh deploy.zip
 
       - name: "Login to Azure"
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: "Nuclear Reset and Deploy"
+      - name: "Fix Config and Deploy"
         run: |
           az account set --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
 
-          echo "Stopping app to clear SCM locks..."
-          az functionapp stop --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }}
+          # Ensure the app is set to run from a local package (removes the 'Bad Request' conflict)
+          az functionapp config appsettings set --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --settings WEBSITE_RUN_FROM_PACKAGE="1"
 
-          # This specifically clears the 'stuck' deployment record you see in the error
-          echo "Cleaning deployment cache..."
-          az functionapp deployment source delete --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }}
-
-          echo "Starting fresh deployment (Build-Remote: False)..."
+          echo "Starting fresh deployment..."
           az functionapp deployment source config-zip \
             --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --src deploy.zip \
             --build-remote false
-
-          echo "Restarting app..."
-          az functionapp start --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }}
 
       - name: "Manual Trigger Sync"
         run: |

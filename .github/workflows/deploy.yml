@@ -22,46 +22,50 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: "Install and Build"
+      - name: "Install, migrate, and build"
         run: |
-          npm install
+          npm ci
           npx prisma migrate deploy
           npx prisma generate
-          npm prune --production
+          npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: "Size Audit (Debug)"
-        # This will show us exactly where the 135MB is hiding
+      - name: "Prepare production node_modules"
         run: |
-          echo "--- Top 10 Largest Folders ---"
-          du -sh ./* | sort -hr | head -n 10
-          echo "--- Prisma Engine Location Search ---"
-          find . -name "query-engine*" -exec du -sh {} +
+          npm prune --production
 
-      - name: "Aggressive Cleanup"
-        # We target the common 'hidden' Prisma engine spots
+          # Remove Prisma engine binaries for non-Linux platforms
+          find node_modules -name "query-engine-windows*" -delete
+          find node_modules -name "query-engine-darwin*" -delete
+          find node_modules -name "libquery_engine-darwin*" -delete
+          find node_modules -name "libquery_engine-windows*" -delete
+
+          # Remove packages that tsup has bundled into dist/ — they are not
+          # needed at runtime and are the primary source of zip bloat.
+          # googleapis alone is ~194MB; after tree-shaking it is a few KB in dist/.
+          node -e "
+            const pkg = require('./package.json');
+            const nativePkgs = new Set(['argon2', '@prisma/client']);
+            const {execSync} = require('child_process');
+            for (const name of Object.keys(pkg.dependencies)) {
+              if (!nativePkgs.has(name)) {
+                try { execSync('rm -rf node_modules/' + name, {stdio: 'inherit'}); } catch {}
+              }
+            }
+          "
+
+      - name: "Size audit"
         run: |
-          # Delete all Prisma engines except the Linux one
-          find . -name "query-engine-windows.exe" -delete
-          find . -name "query-engine-darwin*" -delete
-          find . -name "libquery_engine-darwin*" -delete
+          echo "=== node_modules top 20 ==="
+          du -sh node_modules/*/ 2>/dev/null | sort -hr | head -20
+          echo "=== dist/ ==="
+          du -sh dist/
 
-          # Delete the CLI binaries which are NOT needed at runtime
-          rm -rf node_modules/prisma
-          rm -rf node_modules/@prisma/engines
-
-          # Remove telemetry and cache
-          rm -rf node_modules/.cache
-
-          # If you have a 'dist' or 'build' folder, ensure you aren't zipping both src and dist
-          # (Optional: rm -rf src if you only need dist)
-
-      - name: "Zip Application"
-        # We explicitly exclude .git and node_modules/.cache to save space
+      - name: "Create deployment zip"
         run: |
-          zip -9 -r deploy.zip . -x "*.git*" "node_modules/.cache/*"
-          echo "FINAL ZIP SIZE:"
+          zip -r deploy.zip dist/ node_modules/ host.json package.json
+          echo "=== Final zip size ==="
           du -sh deploy.zip
 
       - name: "Login to Azure"
@@ -69,24 +73,25 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: "Deploy"
+      - name: "Configure app settings"
         run: |
           az account set --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
-
-          # Force the app to use the local zip deployment mode
-          az functionapp config appsettings set --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+          az functionapp config appsettings set \
+            --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --settings WEBSITE_RUN_FROM_PACKAGE="1"
 
-          echo "Starting deployment..."
+      - name: "Deploy zip"
+        run: |
           az functionapp deployment source config-zip \
             --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --src deploy.zip \
-            --build-remote false
+            --build-remote false \
+            --timeout 600
 
-      - name: "Manual Trigger Sync"
+      - name: "Restart function app"
         run: |
-          az functionapp deployment slot sync-triggers \
+          az functionapp restart \
             --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }}

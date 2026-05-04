@@ -2,8 +2,7 @@ name: Deploy Node.js project to function app
 
 on:
   push:
-    branches:
-      - "master"
+    branches: ["master"]
 
 env:
   AZURE_FUNCTIONAPP_NAME: gapi
@@ -22,35 +21,22 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: "Prepare Source and Prisma"
+      - name: "Database Migration"
         shell: bash
         run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           npm install
-          npx prisma generate
           npx prisma migrate deploy
-
-          # Remove node_modules so Azure can build its own (Remote Build)
+          # We delete node_modules because Azure MUST do its own npm install
           rm -rf node_modules
-
-          # CRITICAL: Ensure the Prisma engine has execute permissions 
-          # before it gets zipped, otherwise the zip extraction on Azure can fail.
-          if [ -d "node_modules/.prisma" ]; then
-            chmod -R 755 node_modules/.prisma
-          fi
-
-          popd
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1
-        id: fa
         with:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-          # The holy trinity of Remote Build settings:
           scm-do-build-during-deployment: true
           enable-oryx-build: true
           remote-build: true

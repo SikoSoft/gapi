@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/functions/*.mjs",
   "scripts": {
+    "postinstall": "prisma generate",
     "clean": "rimraf dist",
     "build": "tsup",
     "build:production": "npm run prestart && npm prune --production",

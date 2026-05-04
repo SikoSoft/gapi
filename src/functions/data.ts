@@ -18,6 +18,7 @@ export interface ExportBody {
 }
 
 async function handleExport(
+  context: InvocationContext,
   request: HttpRequest,
   introspection: IntrospectionUser
 ): Promise<HttpResponseInit> {
@@ -53,6 +54,7 @@ async function handleExport(
 }
 
 async function handleImport(
+  context: InvocationContext,
   request: HttpRequest,
   introspection: IntrospectionUser
 ): Promise<HttpResponseInit> {
@@ -75,6 +77,7 @@ async function handleImport(
 }
 
 async function handleDelete(
+  context: InvocationContext,
   request: HttpRequest,
   introspection: IntrospectionUser,
   operation: string
@@ -115,12 +118,13 @@ export async function data(
     case "POST":
       switch (request.params.operation) {
         case "export":
-          return await handleExport(request, introspection);
+          return await handleExport(context, request, introspection);
         case "import":
-          return await handleImport(request, introspection);
+          return await handleImport(context, request, introspection);
       }
     case "DELETE":
       return await handleDelete(
+        context,
         request,
         introspection,
         request.params.operation

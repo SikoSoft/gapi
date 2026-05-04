@@ -28,7 +28,7 @@ async function handleExport(
 
   const startDate = body.startDate ? new Date(body.startDate) : undefined;
   const endDate = body.endDate ? new Date(body.endDate) : undefined;
-  console.log(
+  context.log(
     "Exporting data with body:",
     body,
     "startDate:",
@@ -67,7 +67,7 @@ async function handleImport(
   const res = await Data.import(userId, body, body.timeZone);
 
   if (res.isErr()) {
-    console.error("Failed to import data:", res.error);
+    context.error("Failed to import data:", res.error);
     return {
       status: 500,
     };
@@ -90,6 +90,8 @@ async function handleDelete(
     }
 
     await Data.reset([operation]);
+
+    context.log(`Nuked data for operation: ${operation}`);
 
     return {
       status: 202,

@@ -22,35 +22,46 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: "Aggressive Prisma Slimming"
+      - name: "Install and Build"
         run: |
-          # 1. Standard install
           npm install
           npx prisma migrate deploy
-
-          # 2. Generate ONLY the engine for Azure Linux (Debian based)
-          export PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
           npx prisma generate
-
-          # 3. Prune dev dependencies
           npm prune --production
-
-          # 4. NUCLEAR DELETE of unused Prisma binaries
-          # This usually cuts 100MB+ off the size
-          find node_modules/@prisma/engines -type f ! -name "*debian-openssl-3.0.x*" -delete
-          find node_modules/prisma -type f -name "query-engine-*" -delete
-
-          # 5. Remove any other heavy files not needed for production
-          rm -rf node_modules/.cache
-          rm -rf node_modules/@types
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: "Zip Application"
+      - name: "Size Audit (Debug)"
+        # This will show us exactly where the 135MB is hiding
         run: |
-          # The -9 flag forces maximum compression
-          zip -9 -r deploy.zip . -x "*.git*"
-          echo "NEW ZIP SIZE:"
+          echo "--- Top 10 Largest Folders ---"
+          du -sh ./* | sort -hr | head -n 10
+          echo "--- Prisma Engine Location Search ---"
+          find . -name "query-engine*" -exec du -sh {} +
+
+      - name: "Aggressive Cleanup"
+        # We target the common 'hidden' Prisma engine spots
+        run: |
+          # Delete all Prisma engines except the Linux one
+          find . -name "query-engine-windows.exe" -delete
+          find . -name "query-engine-darwin*" -delete
+          find . -name "libquery_engine-darwin*" -delete
+
+          # Delete the CLI binaries which are NOT needed at runtime
+          rm -rf node_modules/prisma
+          rm -rf node_modules/@prisma/engines
+
+          # Remove telemetry and cache
+          rm -rf node_modules/.cache
+
+          # If you have a 'dist' or 'build' folder, ensure you aren't zipping both src and dist
+          # (Optional: rm -rf src if you only need dist)
+
+      - name: "Zip Application"
+        # We explicitly exclude .git and node_modules/.cache to save space
+        run: |
+          zip -9 -r deploy.zip . -x "*.git*" "node_modules/.cache/*"
+          echo "FINAL ZIP SIZE:"
           du -sh deploy.zip
 
       - name: "Login to Azure"
@@ -62,7 +73,7 @@ jobs:
         run: |
           az account set --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
 
-          # Ensure we are in the correct mode for local zips
+          # Force the app to use the local zip deployment mode
           az functionapp config appsettings set --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --settings WEBSITE_RUN_FROM_PACKAGE="1"

@@ -8,6 +8,7 @@ env:
   AZURE_FUNCTIONAPP_NAME: "sikosoft2"
   RESOURCE_GROUP: "SS"
   NODE_VERSION: "22.x"
+  AZURE_SUBSCRIPTION_ID: "c92be084-7e43-4496-ae1f-ae27b75d6318"
 
 jobs:
   build-and-deploy:
@@ -21,20 +22,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: "Install Dependencies and Migrate"
-        # We run migrations and generate Prisma here to ensure the DB is ready.
-        # Then we wipe node_modules so the zip stays tiny (0.4MB).
+      - name: "Full Build on GitHub"
         run: |
           npm install
           npx prisma migrate deploy
           npx prisma generate
-          rm -rf node_modules
+          npm prune --production
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: "Zip Application"
-        # We zip the contents of the current directory.
-        # This ensures host.json is at the ROOT of the zip.
         run: zip -r deploy.zip . -x "*.git*"
 
       - name: "Login to Azure"
@@ -42,19 +39,28 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: "Deploy to Azure Function App"
-        # az functionapp deployment is much louder about errors than the standard Action.
-        # This will force the build and populate your empty storage containers.
+      - name: "Nuclear Reset and Deploy"
         run: |
+          az account set --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+          echo "Stopping app to clear SCM locks..."
+          az functionapp stop --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }}
+
+          # This specifically clears the 'stuck' deployment record you see in the error
+          echo "Cleaning deployment cache..."
+          az functionapp deployment source delete --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }}
+
+          echo "Starting fresh deployment (Build-Remote: False)..."
           az functionapp deployment source config-zip \
             --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --src deploy.zip \
-            --build-remote true
+            --build-remote false
+
+          echo "Restarting app..."
+          az functionapp start --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }}
 
       - name: "Manual Trigger Sync"
-        # This forces the Azure Scale Controller to re-index the functions
-        # from the new zip we just pushed.
         run: |
           az functionapp deployment slot sync-triggers \
             --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \

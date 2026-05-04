@@ -1,12 +1,12 @@
-name: Deploy Node.js project to function app
+name: Deploy Node.js project to Azure Function App
 
 on:
   push:
     branches: ["master"]
 
 env:
-  AZURE_FUNCTIONAPP_NAME: gapi
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: "."
+  AZURE_FUNCTIONAPP_NAME: "gapi"
+  RESOURCE_GROUP: "SS"
   NODE_VERSION: "22.x"
 
 jobs:
@@ -17,26 +17,45 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node ${{ env.NODE_VERSION }} Environment
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: "Database Migration"
-        shell: bash
+      - name: "Install Dependencies and Migrate"
+        # We run migrations and generate Prisma here to ensure the DB is ready.
+        # Then we wipe node_modules so the zip stays tiny (0.4MB).
         run: |
           npm install
           npx prisma migrate deploy
-          # We delete node_modules because Azure MUST do its own npm install
+          npx prisma generate
           rm -rf node_modules
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: "Run Azure Functions Action"
-        uses: Azure/functions-action@v1
+      - name: "Zip Application"
+        # We zip the contents of the current directory.
+        # This ensures host.json is at the ROOT of the zip.
+        run: zip -r deploy.zip . -x "*.git*"
+
+      - name: "Login to Azure"
+        uses: azure/login@v2
         with:
-          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true
-          remote-build: true
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: "Deploy to Azure Function App"
+        # az functionapp deployment is much louder about errors than the standard Action.
+        # This will force the build and populate your empty storage containers.
+        run: |
+          az functionapp deployment source config-zip \
+            --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --src deploy.zip \
+            --build-remote true
+
+      - name: "Manual Trigger Sync"
+        # This forces the Azure Scale Controller to re-index the functions
+        # from the new zip we just pushed.
+        run: |
+          az functionapp deployment slot sync-triggers \
+            --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }}

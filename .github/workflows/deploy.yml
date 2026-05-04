@@ -41,20 +41,23 @@ jobs:
           find node_modules -name "libquery_engine-darwin*" -delete
           find node_modules -name "libquery_engine-windows*" -delete
 
-          # Remove packages that tsup has bundled into dist/ — they are not
-          # needed at runtime and are the primary source of zip bloat.
-          # googleapis alone is ~194MB; after tree-shaking it is a few KB in dist/.
-          node -e "
-            const pkg = require('./package.json');
-            // Keep packages that are external to the bundle (must exist in node_modules at runtime)
-            const nativePkgs = new Set(['argon2', '@prisma/client', '@azure/functions']);
-            const {execSync} = require('child_process');
-            for (const name of Object.keys(pkg.dependencies)) {
-              if (!nativePkgs.has(name)) {
-                try { execSync('rm -rf node_modules/' + name, {stdio: 'inherit'}); } catch {}
-              }
-            }
-          "
+          # Remove everything from node_modules except the packages that must
+          # exist on disk at runtime (native binaries / Azure host injection).
+          # Everything else was bundled into dist/ by tsup, including transitive
+          # deps — so we drop them here too, not just the top-level packages.
+          find node_modules -maxdepth 1 -mindepth 1 \
+            ! -name "argon2" \
+            ! -name ".prisma" \
+            ! -name "@prisma" \
+            ! -name "@azure" \
+            -exec rm -rf {} \;
+          find node_modules/@azure -maxdepth 1 -mindepth 1 \
+            ! -name "functions" \
+            -exec rm -rf {} \;
+          find node_modules/@prisma -maxdepth 1 -mindepth 1 \
+            ! -name "client" \
+            ! -name "engines-version" \
+            -exec rm -rf {} \;
 
       - name: "Size audit"
         run: |

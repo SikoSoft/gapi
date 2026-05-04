@@ -116,6 +116,8 @@ export async function data(
     return forbiddenReply();
   }
 
+  context.log("Received data request with method:", request.method);
+
   switch (request.method) {
     case "POST":
       switch (request.params.operation) {

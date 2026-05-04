@@ -52,6 +52,7 @@ jobs:
           find node_modules -maxdepth 1 -mindepth 1 \
             ! -name "argon2" \
             ! -name ".prisma" \
+            ! -name "@phc" \
             ! -name "@prisma" \
             ! -name "@azure" \
             -exec rm -rf {} \;

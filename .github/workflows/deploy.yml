@@ -69,30 +69,10 @@ jobs:
           echo "=== Final zip size ==="
           du -sh deploy.zip
 
-      - name: "Login to Azure"
-        uses: azure/login@v2
+      - name: "Deploy to Azure Functions"
+        uses: Azure/functions-action@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: "Configure app settings"
-        run: |
-          az account set --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
-          az functionapp config appsettings set \
-            --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --settings WEBSITE_RUN_FROM_PACKAGE="1"
-
-      - name: "Deploy zip"
-        run: |
-          az functionapp deployment source config-zip \
-            --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --src deploy.zip \
-            --build-remote false \
-            --timeout 600
-
-      - name: "Restart function app"
-        run: |
-          az functionapp restart \
-            --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }}
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: deploy.zip
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          respect-funcignore: false

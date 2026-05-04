@@ -161,6 +161,7 @@ export class Data {
             entityConfigId: entityConfigMap[entity.type],
             createdAt: new Date(entity.createdAt),
             updatedAt: new Date(entity.updatedAt),
+            published: entity.published,
           },
         });
 

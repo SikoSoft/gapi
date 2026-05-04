@@ -33,36 +33,54 @@ jobs:
 
       - name: "Prepare production node_modules"
         run: |
-          # npm prune removes node_modules/.prisma/client/ (the generated Prisma
-          # engine binary) because it is not a listed package. Save and restore it.
           cp -r node_modules/.prisma /tmp/prisma-generated
-
           npm prune --production
-
           cp -r /tmp/prisma-generated node_modules/.prisma
 
-          # Remove Prisma engine binaries for non-Linux platforms
           find node_modules -name "query-engine-windows*" -delete
           find node_modules -name "query-engine-darwin*" -delete
           find node_modules -name "libquery_engine-darwin*" -delete
           find node_modules -name "libquery_engine-windows*" -delete
 
-          # Remove everything from node_modules except runtime-required packages.
-          # All pure-JS deps are bundled into dist/ by tsup.
-          find node_modules -maxdepth 1 -mindepth 1 \
-            ! -name "argon2" \
-            ! -name ".prisma" \
-            ! -name "@phc" \
-            ! -name "@prisma" \
-            ! -name "@azure" \
-            -exec rm -rf {} \;
-          find node_modules/@azure -maxdepth 1 -mindepth 1 \
-            ! -name "functions" \
-            -exec rm -rf {} \;
-          find node_modules/@prisma -maxdepth 1 -mindepth 1 \
-            ! -name "client" \
-            ! -name "engines-version" \
-            -exec rm -rf {} \;
+          node << 'SCRIPT'
+          const fs = require('fs');
+          const path = require('path');
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+
+          function getAllDeps(pkgName, visited = new Set()) {
+            if (visited.has(pkgName)) return visited;
+            visited.add(pkgName);
+            const key = 'node_modules/' + pkgName;
+            const pkg = lock.packages?.[key];
+            if (!pkg) return visited;
+            for (const dep of Object.keys(pkg.dependencies || {})) {
+              getAllDeps(dep, visited);
+            }
+            return visited;
+          }
+
+          const needed = new Set(['.prisma']);
+          for (const pkg of ['argon2', '@prisma/client', '@azure/functions']) {
+            getAllDeps(pkg, needed);
+          }
+
+          const nmDir = 'node_modules';
+          for (const entry of fs.readdirSync(nmDir)) {
+            if (entry.startsWith('@')) {
+              const scopeDir = path.join(nmDir, entry);
+              for (const pkg of fs.readdirSync(scopeDir)) {
+                const full = entry + '/' + pkg;
+                if (!needed.has(full)) {
+                  fs.rmSync(path.join(scopeDir, pkg), { recursive: true, force: true });
+                }
+              }
+            } else if (!needed.has(entry)) {
+              fs.rmSync(path.join(nmDir, entry), { recursive: true, force: true });
+            }
+          }
+
+          console.log('Kept:', [...needed].sort().join(', '));
+          SCRIPT
 
       - name: "Size audit"
         run: |

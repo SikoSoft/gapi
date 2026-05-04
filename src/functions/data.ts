@@ -50,7 +50,7 @@ async function handleExport(
     };
   }
 
-  return jsonReply({ entities: res.value });
+  return jsonReply({ entities: res.value, success: true });
 }
 
 async function handleImport(

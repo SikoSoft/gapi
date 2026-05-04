@@ -388,11 +388,6 @@ export class Entity {
     const properties: EntitySpec.EntityProperty[] = [];
 
     if (entity.imageProperties) {
-      console.log(
-        "Mapping image properties:",
-        JSON.stringify(entity.imageProperties, null, 2)
-      );
-
       entity.imageProperties.forEach((prop) => {
         properties.push({
           id: prop.propertyValueId,

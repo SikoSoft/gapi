@@ -27,8 +27,21 @@ async function handleExport(
 
   const startDate = body.startDate ? new Date(body.startDate) : undefined;
   const endDate = body.endDate ? new Date(body.endDate) : undefined;
+  console.log(
+    "Exporting data with body:",
+    body,
+    "startDate:",
+    startDate,
+    "endDate:",
+    endDate
+  );
 
-  const res = await Entity.export(userId, body.entityConfigIds, startDate, endDate);
+  const res = await Entity.export(
+    userId,
+    body.entityConfigIds,
+    startDate,
+    endDate
+  );
 
   if (res.isErr()) {
     return {

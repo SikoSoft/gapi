@@ -43,4 +43,6 @@ npx prisma migration dev --name "added-user-field"
 
 ## Deploy
 
-Dear lord
+For future reference, here is the Claude session that helped troubleshoot the failing deployment:
+
+00e1b7ab-ea0e-47a2-879e-bb9e4a89fdab

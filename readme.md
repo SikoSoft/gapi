@@ -43,4 +43,4 @@ npx prisma migration dev --name "added-user-field"
 
 ## Deploy
 
-Dear lord.
+Dear lord

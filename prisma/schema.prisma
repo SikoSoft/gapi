@@ -212,6 +212,13 @@ model EntityShortTextProperty {
   @@index([entityId, order], map: "idx_entityshorttextprop_entityid_order")
 }
 
+/**
+ * model SuggestionTime {
+ * yyyy Int
+ * mm   Int
+ * dd   Int
+ * }
+ */
 model Entity {
   id                  Int                       @id @default(autoincrement())
   entityConfigId      Int
@@ -437,6 +444,8 @@ model ListFilter {
   includeUntagged   Boolean          @default(false)
   includeAll        Boolean          @default(false)
   includeAllTagging Boolean          @default(false)
+  published         Boolean?         @default(false)
+  suggestion        Boolean?         @default(false)
   includeTypes      ListFilterType[]
   time              ListFilterTime?
   text              ListFilterText[]

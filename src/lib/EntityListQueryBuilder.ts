@@ -72,7 +72,9 @@ export class EntityListQueryBuilder {
         `;
 
     if (!countOnly) {
-      this.registerParam("limit", this.pagination.perPage);
+      if (this.pagination.perPage !== 0) {
+        this.registerParam("limit", this.pagination.perPage);
+      }
       this.registerParam("offset", this.pagination.start);
 
       query += `
@@ -93,7 +95,7 @@ export class EntityListQueryBuilder {
     if (!countOnly) {
       query += `
       ${this.getSortFragment()}
-        LIMIT {limit} OFFSET {offset}
+        ${this.pagination.perPage !== 0 ? "LIMIT {limit}" : ""} OFFSET {offset}
       `;
     }
 

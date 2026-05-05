@@ -1,6 +1,5 @@
 import { Entity, Identity } from "api-spec/models";
 import { EntityConfig } from "../lib/EntityConfig";
-import { ActionBodyPayload, ActionItem, ActionList } from "./Action";
 import { EntityConfigCreateBody, EntityConfigUpdateBody } from "./Entity";
 
 export enum HttpMethod {
@@ -11,8 +10,6 @@ export enum HttpMethod {
 }
 
 export enum EndpointName {
-  ACTION = "action",
-  ACTION_SUGGESTION = "actionSuggestion",
   ENTITY_CONFIG = "entityConfig",
   INTROSPECT = "introspect",
   LEADERBOARD = "leaderboard",
@@ -28,22 +25,6 @@ export enum EndpointName {
 }
 
 export interface EndpointConfig {
-  [EndpointName.ACTION]: {
-    [HttpMethod.GET]: {
-      responseBody: ActionList;
-    };
-    [HttpMethod.POST]: {
-      requestBody: ActionBodyPayload;
-      responseBody: ActionItem;
-    };
-    [HttpMethod.PUT]: {
-      requestBody: ActionBodyPayload;
-      responseBody: ActionItem;
-    };
-    [HttpMethod.DELETE]: {
-      responseBody: null;
-    };
-  };
   [EndpointName.ENTITY_CONFIG]: {
     [HttpMethod.GET]: {
       responseBody: { entityConfigs: Entity.EntityConfig[] };

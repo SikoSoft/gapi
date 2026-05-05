@@ -25,15 +25,15 @@ export async function operation(
 
   switch (body.operation.type) {
     case OperationType.DELETE:
-      for (const actionId of body.entities) {
-        const deleteAllTagsRes = await Tagging.deleteAllEntityTags(actionId);
+      for (const entityId of body.entities) {
+        const deleteAllTagsRes = await Tagging.deleteAllEntityTags(entityId);
         if (deleteAllTagsRes.isErr()) {
           context.error(deleteAllTagsRes.error);
 
           return { status: 500 };
         }
 
-        const deleteRes = await Entity.delete(userId, actionId);
+        const deleteRes = await Entity.delete(userId, entityId);
         if (deleteRes.isErr()) {
           context.error(deleteRes.error);
 
@@ -42,7 +42,7 @@ export async function operation(
       }
       break;
     case OperationType.ADD_TAGS:
-      for (const actionId of body.entities) {
+      for (const entityId of body.entities) {
         const saveTagsRes = await Tagging.saveTags(body.operation.tags);
         if (saveTagsRes.isErr()) {
           context.error(saveTagsRes.error);
@@ -51,7 +51,7 @@ export async function operation(
         }
 
         const addEntityTagsRes = await Tagging.addEntityTags(
-          actionId,
+          entityId,
           body.operation.tags
         );
         if (addEntityTagsRes.isErr()) {
@@ -62,9 +62,9 @@ export async function operation(
       }
       break;
     case OperationType.REMOVE_TAGS:
-      for (const actionId of body.entities) {
+      for (const entityId of body.entities) {
         const deleteEntityTagsRes = await Tagging.deleteEntityTags(
-          actionId,
+          entityId,
           body.operation.tags
         );
         if (deleteEntityTagsRes.isErr()) {
@@ -75,8 +75,8 @@ export async function operation(
       }
       break;
     case OperationType.REPLACE_TAGS:
-      for (const actionId of body.entities) {
-        const deleteAllTagsRes = await Tagging.deleteAllEntityTags(actionId);
+      for (const entityId of body.entities) {
+        const deleteAllTagsRes = await Tagging.deleteAllEntityTags(entityId);
         if (deleteAllTagsRes.isErr()) {
           context.error(deleteAllTagsRes.error);
 
@@ -90,12 +90,12 @@ export async function operation(
           return { status: 500 };
         }
 
-        const addActionTagsRes = await Tagging.addEntityTags(
-          actionId,
+        const addEntityTagsRes = await Tagging.addEntityTags(
+          entityId,
           body.operation.tags
         );
-        if (addActionTagsRes.isErr()) {
-          context.error(addActionTagsRes.error);
+        if (addEntityTagsRes.isErr()) {
+          context.error(addEntityTagsRes.error);
 
           return { status: 500 };
         }

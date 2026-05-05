@@ -18,7 +18,7 @@ export async function tagSuggestion(
   const userId = introspection.user.id;
   context.log(`Http function processed request for url "${request.url}"`);
 
-  const suggestionsRes = await Tagging.getTagsFromActionDesc(
+  const suggestionsRes = await Tagging.getTagsFromEntityDesc(
     userId,
     request.params.query
   );

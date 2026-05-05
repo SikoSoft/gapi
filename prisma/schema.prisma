@@ -212,13 +212,14 @@ model EntityShortTextProperty {
   @@index([entityId, order], map: "idx_entityshorttextprop_entityid_order")
 }
 
-/**
- * model SuggestionTime {
- * yyyy Int
- * mm   Int
- * dd   Int
- * }
- */
+model SuggestionLock {
+  yyyy Int
+  mm   Int
+  dd   Int
+
+  @@id([yyyy, mm, dd])
+}
+
 model Entity {
   id                  Int                       @id @default(autoincrement())
   entityConfigId      Int

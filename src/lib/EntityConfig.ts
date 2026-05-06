@@ -265,6 +265,25 @@ export class EntityConfig {
     }
   }
 
+  static async getAll(): Promise<Result<Entity.EntityConfig[], Error>> {
+    try {
+      const entityConfigs = await prisma.entityConfig.findMany({
+        include: entityConfigInclude,
+        orderBy: { name: "asc" },
+      });
+
+      return ok(
+        entityConfigs.map((entityConfig) =>
+          EntityConfig.mapDataToSpec(entityConfig)
+        )
+      );
+    } catch (error) {
+      return err(
+        new Error("Failed to retrieve all entityConfigs", { cause: error })
+      );
+    }
+  }
+
   static async syncProperties(
     userId: string,
     entityConfig: Entity.EntityConfig

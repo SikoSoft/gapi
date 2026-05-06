@@ -19,14 +19,33 @@ export async function listConfig(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
-  if (!introspection.isLoggedIn) {
+  if (!introspection.isLoggedIn && !introspection.isSystem) {
     return forbiddenReply();
   }
-  const userId = introspection.user.id;
+
+  if (introspection.isSystem && request.method !== HttpMethod.GET) {
+    return forbiddenReply();
+  }
 
   switch (request.method) {
     case HttpMethod.GET:
-      const entityConfigsRes = await EntityConfig.getByUser(userId);
+      if (introspection.isSystem) {
+        const allEntityConfigsRes = await EntityConfig.getAll();
+        if (allEntityConfigsRes.isErr()) {
+          context.error(allEntityConfigsRes.error);
+          return { status: 500 };
+        }
+
+        return jsonReply<
+          EndpointConfig[EndpointName.ENTITY_CONFIG][HttpMethod.GET]["responseBody"]
+        >({
+          entityConfigs: allEntityConfigsRes.value,
+        });
+      }
+
+      const entityConfigsRes = await EntityConfig.getByUser(
+        introspection.user.id
+      );
       if (entityConfigsRes.isErr()) {
         return { status: 500 };
       }
@@ -38,19 +57,22 @@ export async function listConfig(
       });
     case HttpMethod.POST:
       const createBody = (await request.json()) as EntityConfigCreateBody;
-      const entityConfigRes = await EntityConfig.create(userId, {
-        userId,
-        name: createBody.name,
-        description: createBody.description,
-        properties: createBody.properties,
-        revisionOf: createBody.revisionOf,
-        allowPropertyOrdering: createBody.allowPropertyOrdering,
-        aiEnabled: createBody.aiEnabled,
-        aiIdentifyPrompt: createBody.aiIdentifyPrompt,
-        viewAccessPolicy: null,
-        editAccessPolicy: null,
-        public: createBody.public,
-      });
+      const entityConfigRes = await EntityConfig.create(
+        introspection.user.id,
+        {
+          userId: introspection.user.id,
+          name: createBody.name,
+          description: createBody.description,
+          properties: createBody.properties,
+          revisionOf: createBody.revisionOf,
+          allowPropertyOrdering: createBody.allowPropertyOrdering,
+          aiEnabled: createBody.aiEnabled,
+          aiIdentifyPrompt: createBody.aiIdentifyPrompt,
+          viewAccessPolicy: null,
+          editAccessPolicy: null,
+          public: createBody.public,
+        }
+      );
 
       if (entityConfigRes.isErr()) {
         context.error(entityConfigRes.error);
@@ -61,7 +83,7 @@ export async function listConfig(
       return jsonReply({ ...entityConfigRes.value });
     case HttpMethod.PUT:
       const updateBody = (await request.json()) as EntityConfigUpdateBody;
-      const result = await EntityConfig.update(userId, updateBody);
+      const result = await EntityConfig.update(introspection.user.id, updateBody);
       if (result.isErr()) {
         context.error(result.error);
 
@@ -84,7 +106,7 @@ export async function listConfig(
         };
       }
       id = parseInt(request.params.id);
-      const status = await EntityConfig.delete(userId, id);
+      const status = await EntityConfig.delete(introspection.user.id, id);
       if (status) {
         return {
           status: 204,

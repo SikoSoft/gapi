@@ -457,6 +457,7 @@ export class Entity {
 
     return {
       id: entity.id,
+      userId: entity.userId,
       type: entity.entityConfigId,
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),

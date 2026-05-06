@@ -5,7 +5,6 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import { forbiddenReply, introspect, jsonReply } from "..";
-import multipart from "parse-multipart";
 import { FileStorage } from "../lib/FileStorage";
 
 export type RequestBody = {};
@@ -41,14 +40,23 @@ export async function file(
     }
   }
 
-  const boundary = multipart.getBoundary(request.headers.get("content-type"));
-  const parts = multipart.Parse(buffer, boundary);
-  const filename = parts[0].filename || "upload";
+  const formDataResponse = new Response(buffer, {
+    headers: { "content-type": request.headers.get("content-type") || "" },
+  });
+  const formData = await formDataResponse.formData();
+  const firstEntry = [...formData.entries()][0]?.[1];
+  const filename =
+    (firstEntry instanceof File ? firstEntry.name : "") || "upload";
   const blobName = destPath
     ? `${destPath}/${filename}`
     : FileStorage.getBlobName(filename);
+  const fileData =
+    firstEntry instanceof File
+      ? Buffer.from(await firstEntry.arrayBuffer())
+      : Buffer.alloc(0);
+  const fileType = firstEntry instanceof File ? firstEntry.type : "";
 
-  await FileStorage.uploadImage(blobName, parts[0].data, parts[0].type);
+  await FileStorage.uploadImage(blobName, fileData, fileType);
 
   const url = `${process.env.AZURE_STORAGE_URL}/images/${blobName}`;
 

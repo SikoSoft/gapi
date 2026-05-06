@@ -49,6 +49,14 @@ export const introspect = async (
     if (!authToken) {
       return {
         isLoggedIn: false,
+        isSystem: false,
+      };
+    }
+
+    if (authToken === process.env.SYSTEM_API_KEY) {
+      return {
+        isLoggedIn: false,
+        isSystem: true,
       };
     }
 
@@ -57,6 +65,7 @@ export const introspect = async (
     if (sessionRes.isErr()) {
       return {
         isLoggedIn: false,
+        isSystem: false,
       };
     }
 
@@ -65,6 +74,7 @@ export const introspect = async (
     if (session) {
       return {
         isLoggedIn: true,
+        isSystem: false,
         user: {
           id: session.userId,
           username: session.user.username,
@@ -84,6 +94,7 @@ export const introspect = async (
 
   return {
     isLoggedIn: false,
+    isSystem: false,
   };
 };
 

@@ -27,10 +27,13 @@ export async function listConfig(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
-  if (!introspection.isLoggedIn) {
+  if (!introspection.isLoggedIn && !introspection.isSystem) {
     return forbiddenReply();
   }
-  const userId = introspection.user.id;
+
+  if (introspection.isSystem && request.method !== HttpMethod.GET) {
+    return forbiddenReply();
+  }
 
   switch (request.method) {
     case HttpMethod.GET:
@@ -46,7 +49,19 @@ export async function listConfig(
         });
       }
 
-      const listConfigsRes = await ListConfig.getByUser(userId);
+      if (introspection.isSystem) {
+        const allListConfigsRes = await ListConfig.getAll();
+        if (allListConfigsRes.isErr()) {
+          context.error(allListConfigsRes.error);
+          return { status: 500 };
+        }
+
+        return jsonReply<{ listConfigs: List.ListConfig[] }>({
+          listConfigs: allListConfigsRes.value,
+        });
+      }
+
+      const listConfigsRes = await ListConfig.getByUser(introspection.user.id);
       if (listConfigsRes.isErr()) {
         context.error(listConfigsRes.error);
         return forbiddenReply();
@@ -57,7 +72,7 @@ export async function listConfig(
       });
     case HttpMethod.POST:
       const createBody = (await request.json()) as CreateBody;
-      const createRes = await ListConfig.create(userId, createBody.name);
+      const createRes = await ListConfig.create(introspection.user.id, createBody.name);
       if (createRes.isErr()) {
         context.error(createRes.error);
 
@@ -67,7 +82,7 @@ export async function listConfig(
       return jsonReply<List.ListConfig>({ ...createRes.value });
     case HttpMethod.PUT:
       const updateBody = (await request.json()) as UpdateBody;
-      const updateRes = await ListConfig.update(userId, updateBody);
+      const updateRes = await ListConfig.update(introspection.user.id, updateBody);
       if (updateRes.isErr()) {
         context.error(updateRes.error);
 
@@ -78,8 +93,8 @@ export async function listConfig(
     case HttpMethod.DELETE:
       const deleteItems = request.query.get("deleteItems") === "1";
       const deleteRes = deleteItems
-        ? await ListConfig.deleteWithItems(userId, request.params.id)
-        : await ListConfig.delete(userId, request.params.id);
+        ? await ListConfig.deleteWithItems(introspection.user.id, request.params.id)
+        : await ListConfig.delete(introspection.user.id, request.params.id);
       if (deleteRes.isErr()) {
         context.error(deleteRes.error);
 

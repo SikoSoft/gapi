@@ -697,6 +697,21 @@ export class ListConfig {
     }
   }
 
+  static async getAll(): Promise<Result<List.ListConfig[], Error>> {
+    try {
+      const listConfigs = await prisma.listConfig.findMany({
+        include: prismaListConfigInclude,
+        orderBy: { name: "asc" },
+      });
+
+      return ok(
+        listConfigs.map((listConfig) => ListConfig.mapDataToSpec(listConfig))
+      );
+    } catch (error) {
+      return err(new Error("Failed to retrieve all listConfigs", { cause: error }));
+    }
+  }
+
   static mapFilterTagsDataToSpec(
     data: PrismaListConfig["filter"]["tagging"]
   ): List.TaggingContext {

@@ -5,9 +5,7 @@ import { prismaListConfigInclude } from "../models/ListConfig";
 import { Setting } from "./Setting";
 
 export class Assist {
-  static async getListConfigSuggestions(
-    authorizationHeader?: string
-  ): Promise<Result<void, Error>> {
+  static async getListConfigSuggestions(): Promise<Result<void, Error>> {
     try {
       const upstreamBaseUrl = process.env.ASSIST_API_BASE_URL;
       if (!upstreamBaseUrl) {
@@ -30,9 +28,8 @@ export class Assist {
         upstreamUrl.searchParams.set("listConfigId", listConfig.id);
 
         const headers: Record<string, string> = {};
-        if (authorizationHeader) {
-          headers["authorization"] = authorizationHeader;
-        }
+
+        headers["authorization"] = process.env.SYSTEM_API_KEY || "";
 
         await fetch(upstreamUrl.toString(), {
           method: "GET",

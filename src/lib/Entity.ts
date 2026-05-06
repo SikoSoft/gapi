@@ -479,7 +479,11 @@ export class Entity {
     perPage,
   }: EntityListParams): Promise<Result<EntityList, Error>> {
     const listQuery = new EntityListQueryBuilder();
-    listQuery.setUserId(userId);
+    if (userId) {
+      listQuery.setUserId(userId);
+    } else {
+      listQuery.setSystemMode();
+    }
     listQuery.setFilter(filter);
     listQuery.setSort(sort);
     listQuery.setPagination(start, perPage);

@@ -27,12 +27,17 @@ export class EntityListQueryBuilder {
     perPage: 25,
   };
   private isCustomSort: boolean = false;
+  private systemMode: boolean = false;
 
   constructor() {}
 
   setUserId(userId: string) {
     this.userId = userId;
     this.registerParam("userId", this.userId);
+  }
+
+  setSystemMode() {
+    this.systemMode = true;
   }
 
   setFilter(filter: ListFilter) {
@@ -87,8 +92,8 @@ export class EntityListQueryBuilder {
 
     query += `
       WHERE
-        e."userId" = {userId}::uuid
-        AND e."published" = true
+        ${!this.systemMode ? `e."userId" = {userId}::uuid AND` : ""}
+        e."published" = true
         ${this.getFilterFragment()}
     `;
 
@@ -145,8 +150,8 @@ export class EntityListQueryBuilder {
       SELECT e."id"
       FROM "Entity" e
       WHERE
-        e."userId" = {userId}::uuid
-        AND e."published" = true
+        ${!this.systemMode ? `e."userId" = {userId}::uuid AND` : ""}
+        e."published" = true
         ${this.getFilterFragment()}
     `;
   }

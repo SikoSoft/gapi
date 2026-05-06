@@ -12,13 +12,11 @@ export async function assist(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
-  if (!introspection.isLoggedIn) {
+  if (!introspection.isSystem) {
     return forbiddenReply();
   }
 
-  const authorizationHeader = request.headers.get("authorization") ?? undefined;
-
-  const result = await Assist.getListConfigSuggestions(authorizationHeader);
+  const result = await Assist.getListConfigSuggestions();
 
   if (result.isErr()) {
     context.error(result.error);

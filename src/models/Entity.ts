@@ -21,7 +21,7 @@ export interface EntityBodyPayload {
 export type ContextEntities = Record<number, PrismaEntity[]>;
 
 export interface EntityListParams {
-  userId: string;
+  userId?: string;
   filter: ListFilter;
   sort: ListSort;
   start: number;

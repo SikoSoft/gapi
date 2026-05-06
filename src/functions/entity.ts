@@ -25,11 +25,15 @@ export async function entity(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
-  if (!introspection.isLoggedIn) {
+  if (!introspection.isLoggedIn && !introspection.isSystem) {
     return forbiddenReply();
   }
 
-  const userId = introspection.user.id;
+  if (introspection.isSystem && request.method !== "GET") {
+    return forbiddenReply();
+  }
+
+  const userId = introspection.isLoggedIn ? introspection.user.id : undefined;
 
   let body: EntityBodyPayload;
 
@@ -37,7 +41,7 @@ export async function entity(
   switch (request.method) {
     case "POST":
       body = (await request.json()) as EntityBodyPayload;
-      entityRes = await Entity.create(userId, body);
+      entityRes = await Entity.create(userId!, body);
 
       if (entityRes.isErr()) {
         context.error(entityRes.error);
@@ -57,7 +61,7 @@ export async function entity(
     case "PUT":
       body = (await request.json()) as EntityBodyPayload;
       entityRes = await Entity.update(
-        userId,
+        userId!,
         parseInt(request.params.id),
         body
       );
@@ -78,7 +82,7 @@ export async function entity(
       }
       return jsonReply({ ...entityRes.value });
     case "DELETE":
-      entityRes = await Entity.delete(userId, parseInt(request.params.id));
+      entityRes = await Entity.delete(userId!, parseInt(request.params.id));
 
       if (entityRes.isErr()) {
         context.error(entityRes.error);

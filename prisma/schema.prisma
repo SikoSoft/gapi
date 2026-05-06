@@ -213,9 +213,10 @@ model EntityShortTextProperty {
 }
 
 model SuggestionLock {
-  yyyy Int
-  mm   Int
-  dd   Int
+  yyyy      Int
+  mm        Int
+  dd        Int
+  createdAt DateTime @default(now())
 
   @@id([yyyy, mm, dd])
 }

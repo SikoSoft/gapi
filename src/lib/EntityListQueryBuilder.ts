@@ -93,7 +93,7 @@ export class EntityListQueryBuilder {
     query += `
       WHERE
         ${!this.systemMode ? `e."userId" = {userId}::uuid AND` : ""}
-        e."published" = true
+        1=1
         ${this.getFilterFragment()}
     `;
 
@@ -151,7 +151,7 @@ export class EntityListQueryBuilder {
       FROM "Entity" e
       WHERE
         ${!this.systemMode ? `e."userId" = {userId}::uuid AND` : ""}
-        e."published" = true
+        1=1
         ${this.getFilterFragment()}
     `;
   }
@@ -342,6 +342,16 @@ export class EntityListQueryBuilder {
 
   getFilterFragment(): string {
     let fragment = "";
+
+    if (this.filter.published !== undefined && this.filter.published !== null) {
+      this.registerParam("published", this.filter.published);
+      fragment += ` AND e."published" = {published}::boolean `;
+    }
+
+    if (this.filter.suggestion !== undefined && this.filter.suggestion !== null) {
+      this.registerParam("suggestion", this.filter.suggestion);
+      fragment += ` AND e."suggestion" = {suggestion}::boolean `;
+    }
 
     if (this.filter.includeTypes && this.filter.includeTypes.length) {
       fragment += ` AND e."entityConfigId" = ANY({types}::int[]) `;

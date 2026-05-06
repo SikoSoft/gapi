@@ -233,10 +233,13 @@ export class Entity {
         Tagging.syncEntityTags(id, data.tags);
       }
 
-      if (data.published !== undefined) {
+      if (data.published !== undefined || data.suggestion !== undefined) {
         await prisma.entity.update({
           where: { id, userId },
-          data: { published: data.published },
+          data: {
+            ...(data.published !== undefined && { published: data.published }),
+            ...(data.suggestion !== undefined && { suggestion: data.suggestion }),
+          },
         });
       }
 

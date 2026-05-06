@@ -169,9 +169,11 @@ export class Entity {
 
       const entity = await prisma.entity.create({
         data: {
-          userId,
+          userId: data.userId ?? userId,
           entityConfigId: data.entityConfigId,
           published: data.published ?? false,
+          suggestion: data.suggestion ?? false,
+          ...(data.createdAt ? { createdAt: new Date(data.createdAt) } : {}),
         },
       });
 

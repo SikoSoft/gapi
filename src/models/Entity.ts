@@ -16,6 +16,9 @@ export interface EntityBodyPayload {
   properties?: Entity.EntityProperty[];
   propertyReferences?: PropertyReference[];
   published?: boolean;
+  userId?: string;
+  suggestion?: boolean;
+  createdAt?: string;
 }
 
 export type ContextEntities = Record<number, PrismaEntity[]>;

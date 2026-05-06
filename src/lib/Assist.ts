@@ -5,6 +5,34 @@ import { prismaListConfigInclude } from "../models/ListConfig";
 import { Setting } from "./Setting";
 
 export class Assist {
+  static async getSuggestionLock(
+    yyyy: number,
+    mm: number,
+    dd: number
+  ): Promise<Result<boolean, Error>> {
+    try {
+      const lock = await prisma.suggestionLock.findUnique({
+        where: { yyyy_mm_dd: { yyyy, mm, dd } },
+      });
+      return ok(lock !== null);
+    } catch (error) {
+      return err(new Error("Failed to check suggestion lock", { cause: error }));
+    }
+  }
+
+  static async setSuggestionLock(
+    yyyy: number,
+    mm: number,
+    dd: number
+  ): Promise<Result<void, Error>> {
+    try {
+      await prisma.suggestionLock.create({ data: { yyyy, mm, dd } });
+      return ok(undefined);
+    } catch (error) {
+      return err(new Error("Failed to set suggestion lock", { cause: error }));
+    }
+  }
+
   static async getListConfigSuggestions(): Promise<Result<void, Error>> {
     try {
       const upstreamBaseUrl = process.env.ASSIST_API_BASE_URL;

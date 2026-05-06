@@ -4,7 +4,7 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { jsonReply, prisma } from "..";
+import { forbiddenReply, introspect, jsonReply, prisma } from "..";
 
 declare interface RequestBody {
   label: string;
@@ -14,18 +14,30 @@ export async function tag(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
+  const introspection = await introspect(request);
+  if (!introspection.isLoggedIn) {
+    return forbiddenReply();
+  }
+
   switch (request.method) {
-    case "POST":
+    case "POST": {
       const body = (await request.json()) as RequestBody;
-      await prisma.tag.create({
+      const created = await prisma.tag.create({
         data: {
           label: body.label,
         },
       });
+      return jsonReply({ label: created.label });
+    }
 
-    case "DELETE":
+    case "DELETE": {
+      await prisma.tag.deleteMany({
+        where: { label: request.params.query },
+      });
+      return jsonReply({});
+    }
 
-    case "GET":
+    case "GET": {
       const rawTags = await prisma.tag.findMany({
         where: {
           label: { startsWith: request.params.query, mode: "insensitive" },
@@ -33,6 +45,7 @@ export async function tag(
       });
       const tags = rawTags.map((tag) => tag.label);
       return jsonReply({ tags });
+    }
   }
 
   return jsonReply({ time: new Date().toISOString() });

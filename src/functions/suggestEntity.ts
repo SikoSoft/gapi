@@ -47,7 +47,7 @@ export async function suggestEntity(
   const entities = [];
 
   for (const payload of body) {
-    const entityRes = await Entity.create("", payload);
+    const entityRes = await Entity.create("", { ...payload, suggestion: true });
 
     if (entityRes.isErr()) {
       context.error(entityRes.error);

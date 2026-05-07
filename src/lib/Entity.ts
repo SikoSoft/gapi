@@ -173,7 +173,14 @@ export class Entity {
           entityConfigId: data.entityConfigId,
           published: data.published ?? false,
           suggestion: data.suggestion ?? false,
-          ...(data.createdAt ? { createdAt: new Date(data.createdAt) } : {}),
+          ...(data.createdAt
+            ? {
+                createdAt: Util.getDateInTimeZone(
+                  data.createdAt,
+                  data.timeZone ?? 0
+                ),
+              }
+            : {}),
         },
       });
 
@@ -238,7 +245,9 @@ export class Entity {
           where: { id, userId },
           data: {
             ...(data.published !== undefined && { published: data.published }),
-            ...(data.suggestion !== undefined && { suggestion: data.suggestion }),
+            ...(data.suggestion !== undefined && {
+              suggestion: data.suggestion,
+            }),
           },
         });
       }

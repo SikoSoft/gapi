@@ -57,6 +57,8 @@ export async function suggestEntity(
     entities.push(entityRes.value);
   }
 
+  console.log("SUGGESTED ENTITIES", JSON.stringify(body, null, 2));
+
   const setLockRes = await Assist.setSuggestionLock(yyyy, mm, dd);
   if (setLockRes.isErr()) {
     context.error(setLockRes.error);

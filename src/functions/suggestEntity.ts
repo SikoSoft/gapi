@@ -43,6 +43,12 @@ export async function suggestEntity(
     return { status: 409 };
   }
 
+  const deleteRes = await Entity.deleteStaleSuggestions();
+  if (deleteRes.isErr()) {
+    context.error(deleteRes.error);
+    return { status: 500 };
+  }
+
   const body = (await request.json()) as EntityBodyPayload[];
   const entities = [];
 

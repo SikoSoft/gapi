@@ -580,6 +580,21 @@ export class Entity {
     }
   }
 
+  static async deleteStaleSuggestions(): Promise<Result<number, Error>> {
+    try {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const { count } = await prisma.entity.deleteMany({
+        where: {
+          suggestion: true,
+          createdAt: { lte: cutoff },
+        },
+      });
+      return ok(count);
+    } catch (error) {
+      return err(error);
+    }
+  }
+
   static async delete(
     userId: string,
     id: number

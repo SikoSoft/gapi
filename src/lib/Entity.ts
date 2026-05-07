@@ -179,6 +179,10 @@ export class Entity {
                   data.createdAt,
                   data.timeZone ?? 0
                 ),
+                updatedAt: Util.getDateInTimeZone(
+                  data.createdAt,
+                  data.timeZone ?? 0
+                ),
               }
             : {}),
         },

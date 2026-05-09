@@ -7,6 +7,7 @@ import {
   prismaListConfigInclude,
 } from "../models/ListConfig";
 import {
+  defaultListFilter,
   ListFilterTimeType,
   ListFilterType,
   ListSortCustomProperty,
@@ -482,8 +483,14 @@ export class ListConfig {
           includeAll: filter.includeAll,
           includeUntagged: filter.includeUntagged,
           includeAllTagging: filter.includeAllTagging,
-          published: filter.published ?? null,
-          suggestion: filter.suggestion ?? null,
+          published:
+            typeof filter.published === "undefined"
+              ? defaultListFilter.published
+              : filter.published,
+          suggestion:
+            typeof filter.suggestion === "undefined"
+              ? defaultListFilter.suggestion
+              : filter.suggestion,
         },
       });
       return ok(null);

@@ -93,6 +93,23 @@ export async function entity(
       }
       return jsonReply({ ...entityRes.value });
     case "GET":
+      const idParam = request.params.id;
+      if (idParam) {
+        const singleEntityRes = introspection.isSystem
+          ? await Entity.getEntity(parseInt(idParam, 10))
+          : await Entity.getEntityForUser(parseInt(idParam, 10), userId!);
+
+        if (singleEntityRes.isErr()) {
+          if (singleEntityRes.error.name === ErrorCode.AccessError) {
+            return forbiddenReply();
+          }
+          context.error(singleEntityRes.error);
+          return { status: 500 };
+        }
+
+        return jsonReply({ ...singleEntityRes.value });
+      }
+
       const start = getStart(request);
       const perPage = getPerPage(request);
       const filter = getFilter(request);

@@ -24,7 +24,7 @@ import {
   EntityProperty,
   ImageDataValue,
 } from "api-spec/models/Entity";
-import { Entity as EntitySpec } from "api-spec/models";
+import { Access, Entity as EntitySpec } from "api-spec/models";
 import { Util } from "./Util";
 import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
 import { PropertyConfig } from "./PropertyConfig";
@@ -33,6 +33,7 @@ import {
   propertyConfigInclude,
 } from "../models/PropertyConfig";
 import { ValidationError } from "../errors/ValidationError";
+import { AccessError } from "../errors/AccessError";
 
 export class Entity {
   static async getPropertySuggestions(
@@ -337,6 +338,49 @@ export class Entity {
       if (!entity) {
         return err(new Error("Entity not found"));
       }
+      return ok(Entity.toSpec(entity));
+    } catch (error) {
+      return err(error);
+    }
+  }
+
+  static async getEntityForUser(
+    id: number,
+    userId: string
+  ): Promise<Result<EntitySpec.Entity, Error>> {
+    try {
+      const entity = await prisma.entity.findUnique({
+        where: { id },
+        include: entityInclude,
+      });
+
+      if (!entity) {
+        return err(new Error("Entity not found"));
+      }
+
+      if (entity.userId === userId) {
+        return ok(Entity.toSpec(entity));
+      }
+
+      const viewPolicy = entity.accessPolicy?.viewAccessPolicy;
+      if (!viewPolicy) {
+        return err(new AccessError("Access denied"));
+      }
+
+      const hasAccess = viewPolicy.parties.some(party => {
+        if (party.type === Access.AccessPartyType.USER) {
+          return party.userId === userId;
+        }
+        if (party.type === Access.AccessPartyType.GROUP) {
+          return party.group?.users.some(gu => gu.userId === userId) ?? false;
+        }
+        return false;
+      });
+
+      if (!hasAccess) {
+        return err(new AccessError("Access denied"));
+      }
+
       return ok(Entity.toSpec(entity));
     } catch (error) {
       return err(error);

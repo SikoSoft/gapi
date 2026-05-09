@@ -484,13 +484,9 @@ export class ListConfig {
           includeUntagged: filter.includeUntagged,
           includeAllTagging: filter.includeAllTagging,
           published:
-            typeof filter.published === "undefined"
-              ? defaultListFilter.published
-              : filter.published,
+            typeof filter.published === "undefined" ? null : filter.published,
           suggestion:
-            typeof filter.suggestion === "undefined"
-              ? defaultListFilter.suggestion
-              : filter.suggestion,
+            typeof filter.suggestion === "undefined" ? null : filter.suggestion,
         },
       });
       return ok(null);

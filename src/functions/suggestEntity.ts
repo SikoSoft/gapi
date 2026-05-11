@@ -8,6 +8,7 @@ import { forbiddenReply, introspect, jsonReply } from "..";
 import { EntityBodyPayload } from "../models/Entity";
 import { Entity } from "../lib/Entity";
 import { Assist } from "../lib/Assist";
+import { NotificationQueue } from "../lib/NotificationQueue";
 
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -60,7 +61,29 @@ export async function suggestEntity(
       return { status: 500 };
     }
 
-    entities.push(entityRes.value);
+    const entity = entityRes.value;
+    entities.push(entity);
+
+    if (payload.userId) {
+      const textValuesRes = await Entity.getTextValues(entity.id);
+
+      if (textValuesRes.isErr()) {
+        context.error(textValuesRes.error);
+        return { status: 500 };
+      }
+
+      const enqueueRes = await NotificationQueue.enqueue({
+        userId: payload.userId,
+        entityConfigId: entity.entityConfigId,
+        suggestionEntityId: entity.id,
+        textValues: textValuesRes.value,
+      });
+
+      if (enqueueRes.isErr()) {
+        context.error(enqueueRes.error);
+        return { status: 500 };
+      }
+    }
   }
 
   console.log("SUGGESTED ENTITIES", JSON.stringify(body, null, 2));

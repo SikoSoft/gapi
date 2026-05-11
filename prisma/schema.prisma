@@ -549,6 +549,20 @@ model User {
   googleAccount       UserGoogleAccount[]
   accessPolicyGroups  AccessPolicyGroupUser[]
   accessPolicyParties AccessPolicyParty[]
+  pushSubscriptions   PushSubscription[]
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    String   @db.Uuid
+  endpoint  String   @unique @db.VarChar(2048)
+  p256dh    String   @db.VarChar(512)
+  auth      String   @db.VarChar(512)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_pushsubscription_userid")
 }
 
 model UserRole {

@@ -21,6 +21,13 @@ export async function notification(
     case "POST": {
       const body = (await request.json()) as NotificationMessage;
 
+      if (!body.userId || !body.title || !body.body) {
+        return {
+          status: 400,
+          body: JSON.stringify({ message: "userId, title, and body are required" }),
+        };
+      }
+
       const result = await Notification.send(body);
 
       if (result.isErr()) {

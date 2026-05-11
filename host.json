@@ -10,7 +10,10 @@
     "logLevel": {
       "default": "Information",
       "Function": "Information",
-      "Host.Aggregator": "Information"
+      "Host.Aggregator": "Information",
+      "Azure.Core": "Warning",
+      "Azure.Storage.Blobs": "Warning",
+      "Azure.Storage.Queues": "Warning"
     }
   },
   "extensionBundle": {

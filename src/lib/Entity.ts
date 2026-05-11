@@ -1559,6 +1559,74 @@ export class Entity {
     }
   }
 
+  static async getTextValues(
+    entityId: number
+  ): Promise<Result<string[], Error>> {
+    try {
+      const entity = await prisma.entity.findUnique({
+        where: { id: entityId },
+        include: {
+          shortTextProperties: { include: { propertyValue: true } },
+          longTextProperties: { include: { propertyValue: true } },
+        },
+      });
+
+      if (!entity) {
+        return err(new Error(`Entity ${entityId} not found`));
+      }
+
+      const textValues = [
+        ...entity.shortTextProperties.map(p => p.propertyValue.value),
+        ...entity.longTextProperties.map(p => p.propertyValue.value),
+      ];
+
+      return ok(textValues);
+    } catch (error) {
+      return err(
+        new Error("Failed to get entity text values", { cause: error })
+      );
+    }
+  }
+
+  static async hasMatchingEntityLoggedInPastHour(
+    userId: string,
+    entityConfigId: number,
+    textValues: string[]
+  ): Promise<Result<boolean, Error>> {
+    try {
+      const oneHourAgo = new Date(Date.now() - 3600000);
+      const entities = await prisma.entity.findMany({
+        where: {
+          userId,
+          entityConfigId,
+          suggestion: false,
+          createdAt: { gte: oneHourAgo },
+        },
+        include: {
+          shortTextProperties: { include: { propertyValue: true } },
+          longTextProperties: { include: { propertyValue: true } },
+        },
+      });
+
+      for (const entity of entities) {
+        const entityTextValues = [
+          ...entity.shortTextProperties.map(p => p.propertyValue.value),
+          ...entity.longTextProperties.map(p => p.propertyValue.value),
+        ];
+
+        if (textValues.every(v => entityTextValues.includes(v))) {
+          return ok(true);
+        }
+      }
+
+      return ok(false);
+    } catch (error) {
+      return err(
+        new Error("Failed to check for matching entity", { cause: error })
+      );
+    }
+  }
+
   static async replaceProperties(
     entityId: number,
     properties: EntityProperty[],

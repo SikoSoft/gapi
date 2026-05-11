@@ -1,12 +1,12 @@
 export interface NotificationAction {
   action: string;
-  label: string;
+  title: string;
   url: string;
 }
 
 export interface NotificationMessage {
   userId: string;
-  topic: string;
-  message: string;
+  title: string;
+  body: string;
   actions: NotificationAction[];
 }

@@ -18,6 +18,13 @@ async function notificationQueueHandler(
     return;
   }
 
+  context.log("[notificationQueue] processing", {
+    userId: queueMessage.userId,
+    entityConfigId: queueMessage.entityConfigId,
+    suggestionEntityId: queueMessage.suggestionEntityId,
+    textValues: queueMessage.textValues,
+  });
+
   const alreadyLoggedRes = await Entity.hasMatchingEntityLoggedInPastHour(
     queueMessage.userId,
     queueMessage.entityConfigId,
@@ -30,10 +37,13 @@ async function notificationQueueHandler(
   }
 
   if (alreadyLoggedRes.value) {
+    context.log("[notificationQueue] user already logged a matching entity in the past hour — skipping notification");
     return;
   }
 
   const addUrl = `${process.env.ORBIT_FE_BASE_URL}/entity/add?suggestion=${queueMessage.suggestionEntityId}`;
+
+  context.log("[notificationQueue] sending push notification", { addUrl });
 
   const sendRes = await Notification.send({
     userId: queueMessage.userId,
@@ -43,7 +53,9 @@ async function notificationQueueHandler(
   });
 
   if (sendRes.isErr()) {
-    context.error(sendRes.error);
+    context.error("[notificationQueue] Notification.send failed:", sendRes.error);
+  } else {
+    context.log("[notificationQueue] Notification.send completed");
   }
 }
 

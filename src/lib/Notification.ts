@@ -28,6 +28,8 @@ export class Notification {
       );
     }
 
+    console.log(`[Notification] found ${subscriptions.length} subscription(s) for userId=${message.userId}`);
+
     if (subscriptions.length === 0) {
       return ok(undefined);
     }
@@ -45,15 +47,18 @@ export class Notification {
 
     for (const sub of subscriptions) {
       try {
+        console.log(`[Notification] sending to endpoint: ${sub.endpoint}`);
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload
         );
+        console.log(`[Notification] sent successfully to ${sub.endpoint}`);
       } catch (error: any) {
         if (error?.statusCode === 410) {
+          console.log(`[Notification] subscription expired (410), deleting: ${sub.endpoint}`);
           await prisma.pushSubscription.delete({ where: { id: sub.id } });
         } else {
-          console.error(`Failed to send push notification to ${sub.endpoint}`, error);
+          console.error(`[Notification] failed to send to ${sub.endpoint}`, error);
         }
       }
     }

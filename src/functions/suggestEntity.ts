@@ -30,18 +30,22 @@ export async function suggestEntity(
     };
   }
 
+  const ignoreLock = request.query.get("ignoreLock") === "1";
+
   const yyyy = parseInt(match[1]);
   const mm = parseInt(match[2]);
   const dd = parseInt(match[3]);
 
-  const lockRes = await Assist.getSuggestionLock(yyyy, mm, dd);
-  if (lockRes.isErr()) {
-    context.error(lockRes.error);
-    return { status: 500 };
-  }
+  if (!ignoreLock) {
+    const lockRes = await Assist.getSuggestionLock(yyyy, mm, dd);
+    if (lockRes.isErr()) {
+      context.error(lockRes.error);
+      return { status: 500 };
+    }
 
-  if (lockRes.value) {
-    return { status: 409 };
+    if (lockRes.value) {
+      return { status: 409 };
+    }
   }
 
   const deleteRes = await Entity.deleteStaleSuggestions();
@@ -52,6 +56,10 @@ export async function suggestEntity(
 
   const body = (await request.json()) as EntityBodyPayload[];
   const entities = [];
+
+  context.log(
+    `[suggestEntity] received ${body.length} payload(s); userIds present: [${body.map(p => p.userId ?? "(none)").join(", ")}]`
+  );
 
   for (const payload of body) {
     const entityRes = await Entity.create("", { ...payload, suggestion: true });
@@ -65,6 +73,10 @@ export async function suggestEntity(
     entities.push(entity);
 
     if (payload.userId) {
+      context.log(
+        `[suggestEntity] entity ${entity.id} has userId=${payload.userId} — enqueuing push notification`
+      );
+
       const textValuesRes = await Entity.getTextValues(entity.id);
 
       if (textValuesRes.isErr()) {
@@ -74,7 +86,7 @@ export async function suggestEntity(
 
       const enqueueRes = await NotificationQueue.enqueue({
         userId: payload.userId,
-        entityConfigId: entity.entityConfigId,
+        entityConfigId: entity.type,
         suggestionEntityId: entity.id,
         textValues: textValuesRes.value,
       });
@@ -83,15 +95,21 @@ export async function suggestEntity(
         context.error(enqueueRes.error);
         return { status: 500 };
       }
+    } else {
+      context.log(
+        `[suggestEntity] entity ${entity.id} has no userId — skipping push notification`
+      );
     }
   }
 
   console.log("SUGGESTED ENTITIES", JSON.stringify(body, null, 2));
 
-  const setLockRes = await Assist.setSuggestionLock(yyyy, mm, dd);
-  if (setLockRes.isErr()) {
-    context.error(setLockRes.error);
-    return { status: 500 };
+  if (!ignoreLock) {
+    const setLockRes = await Assist.setSuggestionLock(yyyy, mm, dd);
+    if (setLockRes.isErr()) {
+      context.error(setLockRes.error);
+      return { status: 500 };
+    }
   }
 
   return jsonReply({ entities });

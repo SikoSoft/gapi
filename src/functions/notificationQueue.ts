@@ -14,7 +14,7 @@ async function notificationQueueHandler(
     !queueMessage.entityConfigId ||
     !queueMessage.suggestionEntityId
   ) {
-    context.error("Invalid notification queue message");
+    context.error("Invalid notification queue message", { queueMessage });
     return;
   }
 
@@ -23,7 +23,22 @@ async function notificationQueueHandler(
     entityConfigId: queueMessage.entityConfigId,
     suggestionEntityId: queueMessage.suggestionEntityId,
     textValues: queueMessage.textValues,
+    receivedAt: new Date().toISOString(),
   });
+
+  const entityExistsRes = await Entity.suggestionExists(queueMessage.suggestionEntityId);
+
+  if (entityExistsRes.isErr()) {
+    context.error("[notificationQueue] failed to check suggestion existence", entityExistsRes.error);
+    return;
+  }
+
+  if (!entityExistsRes.value) {
+    context.log("[notificationQueue] suggestion entity no longer exists — skipping notification", {
+      suggestionEntityId: queueMessage.suggestionEntityId,
+    });
+    return;
+  }
 
   const alreadyLoggedRes = await Entity.hasMatchingEntityLoggedInPastHour(
     queueMessage.userId,
@@ -37,13 +52,23 @@ async function notificationQueueHandler(
   }
 
   if (alreadyLoggedRes.value) {
-    context.log("[notificationQueue] user already logged a matching entity in the past hour — skipping notification");
+    context.log("[notificationQueue] user already logged a matching entity in the past hour — skipping notification", {
+      userId: queueMessage.userId,
+      entityConfigId: queueMessage.entityConfigId,
+      textValues: queueMessage.textValues,
+    });
     return;
   }
 
+  context.log("[notificationQueue] no recent matching entity found — proceeding to send notification");
+
   const addUrl = `${process.env.ORBIT_FE_BASE_URL}/entity/add?suggestion=${queueMessage.suggestionEntityId}`;
 
-  context.log("[notificationQueue] sending push notification", { addUrl });
+  context.log("[notificationQueue] sending push notification", {
+    addUrl,
+    userId: queueMessage.userId,
+    body: queueMessage.textValues.join("\n"),
+  });
 
   const sendRes = await Notification.send({
     userId: queueMessage.userId,
@@ -55,7 +80,7 @@ async function notificationQueueHandler(
   if (sendRes.isErr()) {
     context.error("[notificationQueue] Notification.send failed:", sendRes.error);
   } else {
-    context.log("[notificationQueue] Notification.send completed");
+    context.log("[notificationQueue] Notification.send completed successfully");
   }
 }
 

@@ -3,7 +3,7 @@ import { Result, err, ok } from "neverthrow";
 import { NotificationQueueMessage } from "../models/NotificationQueue";
 
 const QUEUE_NAME = "notification-queue";
-const NOTIFICATION_DELAY_SECONDS = 0;
+const NOTIFICATION_DELAY_SECONDS = 3600;
 
 function extractAccountName(connectionString: string): string {
   const match = /AccountName=([^;]+)/.exec(connectionString);

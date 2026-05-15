@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { ListContext, ListFilter, ListSort } from "api-spec/models/List";
+import { ListFilter, ListSort } from "api-spec/models/List";
 import { Entity } from "api-spec/models";
 import { DataType } from "api-spec/models/Entity";
 

@@ -1,6 +1,6 @@
 import { err, ok, Result } from "neverthrow";
 import { v4 as uuidv4 } from "uuid";
-import { prisma, sha256Hex } from "..";
+import { prisma } from "..";
 import {
   ExportEntityConfigData,
   ExportDataContents,

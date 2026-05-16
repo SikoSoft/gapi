@@ -1594,6 +1594,11 @@ export class Entity {
     textValues: string[]
   ): Promise<Result<boolean, Error>> {
     try {
+      if (textValues.length === 0) {
+        console.log("[Entity] hasMatchingEntityLoggedInPastHour: textValues is empty — skipping dedupe check");
+        return ok(false);
+      }
+
       const oneHourAgo = new Date(Date.now() - 3600000);
       const entities = await prisma.entity.findMany({
         where: {
@@ -1608,6 +1613,8 @@ export class Entity {
         },
       });
 
+      console.log(`[Entity] hasMatchingEntityLoggedInPastHour: found ${entities.length} non-suggestion entities of type ${entityConfigId} logged in past hour`, { textValues });
+
       for (const entity of entities) {
         const entityTextValues = [
           ...entity.shortTextProperties.map(p => p.propertyValue.value),
@@ -1615,6 +1622,7 @@ export class Entity {
         ];
 
         if (textValues.every(v => entityTextValues.includes(v))) {
+          console.log(`[Entity] hasMatchingEntityLoggedInPastHour: match found on entity ${entity.id}`, { entityTextValues, textValues });
           return ok(true);
         }
       }
@@ -1624,6 +1632,18 @@ export class Entity {
       return err(
         new Error("Failed to check for matching entity", { cause: error })
       );
+    }
+  }
+
+  static async suggestionExists(entityId: number): Promise<Result<boolean, Error>> {
+    try {
+      const entity = await prisma.entity.findUnique({
+        where: { id: entityId, suggestion: true },
+        select: { id: true },
+      });
+      return ok(entity !== null);
+    } catch (error) {
+      return err(new Error("Failed to check suggestion existence", { cause: error }));
     }
   }
 

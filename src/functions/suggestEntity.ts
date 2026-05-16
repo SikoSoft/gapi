@@ -84,6 +84,11 @@ export async function suggestEntity(
         return { status: 500 };
       }
 
+      context.log(
+        `[suggestEntity] enqueuing notification for entity ${entity.id}`,
+        { userId: payload.userId, entityConfigId: entity.type, textValues: textValuesRes.value }
+      );
+
       const enqueueRes = await NotificationQueue.enqueue({
         userId: payload.userId,
         entityConfigId: entity.type,

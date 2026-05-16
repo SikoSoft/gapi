@@ -14,7 +14,7 @@ async function notificationQueueHandler(
     !queueMessage.entityConfigId ||
     !queueMessage.suggestionEntityId
   ) {
-    context.error("Invalid notification queue message");
+    context.error("Invalid notification queue message", { queueMessage });
     return;
   }
 
@@ -23,7 +23,30 @@ async function notificationQueueHandler(
     entityConfigId: queueMessage.entityConfigId,
     suggestionEntityId: queueMessage.suggestionEntityId,
     textValues: queueMessage.textValues,
+    receivedAt: new Date().toISOString(),
   });
+
+  const entityExistsRes = await Entity.suggestionExists(
+    queueMessage.suggestionEntityId
+  );
+
+  if (entityExistsRes.isErr()) {
+    context.error(
+      "[notificationQueue] failed to check suggestion existence",
+      entityExistsRes.error
+    );
+    return;
+  }
+
+  if (!entityExistsRes.value) {
+    context.log(
+      "[notificationQueue] suggestion entity no longer exists — skipping notification",
+      {
+        suggestionEntityId: queueMessage.suggestionEntityId,
+      }
+    );
+    return;
+  }
 
   const alreadyLoggedRes = await Entity.hasMatchingEntityLoggedInPastHour(
     queueMessage.userId,
@@ -66,7 +89,7 @@ async function notificationQueueHandler(
       sendRes.error
     );
   } else {
-    context.log("[notificationQueue] Notification.send completed");
+    context.log("[notificationQueue] Notification.send completed successfully");
   }
 }
 

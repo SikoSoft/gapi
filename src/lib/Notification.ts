@@ -45,6 +45,10 @@ export class Notification {
       data: { actionUrls },
     });
 
+    let sent = 0;
+    let failed = 0;
+    let expired = 0;
+
     for (const sub of subscriptions) {
       try {
         console.log(`[Notification] sending to endpoint: ${sub.endpoint}`);
@@ -53,15 +57,24 @@ export class Notification {
           payload
         );
         console.log(`[Notification] sent successfully to ${sub.endpoint}`);
+        sent++;
       } catch (error: any) {
         if (error?.statusCode === 410) {
           console.log(`[Notification] subscription expired (410), deleting: ${sub.endpoint}`);
           await prisma.pushSubscription.delete({ where: { id: sub.id } });
+          expired++;
         } else {
-          console.error(`[Notification] failed to send to ${sub.endpoint}`, error);
+          console.error(`[Notification] failed to send to ${sub.endpoint}`, {
+            statusCode: error?.statusCode,
+            body: error?.body,
+            message: error instanceof Error ? error.message : String(error),
+          });
+          failed++;
         }
       }
     }
+
+    console.log(`[Notification] send summary: sent=${sent} failed=${failed} expired=${expired} total=${subscriptions.length}`);
 
     return ok(undefined);
   }

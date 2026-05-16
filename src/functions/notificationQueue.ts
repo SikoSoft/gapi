@@ -37,23 +37,34 @@ async function notificationQueueHandler(
   }
 
   if (alreadyLoggedRes.value) {
-    context.log("[notificationQueue] user already logged a matching entity in the past hour — skipping notification");
+    context.log(
+      "[notificationQueue] user already logged a matching entity in the past hour — skipping notification"
+    );
     return;
   }
 
-  const addUrl = `${process.env.ORBIT_FE_BASE_URL}/entity/add?suggestion=${queueMessage.suggestionEntityId}`;
+  const addUrl = new URL("/entity/add", process.env.ORBIT_FE_BASE_URL);
+  addUrl.searchParams.set(
+    "suggestion",
+    String(queueMessage.suggestionEntityId)
+  );
 
-  context.log("[notificationQueue] sending push notification", { addUrl });
+  context.log("[notificationQueue] sending push notification", {
+    addUrl: addUrl.toString(),
+  });
 
   const sendRes = await Notification.send({
     userId: queueMessage.userId,
     title: "Forget this?",
     body: queueMessage.textValues.join("\n"),
-    actions: [{ action: "add", title: "Add", url: addUrl }],
+    actions: [{ action: "add", title: "Add", url: addUrl.toString() }],
   });
 
   if (sendRes.isErr()) {
-    context.error("[notificationQueue] Notification.send failed:", sendRes.error);
+    context.error(
+      "[notificationQueue] Notification.send failed:",
+      sendRes.error
+    );
   } else {
     context.log("[notificationQueue] Notification.send completed");
   }

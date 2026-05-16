@@ -3,4 +3,5 @@ export interface NotificationQueueMessage {
   entityConfigId: number;
   suggestionEntityId: number;
   textValues: string[];
+  createdAt: string;
 }

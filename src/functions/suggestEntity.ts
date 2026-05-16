@@ -89,6 +89,7 @@ export async function suggestEntity(
         entityConfigId: entity.type,
         suggestionEntityId: entity.id,
         textValues: textValuesRes.value,
+        createdAt: entity.createdAt,
       });
 
       if (enqueueRes.isErr()) {

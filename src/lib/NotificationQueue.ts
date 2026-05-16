@@ -3,7 +3,7 @@ import { Result, err, ok } from "neverthrow";
 import { NotificationQueueMessage } from "../models/NotificationQueue";
 
 const QUEUE_NAME = "notification-queue";
-const NOTIFICATION_DELAY_SECONDS = 0;
+const NOTIFICATION_DELAY_MS = 60 * 60 * 1000;
 
 function extractAccountName(connectionString: string): string {
   const match = /AccountName=([^;]+)/.exec(connectionString);
@@ -26,10 +26,19 @@ export class NotificationQueue {
       const connectionString = process.env.AzureWebJobsStorage ?? "";
       const accountName = extractAccountName(connectionString);
 
+      const notifyAt = new Date(
+        new Date(message.createdAt).getTime() + NOTIFICATION_DELAY_MS
+      );
+      const visibilityTimeoutSeconds = Math.max(
+        0,
+        Math.floor((notifyAt.getTime() - Date.now()) / 1000)
+      );
+
       console.log("[NotificationQueue] enqueue start", {
         storageAccount: accountName,
         queueName: QUEUE_NAME,
-        visibilityTimeoutSeconds: NOTIFICATION_DELAY_SECONDS,
+        visibilityTimeoutSeconds,
+        notifyAt: notifyAt.toISOString(),
         message,
       });
 
@@ -46,16 +55,14 @@ export class NotificationQueue {
 
       const encoded = Buffer.from(JSON.stringify(message)).toString("base64");
       const sendResult = await client.sendMessage(encoded, {
-        visibilityTimeout: NOTIFICATION_DELAY_SECONDS,
+        visibilityTimeout: visibilityTimeoutSeconds,
       });
 
       console.log("[NotificationQueue] message enqueued successfully", {
         messageId: sendResult.messageId,
         insertionTime: sendResult.insertionTime,
         expiresOn: sendResult.expiresOn,
-        visibleAt: new Date(
-          Date.now() + NOTIFICATION_DELAY_SECONDS * 1000
-        ).toISOString(),
+        visibleAt: notifyAt.toISOString(),
         requestId: sendResult.requestId,
       });
 

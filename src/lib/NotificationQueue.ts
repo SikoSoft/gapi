@@ -47,7 +47,7 @@ export class NotificationQueue {
       console.log("[NotificationQueue] queue URL:", client.url);
 
       const createResult = await client.createIfNotExists();
-      if (createResult.created) {
+      if (createResult.succeeded) {
         console.log("[NotificationQueue] queue did not exist — created it now");
       } else {
         console.log("[NotificationQueue] queue already exists, reusing");
@@ -60,8 +60,8 @@ export class NotificationQueue {
 
       console.log("[NotificationQueue] message enqueued successfully", {
         messageId: sendResult.messageId,
-        insertionTime: sendResult.insertionTime,
         expiresOn: sendResult.expiresOn,
+        nextVisibleOn: sendResult.nextVisibleOn,
         visibleAt: notifyAt.toISOString(),
         requestId: sendResult.requestId,
       });

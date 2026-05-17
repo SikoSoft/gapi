@@ -22,6 +22,7 @@ import {
 import { DataType } from "api-spec/models/Entity";
 import { Revision } from "api-spec/lib/Revision";
 import { EntityConfig } from "./EntityConfig";
+import { Logger } from "./Logger";
 
 export class Data {
   static async reset(
@@ -50,7 +51,7 @@ export class Data {
     timeZone: number
   ): Promise<Result<null, Error>> {
     try {
-      console.log("userId:", userId);
+      Logger.log("userId:", userId);
       //console.log("data:", data);
 
       const entityConfigMap: ImportEntityConfigMap = {};
@@ -59,7 +60,7 @@ export class Data {
       const entityConfigsRes = await EntityConfig.getByUser(userId);
       const entityConfigHashMap: { hash: string; id: number }[] = [];
       if (entityConfigsRes.isErr()) {
-        console.error(
+        Logger.error(
           "Failed to retrieve entity configs:",
           entityConfigsRes.error
         );
@@ -76,15 +77,15 @@ export class Data {
       }
         */
 
-      console.log("EntityConfig Hash Map:", entityConfigHashMap);
+      Logger.log("EntityConfig Hash Map:", entityConfigHashMap);
 
       for (const config of data.entityConfigs) {
         const entityAsString = Revision.getEntityConfigAsString(config);
         const hash = entityAsString; //sha256Hex(entityAsString);
-        console.log("Importing EntityConfig:\n", hash);
+        Logger.log("Importing EntityConfig:\n", hash);
 
         const entityConfigMatch = entityConfigs.find((e) => {
-          console.log(
+          Logger.log(
             "Comparing entity config:",
             Revision.getEntityConfigAsString(e),
             "with",
@@ -93,7 +94,7 @@ export class Data {
           return Revision.getEntityConfigAsString(e) === hash;
         });
         if (entityConfigMatch) {
-          console.log("EntityConfig already exists, skipping:", entityAsString);
+          Logger.log("EntityConfig already exists, skipping:", entityAsString);
           entityConfigMap[config.id] = entityConfigMatch.id;
 
           for (const property of config.properties) {
@@ -102,7 +103,7 @@ export class Data {
               (e) => Revision.getPropertyConfigAsString(e) === propertyHash
             );
             if (propertyConfigMatch) {
-              console.log(
+              Logger.log(
                 "EntityPropertyConfig already exists, skipping:",
                 property
               );

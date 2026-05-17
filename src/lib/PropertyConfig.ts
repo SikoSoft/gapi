@@ -1,5 +1,6 @@
 import { Result, err, ok } from "neverthrow";
 import { prisma } from "..";
+import { Logger } from "./Logger";
 import { Entity } from "api-spec/models";
 import {
   PrismaPropertyConfig,
@@ -93,7 +94,7 @@ export class PropertyConfig {
     id: number,
     propertyConfig: PropertyConfigUpdateBody
   ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
-    console.log("Updating property config:", {
+    Logger.log("Updating property config:", {
       userId,
       entityConfigId,
       id,
@@ -231,7 +232,7 @@ export class PropertyConfig {
   static async syncDefaultValue(
     propertyConfig: Entity.EntityPropertyConfig
   ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
-    console.log("Syncing default value for property config:", propertyConfig);
+    Logger.log("Syncing default value for property config:", propertyConfig);
     try {
       switch (propertyConfig.dataType) {
         case DataType.BOOLEAN:
@@ -310,7 +311,7 @@ export class PropertyConfig {
         });
 
       if (value === null) {
-        console.log("delete date default value!!!!!!!!!!!!!!!");
+        Logger.log("delete date default value!!!!!!!!!!!!!!!");
         if (existingDefault) {
           await prisma.datePropertyValue.deleteMany({
             where: { id: existingDefault.propertyValueId },
@@ -357,7 +358,7 @@ export class PropertyConfig {
   static async syncIntDefaultValue(
     propertyConfig: Entity.EntityPropertyConfig
   ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
-    console.log("Syncing int default value:", propertyConfig);
+    Logger.log("Syncing int default value:", propertyConfig);
     try {
       const value = propertyConfig.defaultValue as IntDataValue;
       const existingDefault =

@@ -34,6 +34,7 @@ import {
 } from "../models/PropertyConfig";
 import { ValidationError } from "../errors/ValidationError";
 import { AccessError } from "../errors/AccessError";
+import { Logger } from "./Logger";
 
 export class Entity {
   static async getPropertySuggestions(
@@ -919,11 +920,11 @@ export class Entity {
     propertyReferences: PropertyReference[],
     timeZone: number
   ): Promise<Result<null, Error>> {
-    console.log("Syncing entity properties:", { entityId, properties });
+    Logger.log("Syncing entity properties:", { entityId, properties });
 
     const dataTypesRes = await Entity.getDataTypesForProperties(properties);
     if (dataTypesRes.isErr()) {
-      console.error(
+      Logger.error(
         "Error getting data types for properties:",
         dataTypesRes.error
       );
@@ -980,7 +981,7 @@ export class Entity {
     entityId: number,
     property: EntityProperty
   ): Promise<Result<null, Error>> {
-    console.log("Syncing boolean property:", { entityId, property });
+    Logger.log("Syncing boolean property:", { entityId, property });
     try {
       const value = property.value as boolean;
 
@@ -1015,7 +1016,7 @@ export class Entity {
 
       return ok(null);
     } catch (error) {
-      console.error("Error syncing boolean property:", error);
+      Logger.error("Error syncing boolean property:", error);
       return err(error);
     }
   }
@@ -1024,7 +1025,7 @@ export class Entity {
     entityId: number,
     property: EntityProperty
   ): Promise<Result<null, Error>> {
-    console.log("Syncing date property:", { entityId, property });
+    Logger.log("Syncing date property:", { entityId, property });
     try {
       const value = property.value as Date;
 
@@ -1059,7 +1060,7 @@ export class Entity {
 
       return ok(null);
     } catch (error) {
-      console.error("Error syncing date property:", error);
+      Logger.error("Error syncing date property:", error);
       return err(error);
     }
   }
@@ -1102,7 +1103,7 @@ export class Entity {
 
       return ok(null);
     } catch (error) {
-      console.error("Error syncing int property:", error);
+      Logger.error("Error syncing int property:", error);
       return err(error);
     }
   }
@@ -1111,7 +1112,7 @@ export class Entity {
     entityId: number,
     property: EntityProperty
   ): Promise<Result<null, Error>> {
-    console.log("Syncing image property:", { entityId, property });
+    Logger.log("Syncing image property:", { entityId, property });
     try {
       const value = property.value as ImageDataValue;
 
@@ -1130,7 +1131,7 @@ export class Entity {
           order: property.order,
         };
 
-        console.log("Creating entity image property with data:", data);
+        Logger.log("Creating entity image property with data:", data);
         await prisma.entityImageProperty.create({
           data,
         });
@@ -1151,7 +1152,7 @@ export class Entity {
 
       return ok(null);
     } catch (error) {
-      console.error("Error syncing image property:", error);
+      Logger.error("Error syncing image property:", error);
       return err(error);
     }
   }
@@ -1193,7 +1194,7 @@ export class Entity {
 
       return ok(null);
     } catch (error) {
-      console.error("Error syncing boolean property:", error);
+      Logger.error("Error syncing boolean property:", error);
       return err(error);
     }
   }
@@ -1236,7 +1237,7 @@ export class Entity {
 
       return ok(null);
     } catch (error) {
-      console.error("Error syncing long text property:", error);
+      Logger.error("Error syncing long text property:", error);
       return err(error);
     }
   }
@@ -1595,7 +1596,7 @@ export class Entity {
   ): Promise<Result<boolean, Error>> {
     try {
       if (textValues.length === 0) {
-        console.log("[Entity] hasMatchingEntityLoggedInPastHour: textValues is empty — skipping dedupe check");
+        Logger.log("[Entity] hasMatchingEntityLoggedInPastHour: textValues is empty — skipping dedupe check");
         return ok(false);
       }
 
@@ -1613,7 +1614,7 @@ export class Entity {
         },
       });
 
-      console.log(`[Entity] hasMatchingEntityLoggedInPastHour: found ${entities.length} non-suggestion entities of type ${entityConfigId} logged in past hour`, { textValues });
+      Logger.log(`[Entity] hasMatchingEntityLoggedInPastHour: found ${entities.length} non-suggestion entities of type ${entityConfigId} logged in past hour`, { textValues });
 
       for (const entity of entities) {
         const entityTextValues = [
@@ -1622,7 +1623,7 @@ export class Entity {
         ];
 
         if (textValues.every(v => entityTextValues.includes(v))) {
-          console.log(`[Entity] hasMatchingEntityLoggedInPastHour: match found on entity ${entity.id}`, { entityTextValues, textValues });
+          Logger.log(`[Entity] hasMatchingEntityLoggedInPastHour: match found on entity ${entity.id}`, { entityTextValues, textValues });
           return ok(true);
         }
       }

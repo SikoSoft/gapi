@@ -1,6 +1,7 @@
 import { QueueClient } from "@azure/storage-queue";
 import { Result, err, ok } from "neverthrow";
 import { NotificationQueueMessage } from "../models/NotificationQueue";
+import { Logger } from "./Logger";
 
 const QUEUE_NAME = "notification-queue";
 const NOTIFICATION_DELAY_MS = 60 * 60 * 1000;
@@ -34,7 +35,7 @@ export class NotificationQueue {
         Math.floor((notifyAt.getTime() - Date.now()) / 1000)
       );
 
-      console.log("[NotificationQueue] enqueue start", {
+      Logger.log("[NotificationQueue] enqueue start", {
         storageAccount: accountName,
         queueName: QUEUE_NAME,
         visibilityTimeoutSeconds,
@@ -44,13 +45,13 @@ export class NotificationQueue {
 
       const client = NotificationQueue.getClient();
 
-      console.log("[NotificationQueue] queue URL:", client.url);
+      Logger.log("[NotificationQueue] queue URL:", client.url);
 
       const createResult = await client.createIfNotExists();
       if (createResult.succeeded) {
-        console.log("[NotificationQueue] queue did not exist — created it now");
+        Logger.log("[NotificationQueue] queue did not exist — created it now");
       } else {
-        console.log("[NotificationQueue] queue already exists, reusing");
+        Logger.log("[NotificationQueue] queue already exists, reusing");
       }
 
       const encoded = Buffer.from(JSON.stringify(message)).toString("base64");
@@ -58,7 +59,7 @@ export class NotificationQueue {
         visibilityTimeout: visibilityTimeoutSeconds,
       });
 
-      console.log("[NotificationQueue] message enqueued successfully", {
+      Logger.log("[NotificationQueue] message enqueued successfully", {
         messageId: sendResult.messageId,
         expiresOn: sendResult.expiresOn,
         nextVisibleOn: sendResult.nextVisibleOn,
@@ -68,7 +69,7 @@ export class NotificationQueue {
 
       return ok(undefined);
     } catch (error) {
-      console.error("[NotificationQueue] enqueue FAILED", {
+      Logger.error("[NotificationQueue] enqueue FAILED", {
         error: error instanceof Error ? error.message : String(error),
         cause:
           error instanceof Error && error.cause instanceof Error

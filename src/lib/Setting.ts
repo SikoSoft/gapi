@@ -14,6 +14,7 @@ import {
 } from "api-spec/models/Setting";
 import { ListConfig } from "./ListConfig";
 import { AccessError } from "../errors/AccessError";
+import { Logger } from "./Logger";
 
 export type SettingConfigPart = Partial<SettingConfig>;
 
@@ -205,7 +206,7 @@ export class Setting {
       });
       return ok(true);
     } catch (error) {
-      console.log("Error updating text setting", error);
+      Logger.log("Error updating text setting", error);
       return err(error);
     }
   }

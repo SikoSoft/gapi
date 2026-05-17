@@ -20,6 +20,7 @@ import { Setting } from "./Setting";
 import { AccessPolicy } from "./AccessPolicy";
 import { AccessError } from "../errors/AccessError";
 import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
+import { Logger } from "./Logger";
 
 export class ListConfig {
   static async create(
@@ -392,7 +393,7 @@ export class ListConfig {
     listConfigId: string,
     types: number[]
   ): Promise<Result<null, Error>> {
-    console.log("Updating types:", types);
+    Logger.log("Updating types:", types);
     try {
       await prisma.listFilterType.deleteMany({ where: { listConfigId } });
       await prisma.listFilterType.createMany({

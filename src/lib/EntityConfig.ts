@@ -11,6 +11,7 @@ import { PrismaPropertyConfig } from "../models/PropertyConfig";
 import { PropertyConfig } from "./PropertyConfig";
 import { AccessPolicy } from "./AccessPolicy";
 import { AccessError } from "../errors/AccessError";
+import { Logger } from "./Logger";
 
 const entityConfigInclude = {
   properties: {
@@ -255,7 +256,7 @@ export class EntityConfig {
         )
       );
     } catch (error) {
-      console.error(
+      Logger.error(
         `Failed to retrieve entityConfigs for user ${userId}`,
         error
       );

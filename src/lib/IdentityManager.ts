@@ -13,6 +13,7 @@ import {
   UserType,
 } from "../models/Identity";
 import { Identity } from "api-spec/models";
+import { Logger } from "./Logger";
 
 export interface UserPayload {
   username: string;
@@ -110,7 +111,7 @@ export class IdentityManager {
     try {
       passwordHash = await argon2.hash(password);
     } catch (error) {
-      console.error(
+      Logger.error(
         "Something went wrong when trying to hash the password",
         error
       );
@@ -132,7 +133,7 @@ export class IdentityManager {
 
       success = await argon2.verify(userRes.value.password, password);
     } catch (error) {
-      console.error(
+      Logger.error(
         "Something went wrong when trying to verify the password",
         error
       );
@@ -152,7 +153,7 @@ export class IdentityManager {
 
       await prisma.session.create({ data: { userId, authToken, expiresAt } });
     } catch (error) {
-      console.error("Something went wrong creating a session", error);
+      Logger.error("Something went wrong creating a session", error);
     }
 
     return authToken;
@@ -200,7 +201,7 @@ export class IdentityManager {
       });
       return ok(null);
     } catch (error) {
-      console.error("Something went wrong saving login attempt", error);
+      Logger.error("Something went wrong saving login attempt", error);
       return err(error);
     }
   }

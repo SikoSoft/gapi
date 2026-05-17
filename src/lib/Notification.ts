@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { Result, err, ok } from "neverthrow";
 import { prisma } from "..";
 import { NotificationMessage } from "../models/Notification";
+import { Logger } from "./Logger";
 
 export class Notification {
   static async send(
@@ -28,7 +29,7 @@ export class Notification {
       );
     }
 
-    console.log(`[Notification] found ${subscriptions.length} subscription(s) for userId=${message.userId}`);
+    Logger.log(`[Notification] found ${subscriptions.length} subscription(s) for userId=${message.userId}`);
 
     if (subscriptions.length === 0) {
       return ok(undefined);
@@ -51,20 +52,20 @@ export class Notification {
 
     for (const sub of subscriptions) {
       try {
-        console.log(`[Notification] sending to endpoint: ${sub.endpoint}`);
+        Logger.log(`[Notification] sending to endpoint: ${sub.endpoint}`);
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload
         );
-        console.log(`[Notification] sent successfully to ${sub.endpoint}`);
+        Logger.log(`[Notification] sent successfully to ${sub.endpoint}`);
         sent++;
       } catch (error: any) {
         if (error?.statusCode === 410) {
-          console.log(`[Notification] subscription expired (410), deleting: ${sub.endpoint}`);
+          Logger.log(`[Notification] subscription expired (410), deleting: ${sub.endpoint}`);
           await prisma.pushSubscription.delete({ where: { id: sub.id } });
           expired++;
         } else {
-          console.error(`[Notification] failed to send to ${sub.endpoint}`, {
+          Logger.error(`[Notification] failed to send to ${sub.endpoint}`, {
             statusCode: error?.statusCode,
             body: error?.body,
             message: error instanceof Error ? error.message : String(error),
@@ -74,7 +75,7 @@ export class Notification {
       }
     }
 
-    console.log(`[Notification] send summary: sent=${sent} failed=${failed} expired=${expired} total=${subscriptions.length}`);
+    Logger.log(`[Notification] send summary: sent=${sent} failed=${failed} expired=${expired} total=${subscriptions.length}`);
 
     return ok(undefined);
   }

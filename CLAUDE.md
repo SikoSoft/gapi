@@ -95,3 +95,4 @@ tsup compiles all `src/**/*.ts` to ESM `.mjs` files in `dist/`. `api-spec` is bu
 - Keep all edits, reads and and shell commands confined to this projects root directory or its subdirectories. Do not traverse into directories outside of this projects root
 - Do not place interfaces, types or enum definitions within library files, but store them separately in models files
 - Endpoint route names should always be camelCase
+- Do not add envs to local.settings.json; always keep them in .env

@@ -368,12 +368,12 @@ export class Entity {
         return err(new AccessError("Access denied"));
       }
 
-      const hasAccess = viewPolicy.parties.some(party => {
+      const hasAccess = viewPolicy.parties.some((party) => {
         if (party.type === Access.AccessPartyType.USER) {
           return party.userId === userId;
         }
         if (party.type === Access.AccessPartyType.GROUP) {
-          return party.group?.users.some(gu => gu.userId === userId) ?? false;
+          return party.group?.users.some((gu) => gu.userId === userId) ?? false;
         }
         return false;
       });
@@ -590,33 +590,7 @@ export class Entity {
                 }
               : {}),
           },
-          include: {
-            tags: true,
-            booleanProperties: {
-              include: { propertyValue: true },
-            },
-            dateProperties: {
-              include: { propertyValue: true },
-            },
-            imageProperties: {
-              include: { propertyValue: true },
-            },
-            intProperties: {
-              include: { propertyValue: true },
-            },
-            longTextProperties: {
-              include: { propertyValue: true },
-            },
-            shortTextProperties: {
-              include: { propertyValue: true },
-            },
-            accessPolicy: {
-              include: {
-                viewAccessPolicy: true,
-                editAccessPolicy: true,
-              },
-            },
-          },
+          include: entityInclude,
         })
       ).map((entity) => Entity.toSpec(entity));
       return ok(entities);
@@ -654,33 +628,7 @@ export class Entity {
           userId,
           id,
         },
-        include: {
-          tags: true,
-          booleanProperties: {
-            include: { propertyValue: true },
-          },
-          dateProperties: {
-            include: { propertyValue: true },
-          },
-          imageProperties: {
-            include: { propertyValue: true },
-          },
-          intProperties: {
-            include: { propertyValue: true },
-          },
-          longTextProperties: {
-            include: { propertyValue: true },
-          },
-          shortTextProperties: {
-            include: { propertyValue: true },
-          },
-          accessPolicy: {
-            include: {
-              viewAccessPolicy: true,
-              editAccessPolicy: true,
-            },
-          },
-        },
+        include: entityInclude,
       });
 
       if (entityPolicy) {
@@ -756,33 +704,7 @@ export class Entity {
             orderBy: {
               //[sort.property]: sort.direction,
             },
-            include: {
-              tags: true,
-              booleanProperties: {
-                include: { propertyValue: true },
-              },
-              dateProperties: {
-                include: { propertyValue: true },
-              },
-              imageProperties: {
-                include: { propertyValue: true },
-              },
-              intProperties: {
-                include: { propertyValue: true },
-              },
-              longTextProperties: {
-                include: { propertyValue: true },
-              },
-              shortTextProperties: {
-                include: { propertyValue: true },
-              },
-              accessPolicy: {
-                include: {
-                  viewAccessPolicy: true,
-                  editAccessPolicy: true,
-                },
-              },
-            },
+            include: entityInclude,
           });
 
           contextEntities[entities[i].id] = entityContext;
@@ -1577,8 +1499,8 @@ export class Entity {
       }
 
       const textValues = [
-        ...entity.shortTextProperties.map(p => p.propertyValue.value),
-        ...entity.longTextProperties.map(p => p.propertyValue.value),
+        ...entity.shortTextProperties.map((p) => p.propertyValue.value),
+        ...entity.longTextProperties.map((p) => p.propertyValue.value),
       ];
 
       return ok(textValues);
@@ -1596,7 +1518,9 @@ export class Entity {
   ): Promise<Result<boolean, Error>> {
     try {
       if (textValues.length === 0) {
-        Logger.log("[Entity] hasMatchingEntityLoggedInPastHour: textValues is empty — skipping dedupe check");
+        Logger.log(
+          "[Entity] hasMatchingEntityLoggedInPastHour: textValues is empty — skipping dedupe check"
+        );
         return ok(false);
       }
 
@@ -1614,16 +1538,22 @@ export class Entity {
         },
       });
 
-      Logger.log(`[Entity] hasMatchingEntityLoggedInPastHour: found ${entities.length} non-suggestion entities of type ${entityConfigId} logged in past hour`, { textValues });
+      Logger.log(
+        `[Entity] hasMatchingEntityLoggedInPastHour: found ${entities.length} non-suggestion entities of type ${entityConfigId} logged in past hour`,
+        { textValues }
+      );
 
       for (const entity of entities) {
         const entityTextValues = [
-          ...entity.shortTextProperties.map(p => p.propertyValue.value),
-          ...entity.longTextProperties.map(p => p.propertyValue.value),
+          ...entity.shortTextProperties.map((p) => p.propertyValue.value),
+          ...entity.longTextProperties.map((p) => p.propertyValue.value),
         ];
 
-        if (textValues.every(v => entityTextValues.includes(v))) {
-          Logger.log(`[Entity] hasMatchingEntityLoggedInPastHour: match found on entity ${entity.id}`, { entityTextValues, textValues });
+        if (textValues.every((v) => entityTextValues.includes(v))) {
+          Logger.log(
+            `[Entity] hasMatchingEntityLoggedInPastHour: match found on entity ${entity.id}`,
+            { entityTextValues, textValues }
+          );
           return ok(true);
         }
       }
@@ -1636,7 +1566,9 @@ export class Entity {
     }
   }
 
-  static async suggestionExists(entityId: number): Promise<Result<boolean, Error>> {
+  static async suggestionExists(
+    entityId: number
+  ): Promise<Result<boolean, Error>> {
     try {
       const entity = await prisma.entity.findUnique({
         where: { id: entityId, suggestion: true },
@@ -1644,7 +1576,23 @@ export class Entity {
       });
       return ok(entity !== null);
     } catch (error) {
-      return err(new Error("Failed to check suggestion existence", { cause: error }));
+      return err(
+        new Error("Failed to check suggestion existence", { cause: error })
+      );
+    }
+  }
+
+  static async acceptSuggestion(
+    entityId: number
+  ): Promise<Result<void, Error>> {
+    try {
+      await prisma.entity.update({
+        where: { id: entityId, suggestion: true },
+        data: { published: true, suggestion: false },
+      });
+      return ok(undefined);
+    } catch (error) {
+      return err(new Error("Failed to accept suggestion", { cause: error }));
     }
   }
 

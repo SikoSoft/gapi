@@ -278,16 +278,27 @@ export class IdentityManager {
 
   static async updateUser(
     userId: string,
-    updates: { firstName?: string; lastName?: string; password?: string; currentPassword?: string; username?: string }
+    updates: {
+      firstName?: string;
+      lastName?: string;
+      password?: string;
+      currentPassword?: string;
+      username?: string;
+    }
   ): Promise<Result<null, Error>> {
     try {
       let newPasswordHash: string | undefined;
 
       if (updates.password !== undefined) {
         if (!updates.currentPassword) {
-          return err(new AuthError("currentPassword is required to update password"));
+          return err(
+            new AuthError("currentPassword is required to update password")
+          );
         }
-        const verifyRes = await IdentityManager.verifyPassword(userId, updates.currentPassword);
+        const verifyRes = await IdentityManager.verifyPassword(
+          userId,
+          updates.currentPassword
+        );
         if (verifyRes.isErr()) {
           return err(verifyRes.error);
         }
@@ -300,7 +311,9 @@ export class IdentityManager {
       await prisma.user.update({
         where: { id: userId },
         data: {
-          ...(updates.firstName !== undefined && { firstName: updates.firstName }),
+          ...(updates.firstName !== undefined && {
+            firstName: updates.firstName,
+          }),
           ...(updates.lastName !== undefined && { lastName: updates.lastName }),
           ...(updates.username !== undefined && { username: updates.username }),
           ...(newPasswordHash !== undefined && { password: newPasswordHash }),
@@ -463,7 +476,11 @@ export class IdentityManager {
 
   static generateTotpSecret(username: string): { secret: string; uri: string } {
     const secret = generateSecret();
-    const uri = generateURI({ issuer: 'Orbit', label: username, secret });
+    const uri = generateURI({
+      issuer: process.env.TOTP_ISSUER,
+      label: username,
+      secret,
+    });
     return { secret, uri };
   }
 
@@ -484,7 +501,7 @@ export class IdentityManager {
       });
       return ok(null);
     } catch (error) {
-      return err(new Error('Failed to save TOTP secret', { cause: error }));
+      return err(new Error("Failed to save TOTP secret", { cause: error }));
     }
   }
 
@@ -493,14 +510,16 @@ export class IdentityManager {
     code: string
   ): Promise<Result<boolean, Error>> {
     try {
-      const record = await prisma.userTotpSecret.findUnique({ where: { userId } });
+      const record = await prisma.userTotpSecret.findUnique({
+        where: { userId },
+      });
       if (!record) {
         return ok(false);
       }
       const secret = IdentityManager.decryptToken(record.secret);
       return ok(verifySync({ secret, token: code }).valid);
     } catch (error) {
-      return err(new Error('Failed to verify TOTP code', { cause: error }));
+      return err(new Error("Failed to verify TOTP code", { cause: error }));
     }
   }
 
@@ -511,10 +530,14 @@ export class IdentityManager {
       const token = IdentityManager.generateRandomToken();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 5);
-      await prisma.pendingMfaSession.create({ data: { userId, token, expiresAt } });
+      await prisma.pendingMfaSession.create({
+        data: { userId, token, expiresAt },
+      });
       return ok(token);
     } catch (error) {
-      return err(new Error('Failed to create pending MFA session', { cause: error }));
+      return err(
+        new Error("Failed to create pending MFA session", { cause: error })
+      );
     }
   }
 
@@ -527,7 +550,9 @@ export class IdentityManager {
       });
       return ok(record ? record.userId : null);
     } catch (error) {
-      return err(new Error('Failed to get pending MFA session', { cause: error }));
+      return err(
+        new Error("Failed to get pending MFA session", { cause: error })
+      );
     }
   }
 
@@ -538,18 +563,18 @@ export class IdentityManager {
       await prisma.pendingMfaSession.deleteMany({ where: { token } });
       return ok(null);
     } catch (error) {
-      return err(new Error('Failed to delete pending MFA session', { cause: error }));
+      return err(
+        new Error("Failed to delete pending MFA session", { cause: error })
+      );
     }
   }
 
-  static async saveMfaAttempt(
-    userId: string
-  ): Promise<Result<null, Error>> {
+  static async saveMfaAttempt(userId: string): Promise<Result<null, Error>> {
     try {
       await prisma.mfaAttempt.create({ data: { userId } });
       return ok(null);
     } catch (error) {
-      return err(new Error('Failed to save MFA attempt', { cause: error }));
+      return err(new Error("Failed to save MFA attempt", { cause: error }));
     }
   }
 
@@ -566,7 +591,7 @@ export class IdentityManager {
       });
       return ok(attempts);
     } catch (error) {
-      return err(new Error('Failed to get MFA attempts', { cause: error }));
+      return err(new Error("Failed to get MFA attempts", { cause: error }));
     }
   }
 }

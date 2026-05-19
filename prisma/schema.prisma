@@ -452,6 +452,7 @@ model ListFilter {
   time              ListFilterTime?
   text              ListFilterText[]
   tagging           ListFilterTag[]
+  userIds           ListFilterUserId[]
   listConfig        ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 
   booleanProperties   ListFilterBooleanProperty[]
@@ -460,6 +461,14 @@ model ListFilter {
   intProperties       ListFilterIntProperty[]
   longTextProperties  ListFilterLongTextProperty[]
   shortTextProperties ListFilterShortTextProperty[]
+}
+
+model ListFilterUserId {
+  listConfigId String     @db.Uuid
+  userId       String     @db.Uuid
+  listFilter   ListFilter @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+
+  @@unique([listConfigId, userId])
 }
 
 model ListFilterBooleanProperty {

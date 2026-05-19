@@ -374,7 +374,17 @@ export class EntityListQueryBuilder {
       });
     }
 
+    fragment += this.getFilterUserIdsFragment();
+
     return fragment;
+  }
+
+  getFilterUserIdsFragment(): string {
+    if (!this.filter.userIds || this.filter.userIds.length === 0) {
+      return "";
+    }
+    this.registerParam("filterUserIds", this.filter.userIds);
+    return ` AND e."userId" = ANY({filterUserIds}::uuid[]) `;
   }
 
   getFilterTimeFragment(): string {

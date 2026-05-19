@@ -293,6 +293,7 @@ export class ListConfig {
         listConfig.id,
         listConfig.filter.includeTypes
       );
+      await ListConfig.updateUserIds(listConfig.id, listConfig.filter.userIds);
       await ListConfig.updateFilter(listConfig.id, listConfig.filter);
       await ListConfig.updateProperties(
         listConfig.id,
@@ -406,6 +407,23 @@ export class ListConfig {
     } catch (error) {
       return err(
         new Error("Failed to update listConfig types", { cause: error })
+      );
+    }
+  }
+
+  static async updateUserIds(
+    listConfigId: string,
+    userIds: string[]
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.listFilterUserId.deleteMany({ where: { listConfigId } });
+      await prisma.listFilterUserId.createMany({
+        data: userIds.map((userId) => ({ listConfigId, userId })),
+      });
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to update listConfig userIds", { cause: error })
       );
     }
   }
@@ -894,7 +912,7 @@ export class ListConfig {
     data: PrismaListConfig["filter"]
   ): List.ListFilter {
     return {
-      userIds: [],
+      userIds: data.userIds.map((u) => u.userId),
       includeAll: data.includeAll,
       includeUntagged: data.includeUntagged,
       includeAllTagging: data.includeAllTagging,

@@ -894,6 +894,7 @@ export class ListConfig {
     data: PrismaListConfig["filter"]
   ): List.ListFilter {
     return {
+      userIds: [],
       includeAll: data.includeAll,
       includeUntagged: data.includeUntagged,
       includeAllTagging: data.includeAllTagging,

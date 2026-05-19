@@ -14,7 +14,7 @@ import {
 import { Introspection } from "api-spec/models/Introspection";
 import { IdentityManager } from "./lib/IdentityManager";
 
-app.hook.preInvocation(hookCtx => {
+app.hook.preInvocation((hookCtx) => {
   Logger.setContext(hookCtx.invocationContext);
 });
 
@@ -109,6 +109,7 @@ export const userIdFromRequest = (request: HttpRequest): string => {
 
 export function getDefaultFilter(): ListFilter {
   return {
+    userIds: [],
     tagging: {
       [ListFilterType.CONTAINS_ONE_OF]: [],
       [ListFilterType.CONTAINS_ALL_OF]: [],

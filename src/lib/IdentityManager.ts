@@ -3,6 +3,7 @@ import { AuthError } from "../errors/AuthError";
 import { v4 as uuidv4 } from "uuid";
 import Crypto from "crypto";
 import * as argon2 from "argon2";
+import { generateSecret, generateURI, verifySync } from "otplib";
 import { prisma } from "..";
 import {
   PrismaOneTimeToken,
@@ -447,6 +448,115 @@ export class IdentityManager {
       return ok(null);
     } catch (error) {
       return err(error);
+    }
+  }
+
+  static generateTotpSecret(username: string): { secret: string; uri: string } {
+    const secret = generateSecret();
+    const uri = generateURI({ issuer: 'Orbit', label: username, secret });
+    return { secret, uri };
+  }
+
+  static verifyTotpCodeForSecret(secret: string, code: string): boolean {
+    return verifySync({ secret, token: code }).valid;
+  }
+
+  static async saveTotpSecret(
+    userId: string,
+    secret: string
+  ): Promise<Result<null, Error>> {
+    try {
+      const encrypted = IdentityManager.encryptToken(secret);
+      await prisma.userTotpSecret.upsert({
+        where: { userId },
+        create: { userId, secret: encrypted },
+        update: { secret: encrypted },
+      });
+      return ok(null);
+    } catch (error) {
+      return err(new Error('Failed to save TOTP secret', { cause: error }));
+    }
+  }
+
+  static async verifyTotpCode(
+    userId: string,
+    code: string
+  ): Promise<Result<boolean, Error>> {
+    try {
+      const record = await prisma.userTotpSecret.findUnique({ where: { userId } });
+      if (!record) {
+        return ok(false);
+      }
+      const secret = IdentityManager.decryptToken(record.secret);
+      return ok(verifySync({ secret, token: code }).valid);
+    } catch (error) {
+      return err(new Error('Failed to verify TOTP code', { cause: error }));
+    }
+  }
+
+  static async createPendingMfaSession(
+    userId: string
+  ): Promise<Result<string, Error>> {
+    try {
+      const token = IdentityManager.generateRandomToken();
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+      await prisma.pendingMfaSession.create({ data: { userId, token, expiresAt } });
+      return ok(token);
+    } catch (error) {
+      return err(new Error('Failed to create pending MFA session', { cause: error }));
+    }
+  }
+
+  static async getPendingMfaUserId(
+    token: string
+  ): Promise<Result<string | null, Error>> {
+    try {
+      const record = await prisma.pendingMfaSession.findFirst({
+        where: { token, expiresAt: { gt: new Date() } },
+      });
+      return ok(record ? record.userId : null);
+    } catch (error) {
+      return err(new Error('Failed to get pending MFA session', { cause: error }));
+    }
+  }
+
+  static async deletePendingMfaSession(
+    token: string
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.pendingMfaSession.deleteMany({ where: { token } });
+      return ok(null);
+    } catch (error) {
+      return err(new Error('Failed to delete pending MFA session', { cause: error }));
+    }
+  }
+
+  static async saveMfaAttempt(
+    userId: string
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.mfaAttempt.create({ data: { userId } });
+      return ok(null);
+    } catch (error) {
+      return err(new Error('Failed to save MFA attempt', { cause: error }));
+    }
+  }
+
+  static async getMfaAttempts(
+    userId: string,
+    seconds: number
+  ): Promise<Result<number, Error>> {
+    try {
+      const attempts = await prisma.mfaAttempt.count({
+        where: {
+          userId,
+          attemptedAt: { gte: new Date(Date.now() - seconds * 1000) },
+        },
+      });
+      return ok(attempts);
+    } catch (error) {
+      return err(new Error('Failed to get MFA attempts', { cause: error }));
     }
   }
 }

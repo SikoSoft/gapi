@@ -6,6 +6,7 @@ import {
 } from "@azure/functions";
 import { getIp, jsonReply } from "..";
 import { IdentityManager } from "../lib/IdentityManager";
+import { Setting } from "../lib/Setting";
 
 declare interface RequestBody {
   username: string;
@@ -71,6 +72,21 @@ export async function login(
       return {
         status: 401,
       };
+    }
+
+    const settingsRes = await Setting.getForUser(user.id);
+    if (settingsRes.isErr()) {
+      context.error(settingsRes.error);
+      return { status: 500 };
+    }
+
+    if (settingsRes.value.enable2FA) {
+      const pendingTokenRes = await IdentityManager.createPendingMfaSession(user.id);
+      if (pendingTokenRes.isErr()) {
+        context.error(pendingTokenRes.error);
+        return { status: 500 };
+      }
+      return jsonReply({ pendingMfaToken: pendingTokenRes.value }, 202);
     }
 
     const authToken = await IdentityManager.createSession(user.id);

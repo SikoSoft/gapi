@@ -78,4 +78,14 @@ export interface GoogleState {
   returnUrl: string;
 }
 
+export interface MfaVerifySetupBody {
+  secret: string;
+  code: string;
+}
+
+export interface MfaVerifyBody {
+  pendingMfaToken: string;
+  code: string;
+}
+
 export type GoogleEvent = calendar_v3.Schema$Event;

@@ -42,6 +42,7 @@
     "into-stream": "^9.0.0",
     "io-ts": "^2.2.22",
     "neverthrow": "^8.2.0",
+    "otplib": "^13.4.0",
     "uuid": "^9.0.1",
     "web-push": "^3.6.7"
   }

@@ -1,6 +1,8 @@
-import { Prisma } from "@prisma/client";
+import { OneTimeTokenScope, Prisma } from "@prisma/client";
 import { calendar_v3 } from "googleapis";
 import * as t from "io-ts";
+
+export { OneTimeTokenScope };
 
 export class User {
   id: string;
@@ -47,6 +49,10 @@ const prismaOneTimeToken = Prisma.validator<Prisma.OneTimeTokenDefaultArgs>()(
 export type PrismaOneTimeToken = Prisma.OneTimeTokenGetPayload<
   typeof prismaOneTimeToken
 >;
+
+export interface SuggestAcceptQuery {
+  token: string;
+}
 
 export interface UserUpdateBody {
   userId: string;

@@ -6,6 +6,7 @@ import {
 } from "@azure/functions";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { IdentityManager } from "../lib/IdentityManager";
+import { OneTimeTokenScope } from "../models/Identity";
 
 export async function ott(
   request: HttpRequest,
@@ -21,7 +22,7 @@ export async function ott(
 
   switch (request.method) {
     case "POST": {
-      const res = await IdentityManager.createOtt();
+      const res = await IdentityManager.createOtt(OneTimeTokenScope.accountCreate);
 
       if (res.isErr()) {
         context.error(res.error);

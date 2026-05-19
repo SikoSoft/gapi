@@ -6,6 +6,7 @@ import * as argon2 from "argon2";
 import { generateSecret, generateURI, verifySync } from "otplib";
 import { prisma } from "..";
 import {
+  OneTimeTokenScope,
   PrismaOneTimeToken,
   PrismaSession,
   PrismaUser,
@@ -365,30 +366,39 @@ export class IdentityManager {
     return decrypted;
   }
 
-  static async createOtt(): Promise<Result<string, Error>> {
+  static async createOtt(
+    scope: OneTimeTokenScope,
+    entityId?: number
+  ): Promise<Result<string, Error>> {
     try {
       const token = IdentityManager.generateRandomToken();
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
-      await prisma.oneTimeToken.create({ data: { token, expiresAt } });
+      await prisma.oneTimeToken.create({
+        data: { token, scope, entityId, expiresAt },
+      });
       return ok(token);
     } catch (error) {
       return err(error);
     }
   }
 
-  static async verifyOtt(token: string = ""): Promise<Result<boolean, Error>> {
+  static async verifyOtt(
+    token: string = "",
+    scope: OneTimeTokenScope
+  ): Promise<Result<PrismaOneTimeToken | null, Error>> {
     try {
       const ott = await prisma.oneTimeToken.findUnique({
         where: {
           token,
+          scope,
           consumed: false,
           expiresAt: { gt: new Date() },
         },
       });
 
       if (!ott) {
-        return ok(false);
+        return ok(null);
       }
 
       await prisma.oneTimeToken.update({
@@ -396,7 +406,7 @@ export class IdentityManager {
         data: { consumed: true },
       });
 
-      return ok(true);
+      return ok(ott);
     } catch (error) {
       return err(error);
     }

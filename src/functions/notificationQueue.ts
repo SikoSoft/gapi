@@ -1,6 +1,8 @@
 import { app, InvocationContext } from "@azure/functions";
 import { Entity } from "../lib/Entity";
+import { IdentityManager } from "../lib/IdentityManager";
 import { Notification } from "../lib/Notification";
+import { OneTimeTokenScope } from "../models/Identity";
 import { NotificationQueueMessage } from "../models/NotificationQueue";
 
 async function notificationQueueHandler(
@@ -66,14 +68,22 @@ async function notificationQueueHandler(
     return;
   }
 
-  const addUrl = new URL("/entity/add", process.env.ORBIT_FE_BASE_URL);
-  addUrl.searchParams.set(
-    "suggestion",
-    String(queueMessage.suggestionEntityId)
+  const ottRes = await IdentityManager.createOtt(
+    OneTimeTokenScope.suggestionAccept,
+    queueMessage.suggestionEntityId
   );
 
+  if (ottRes.isErr()) {
+    context.error("[notificationQueue] failed to create OTT", ottRes.error);
+    return;
+  }
+
+  const baseUrl = (process.env.GAPI_BASE_URL ?? "").replace(/\/?$/, "/");
+  const addUrl = new URL("suggestAccept", baseUrl);
+  addUrl.searchParams.set("token", ottRes.value);
+
   context.log("[notificationQueue] sending push notification", {
-    addUrl: addUrl.toString(),
+    suggestionEntityId: queueMessage.suggestionEntityId,
   });
 
   const sendRes = await Notification.send({

@@ -6,7 +6,7 @@ import {
 } from "@azure/functions";
 import { IdentityManager } from "../lib/IdentityManager";
 import { forbiddenReply, introspect, jsonReply } from "..";
-import { UserCreateBody, UserSelfUpdateBody, UserUpdateBody } from "../models/Identity";
+import { OneTimeTokenScope, UserCreateBody, UserSelfUpdateBody, UserUpdateBody } from "../models/Identity";
 import { AuthError } from "../errors/AuthError";
 
 export async function user(
@@ -22,7 +22,7 @@ export async function user(
     case "POST": {
       const body = (await request.json()) as UserCreateBody;
 
-      const ottRes = await IdentityManager.verifyOtt(body.ott);
+      const ottRes = await IdentityManager.verifyOtt(body.ott, OneTimeTokenScope.accountCreate);
       if (ottRes.isErr()) {
         context.error(ottRes.error);
         return { status: 500 };

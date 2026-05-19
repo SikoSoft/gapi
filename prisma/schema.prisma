@@ -539,11 +539,18 @@ model ListFilterShortTextProperty {
   propertyValue  ShortTextPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
+enum OneTimeTokenScope {
+  accountCreate
+  suggestionAccept
+}
+
 model OneTimeToken {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique @db.VarChar(255)
-  consumed  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id        Int               @id @default(autoincrement())
+  token     String            @unique @db.VarChar(255)
+  scope     OneTimeTokenScope @default(accountCreate)
+  entityId  Int?
+  consumed  Boolean           @default(false)
+  createdAt DateTime          @default(now())
   expiresAt DateTime
 }
 

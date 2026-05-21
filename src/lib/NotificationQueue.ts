@@ -1,6 +1,7 @@
-import { QueueClient } from "@azure/storage-queue";
 import { Result, err, ok } from "neverthrow";
 import { NotificationQueueMessage } from "../models/NotificationQueue";
+import { QueueProvider } from "../models/Queue";
+import { AzureQueueProvider } from "./AzureQueueProvider";
 import { Logger } from "./Logger";
 
 const QUEUE_NAME = "notification-queue";
@@ -12,12 +13,12 @@ function extractAccountName(connectionString: string): string {
 }
 
 export class NotificationQueue {
-  private static getClient(): QueueClient {
+  private static getProvider(): QueueProvider {
     const connectionString = process.env.AzureWebJobsStorage;
     if (!connectionString) {
       throw new Error("Missing AzureWebJobsStorage environment variable");
     }
-    return new QueueClient(connectionString, QUEUE_NAME);
+    return new AzureQueueProvider(connectionString, QUEUE_NAME);
   }
 
   static async enqueue(
@@ -43,11 +44,11 @@ export class NotificationQueue {
         message,
       });
 
-      const client = NotificationQueue.getClient();
+      const provider = NotificationQueue.getProvider();
 
-      Logger.log("[NotificationQueue] queue URL:", client.url);
+      Logger.log("[NotificationQueue] queue URL:", provider.url);
 
-      const createResult = await client.createIfNotExists();
+      const createResult = await provider.createIfNotExists();
       if (createResult.succeeded) {
         Logger.log("[NotificationQueue] queue did not exist — created it now");
       } else {
@@ -55,7 +56,7 @@ export class NotificationQueue {
       }
 
       const encoded = Buffer.from(JSON.stringify(message)).toString("base64");
-      const sendResult = await client.sendMessage(encoded, {
+      const sendResult = await provider.sendMessage(encoded, {
         visibilityTimeout: visibilityTimeoutSeconds,
       });
 

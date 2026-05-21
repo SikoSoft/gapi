@@ -35,6 +35,8 @@ import {
 import { ValidationError } from "../errors/ValidationError";
 import { AccessError } from "../errors/AccessError";
 import { Logger } from "./Logger";
+import { Hook } from "./Hook";
+import { HookType } from "../models/Hook";
 
 export class Entity {
   static async getPropertySuggestions(
@@ -169,6 +171,8 @@ export class Entity {
         return err(validation.error);
       }
 
+      await Hook.trigger({ type: HookType.PRE_CREATE, userId, data });
+
       const entity = await prisma.entity.create({
         data: {
           userId: data.userId ?? userId,
@@ -202,6 +206,14 @@ export class Entity {
       if (entityRes.isErr()) {
         return err(entityRes.error);
       }
+
+      await Hook.trigger({
+        type: HookType.POST_CREATE,
+        userId,
+        data,
+        entityId: entity.id,
+      });
+
       return ok(entityRes.value);
     } catch (error) {
       return err(error);
@@ -214,6 +226,8 @@ export class Entity {
     data: EntityBodyPayload
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
+      await Hook.trigger({ type: HookType.PRE_UPDATE, userId, entityId: id, data });
+
       const properties = data.properties ?? [];
 
       if (properties.length > 0) {
@@ -262,6 +276,9 @@ export class Entity {
       if (entityRes.isErr()) {
         return err(entityRes.error);
       }
+
+      await Hook.trigger({ type: HookType.POST_UPDATE, userId, entityId: id, data });
+
       return ok(entityRes.value);
     } catch (error) {
       return err(error);
@@ -619,6 +636,8 @@ export class Entity {
     id: number
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
+      await Hook.trigger({ type: HookType.PRE_DELETE, userId, entityId: id });
+
       const entityPolicy = await prisma.entityAccessPolicy.findUnique({
         where: { entityId: id },
       });
@@ -656,6 +675,8 @@ export class Entity {
           });
         }
       }
+
+      await Hook.trigger({ type: HookType.POST_DELETE, userId, entityId: id });
 
       return ok(Entity.toSpec(entity));
     } catch (error) {

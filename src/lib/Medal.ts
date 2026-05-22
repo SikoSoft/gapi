@@ -2,16 +2,15 @@ import { Result, err, ok } from "neverthrow";
 import { Prisma } from "@prisma/client";
 import { prisma } from "..";
 import { Medal as MedalSpec } from "api-spec/models";
+import { Criteria, Criterion, FactRequest } from "api-spec/models/Medal";
 import { HookContext } from "../models/Hook";
 import {
-  CriteriaWithParams,
-  CriterionWithParams,
   MedalConfigCreateBody,
   MedalConfigUpdateBody,
   PrismaMedal,
   PrismaMedalConfig,
 } from "../models/Medal";
-import { Fact } from "./Fact";
+import { Fact, FactValue } from "./Fact";
 import { Logger } from "./Logger";
 
 export class Medal {
@@ -24,6 +23,7 @@ export class Medal {
       recurrence: config.recurrence,
       prestige: config.prestige,
       icon: config.icon,
+      factRequests: config.factRequests as unknown as MedalSpec.FactRequest[],
       criteria: config.criteria as MedalSpec.Criterion | MedalSpec.Criteria,
       createdAt: config.createdAt.toISOString(),
       updatedAt: config.updatedAt.toISOString(),
@@ -42,6 +42,11 @@ export class Medal {
   static async createConfig(
     body: MedalConfigCreateBody
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
+    if (!Medal.criteriaAliasesAreValid(body.criteria, body.factRequests)) {
+      return err(
+        new Error("Criteria reference fact aliases not defined in factRequests")
+      );
+    }
     try {
       const config = await prisma.medalConfig.create({
         data: {
@@ -51,6 +56,7 @@ export class Medal {
           recurrence: body.recurrence,
           prestige: body.prestige,
           icon: body.icon,
+          factRequests: body.factRequests as unknown as Prisma.InputJsonValue,
           criteria: body.criteria as Prisma.InputJsonValue,
         },
       });
@@ -64,6 +70,11 @@ export class Medal {
     id: number,
     body: MedalConfigUpdateBody
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
+    if (!Medal.criteriaAliasesAreValid(body.criteria, body.factRequests)) {
+      return err(
+        new Error("Criteria reference fact aliases not defined in factRequests")
+      );
+    }
     try {
       const config = await prisma.medalConfig.update({
         where: { id },
@@ -74,6 +85,7 @@ export class Medal {
           recurrence: body.recurrence,
           prestige: body.prestige,
           icon: body.icon,
+          factRequests: body.factRequests as unknown as Prisma.InputJsonValue,
           criteria: body.criteria as Prisma.InputJsonValue,
         },
       });
@@ -157,27 +169,26 @@ export class Medal {
     }
 
     for (const config of configsRes.value) {
-      const criteria = config.criteria as
-        | CriterionWithParams
-        | CriteriaWithParams;
-      const aliases = Medal.collectFactAliases(criteria);
-
       const facts: Record<string, FactValue> = {};
-      for (const { alias, params } of aliases) {
-        const key = Medal.factKey(alias, params);
-        if (key in facts) {
-          continue;
-        }
-        const value = await Fact.resolve(alias, userId, params);
+      let factsResolved = true;
+
+      for (const factRequest of config.factRequests) {
+        const value = await Fact.resolve(factRequest, userId);
         if (value === undefined) {
           Logger.error(
-            `[Medal] Unresolved fact '${alias}' for medalConfig ${config.id} — skipping config`
+            `[Medal] Unresolved fact '${factRequest.alias}' for medalConfig ${config.id} — skipping config`
           );
+          factsResolved = false;
           break;
         }
-        facts[key] = value;
+        facts[factRequest.alias] = value;
       }
 
+      if (!factsResolved) {
+        continue;
+      }
+
+      const criteria = config.criteria as Criterion | Criteria;
       if (!Medal.evaluateCriteria(criteria, facts)) {
         continue;
       }
@@ -200,28 +211,32 @@ export class Medal {
     }
   }
 
-  private static factKey(
-    alias: string,
-    params?: Record<string, unknown>
-  ): string {
-    return params ? `${alias}:${JSON.stringify(params)}` : alias;
-  }
-
-  private static collectFactAliases(
-    criteria: CriterionWithParams | CriteriaWithParams
-  ): Array<{ alias: string; params?: Record<string, unknown> }> {
+  private static collectCriteriaAliases(
+    criteria: Criterion | Criteria
+  ): string[] {
     if ("fact" in criteria) {
-      return [{ alias: criteria.fact, params: criteria.params }];
+      return [criteria.fact];
     }
-    const children = [
+    return [
       ...(criteria.all ?? []),
       ...(criteria.any ?? []),
-    ] as Array<CriterionWithParams | CriteriaWithParams>;
-    return children.flatMap(child => Medal.collectFactAliases(child));
+    ].flatMap(child =>
+      Medal.collectCriteriaAliases(child as Criterion | Criteria)
+    );
+  }
+
+  private static criteriaAliasesAreValid(
+    criteria: Criterion | Criteria,
+    factRequests: FactRequest[]
+  ): boolean {
+    const defined = new Set(factRequests.map(fr => fr.alias));
+    return Medal.collectCriteriaAliases(criteria).every(alias =>
+      defined.has(alias)
+    );
   }
 
   private static evaluateCriteria(
-    criteria: CriterionWithParams | CriteriaWithParams,
+    criteria: Criterion | Criteria,
     facts: Record<string, FactValue>
   ): boolean {
     if ("fact" in criteria) {
@@ -229,29 +244,28 @@ export class Medal {
     }
     if (criteria.all) {
       return criteria.all.every(child =>
-        Medal.evaluateCriteria(
-          child as CriterionWithParams | CriteriaWithParams,
-          facts
-        )
+        Medal.evaluateCriteria(child as Criterion | Criteria, facts)
       );
     }
     if (criteria.any) {
       return criteria.any.some(child =>
-        Medal.evaluateCriteria(
-          child as CriterionWithParams | CriteriaWithParams,
-          facts
-        )
+        Medal.evaluateCriteria(child as Criterion | Criteria, facts)
       );
     }
     return false;
   }
 
   private static evaluateCriterion(
-    criterion: CriterionWithParams,
+    criterion: Criterion,
     facts: Record<string, FactValue>
   ): boolean {
-    const key = Medal.factKey(criterion.fact, criterion.params);
-    const factValue = facts[key];
+    const factValue = facts[criterion.fact];
+    if (factValue === undefined) {
+      Logger.error(
+        `[Medal] Criterion references unknown fact alias '${criterion.fact}'`
+      );
+      return false;
+    }
     const { operator, value } = criterion;
 
     switch (operator) {
@@ -272,11 +286,11 @@ export class Medal {
           return (value as unknown[]).includes(factValue);
         }
         return String(factValue).includes(String(value));
-      default:
-        Logger.error(`[Medal] Unknown operator: ${operator}`);
+      default: {
+        const exhaustive: never = operator;
+        Logger.error(`[Medal] Unknown operator: ${exhaustive}`);
         return false;
+      }
     }
   }
 }
-
-type FactValue = string | number | boolean;

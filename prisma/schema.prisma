@@ -824,17 +824,18 @@ model MfaAttempt {
 }
 
 model MedalConfig {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(255)
-  description String   @db.VarChar(1000)
-  series      String   @db.VarChar(255)
-  recurrence  Int      @default(0)
-  prestige    Int      @default(0)
-  icon        String   @db.VarChar(255)
-  criteria    Json
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  medals      Medal[]
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  description  String   @db.VarChar(1000)
+  series       String   @db.VarChar(255)
+  recurrence   Int      @default(0)
+  prestige     Int      @default(0)
+  icon         String   @db.VarChar(255)
+  factRequests Json     @default("[]")
+  criteria     Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  medals       Medal[]
 }
 
 model Medal {

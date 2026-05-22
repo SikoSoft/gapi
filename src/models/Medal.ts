@@ -1,18 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { Medal as MedalSpec } from "api-spec/models";
 
-// Local extension of Criterion until api-spec includes the params field.
-// Remove this and import Criterion directly from api-spec once the version
-// containing params has been published and installed.
-export interface CriterionWithParams extends MedalSpec.Criterion {
-  params?: Record<string, unknown>;
-}
-
-export type CriteriaWithParams = {
-  any?: (CriterionWithParams | CriteriaWithParams)[];
-  all?: (CriterionWithParams | CriteriaWithParams)[];
-};
-
 export interface MedalConfigCreateBody {
   name: string;
   description: string;
@@ -20,7 +8,8 @@ export interface MedalConfigCreateBody {
   recurrence: number;
   prestige: number;
   icon: string;
-  criteria: CriterionWithParams | CriteriaWithParams;
+  factRequests: MedalSpec.FactRequest[];
+  criteria: MedalSpec.Criterion | MedalSpec.Criteria;
 }
 
 export type MedalConfigUpdateBody = MedalConfigCreateBody;

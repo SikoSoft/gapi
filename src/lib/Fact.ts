@@ -1,78 +1,46 @@
-import { ListFilter } from "api-spec/models/List";
+import { FactOperation, FactRequest } from "api-spec/models/Medal";
 import { prisma } from "..";
 import { Entity } from "./Entity";
 import { Logger } from "./Logger";
 
 export type FactValue = string | number | boolean;
-export type FactHandler = (
-  userId: string,
-  params?: Record<string, unknown>
-) => Promise<FactValue>;
-
-const registry = new Map<string, FactHandler>();
 
 export class Fact {
-  static register(alias: string, handler: FactHandler): void {
-    registry.set(alias, handler);
-  }
-
   static async resolve(
-    alias: string,
-    userId: string,
-    params?: Record<string, unknown>
+    request: FactRequest,
+    userId: string
   ): Promise<FactValue | undefined> {
-    const handler = registry.get(alias);
-    if (!handler) {
-      Logger.error(`[Fact] No handler registered for alias: ${alias}`);
-      return undefined;
+    const { context } = request;
+    switch (context.operation) {
+      case FactOperation.ENTITY_COUNT: {
+        const where = Entity.getFilteredConditions(userId, context.filter);
+        return prisma.entity.count({ where });
+      }
+      case FactOperation.UNIQUE_TAG_COUNT: {
+        const entityWhere = Entity.getFilteredConditions(userId, context.filter);
+        const tags = await prisma.entityTag.findMany({
+          where: { entity: entityWhere },
+          select: { label: true },
+          distinct: ["label"],
+        });
+        return tags.length;
+      }
+      case FactOperation.MEDAL_COUNT: {
+        return prisma.medal.count({
+          where: {
+            userId,
+            medalConfigId: context.medalConfigId,
+            medalConfig: { series: context.series },
+          },
+        });
+      }
+      default: {
+        const exhaustive: never = context;
+        Logger.error(
+          `[Fact] Unknown operation: ${(exhaustive as FactRequest["context"]).operation}`
+        );
+        return undefined;
+      }
     }
-    return handler(userId, params);
   }
 }
-
-// Count of all entities belonging to a user, with optional full ListFilter scoping.
-// Pass params.filter (ListFilter) to scope the count to a specific subset of entities.
-Fact.register("entityCount", async (userId, params) => {
-  const filter = params?.filter as ListFilter | undefined;
-  if (filter) {
-    const where = Entity.getFilteredConditions(userId, filter);
-    return prisma.entity.count({ where });
-  }
-  return prisma.entity.count({ where: { userId } });
-});
-
-// Shorthand count of entities belonging to a user scoped to a specific entityConfigId.
-// Requires params.entityConfigId (number).
-Fact.register("entityCountByConfig", async (userId, params) => {
-  const entityConfigId = params?.entityConfigId as number | undefined;
-  if (entityConfigId === undefined) {
-    Logger.error("[Fact] entityCountByConfig requires params.entityConfigId");
-    return 0;
-  }
-  return prisma.entity.count({ where: { userId, entityConfigId } });
-});
-
-// Count of medals earned by a user.
-// Optional params: medalConfigId (number) to scope to a specific medal,
-// or series (string) to scope to all medals in a series.
-Fact.register("medalCount", async (userId, params) => {
-  const medalConfigId = params?.medalConfigId as number | undefined;
-  const series = params?.series as string | undefined;
-  return prisma.medal.count({
-    where: {
-      userId,
-      ...(medalConfigId !== undefined ? { medalConfigId } : {}),
-      ...(series !== undefined ? { medalConfig: { series } } : {}),
-    },
-  });
-});
-
-// Count of distinct tag labels applied across all of a user's entities.
-Fact.register("uniqueTagCount", async (userId) => {
-  const tags = await prisma.entityTag.findMany({
-    where: { entity: { userId } },
-    select: { label: true },
-    distinct: ["label"],
-  });
-  return tags.length;
-});

@@ -360,11 +360,11 @@ export class EntityListQueryBuilder {
 
     fragment += this.getFilterTimeFragment();
 
-    if (this.filter.tagging.containsAllOf.length) {
+    if (this.filter.tagging?.containsAllOf?.length) {
       fragment += this.getFilterTagsContainsAllOfFragment();
     }
 
-    if (this.filter.tagging.containsOneOf.length) {
+    if (this.filter.tagging?.containsOneOf?.length) {
       fragment += this.getFilterTagsContainsOneOfFragment();
     }
 
@@ -390,7 +390,7 @@ export class EntityListQueryBuilder {
   getFilterTimeFragment(): string {
     const time = this.filter.time;
 
-    if (time.type === ListFilterTimeType.ALL_TIME) {
+    if (!time || time.type === ListFilterTimeType.ALL_TIME) {
       return "";
     }
 
@@ -495,7 +495,7 @@ export class EntityListQueryBuilder {
   }
 
   getFilterTagsContainsOneOfFragment(): string {
-    const tagLabels = this.filter.tagging.containsOneOf || [];
+    const tagLabels = this.filter.tagging?.containsOneOf || [];
     if (tagLabels.length === 0) {
       return "";
     }
@@ -520,7 +520,7 @@ export class EntityListQueryBuilder {
   }
 
   getFilterTagsContainsAllOfFragment(): string {
-    const tagLabels = this.filter.tagging.containsAllOf || [];
+    const tagLabels = this.filter.tagging?.containsAllOf || [];
     if (tagLabels.length === 0) {
       return "";
     }

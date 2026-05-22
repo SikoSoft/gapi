@@ -287,17 +287,21 @@ export class ListConfig {
       });
 
       await ListConfig.updateSort(userId, listConfig.id, listConfig.sort);
-      await ListConfig.updateTags(listConfig.id, listConfig.filter.tagging);
-      await ListConfig.updateTime(listConfig.id, listConfig.filter.time);
+      if (listConfig.filter.tagging) {
+        await ListConfig.updateTags(listConfig.id, listConfig.filter.tagging);
+      }
+      if (listConfig.filter.time) {
+        await ListConfig.updateTime(listConfig.id, listConfig.filter.time);
+      }
       await ListConfig.updateTypes(
         listConfig.id,
-        listConfig.filter.includeTypes
+        listConfig.filter.includeTypes ?? []
       );
-      await ListConfig.updateUserIds(listConfig.id, listConfig.filter.userIds);
+      await ListConfig.updateUserIds(listConfig.id, listConfig.filter.userIds ?? []);
       await ListConfig.updateFilter(listConfig.id, listConfig.filter);
       await ListConfig.updateProperties(
         listConfig.id,
-        listConfig.filter.properties
+        listConfig.filter.properties ?? []
       );
       const updatedRes = await ListConfig.getById(listConfig.id);
       if (updatedRes.isErr()) {
@@ -499,9 +503,9 @@ export class ListConfig {
       await prisma.listFilter.update({
         where: { listConfigId },
         data: {
-          includeAll: filter.includeAll,
-          includeUntagged: filter.includeUntagged,
-          includeAllTagging: filter.includeAllTagging,
+          includeAll: filter.includeAll ?? false,
+          includeUntagged: filter.includeUntagged ?? false,
+          includeAllTagging: filter.includeAllTagging ?? false,
           published:
             typeof filter.published === "undefined" ? null : filter.published,
           suggestion:

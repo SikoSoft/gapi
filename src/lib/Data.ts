@@ -209,17 +209,21 @@ export class Data {
           prismaListConfig.id,
           listConfig.sort
         );
-        await ListConfig.updateTags(
-          prismaListConfig.id,
-          listConfig.filter.tagging
-        );
-        await ListConfig.updateTime(
-          prismaListConfig.id,
-          listConfig.filter.time
-        );
+        if (listConfig.filter.tagging) {
+          await ListConfig.updateTags(
+            prismaListConfig.id,
+            listConfig.filter.tagging
+          );
+        }
+        if (listConfig.filter.time) {
+          await ListConfig.updateTime(
+            prismaListConfig.id,
+            listConfig.filter.time
+          );
+        }
         await ListConfig.updateTypes(
           prismaListConfig.id,
-          listConfig.filter.includeTypes
+          listConfig.filter.includeTypes ?? []
         );
         await ListConfig.updateFilter(prismaListConfig.id, listConfig.filter);
       }

@@ -1,11 +1,8 @@
 import { Result, err, ok } from "neverthrow";
-import { Prisma } from "@prisma/client";
 import {
   ListContext,
   ListContextType,
   ListContextUnit,
-  ListFilter,
-  ListFilterTimeType,
   ListSort,
 } from "api-spec/models/List";
 import { prisma } from "..";
@@ -60,92 +57,6 @@ export class Entity {
     } catch (error) {
       return err(error);
     }
-  }
-
-  static getFilteredConditions(userId: string, filter: ListFilter) {
-    let startTime: Date;
-    let endTime: Date;
-    if (filter.time.type === ListFilterTimeType.EXACT_DATE) {
-      startTime = new Date(filter.time.date);
-      endTime = new Date(startTime.getTime() + 86400000);
-    }
-    if (filter.time.type === ListFilterTimeType.RANGE) {
-      startTime = new Date(filter.time.start);
-      endTime = new Date(new Date(filter.time.end).getTime() + 86400000);
-    }
-
-    return Prisma.validator(
-      prisma,
-      "entity",
-      "findMany",
-      "where"
-    )({
-      userId,
-      ...(!filter.includeAll
-        ? {
-            AND: [
-              {
-                ...(filter.includeTypes.length
-                  ? { entityConfigId: { in: filter.includeTypes } }
-                  : {}),
-              },
-              {
-                ...(filter.time.type === ListFilterTimeType.ALL_TIME
-                  ? { createdAt: { lte: new Date() } }
-                  : {
-                      AND: [
-                        { createdAt: { gte: startTime } },
-                        { createdAt: { lte: endTime } },
-                      ],
-                    }),
-              },
-              {
-                ...(filter.includeAllTagging
-                  ? {}
-                  : {
-                      OR: [
-                        {
-                          ...(filter.includeUntagged
-                            ? { tags: { none: {} } }
-                            : {}),
-                        },
-                        {
-                          AND: [
-                            {
-                              ...(filter.tagging.containsOneOf.length
-                                ? {
-                                    OR: [
-                                      ...filter.tagging.containsOneOf.map(
-                                        (tag) => ({
-                                          tags: { some: { label: tag } },
-                                        })
-                                      ),
-                                    ],
-                                  }
-                                : {}),
-                            },
-                            {
-                              ...(filter.tagging.containsAllOf
-                                ? {
-                                    AND: [
-                                      ...filter.tagging.containsAllOf.map(
-                                        (tag) => ({
-                                          tags: { some: { label: tag } },
-                                        })
-                                      ),
-                                    ],
-                                  }
-                                : {}),
-                            },
-                          ],
-                        },
-                      ],
-                    }),
-              },
-            ],
-          }
-        : {}),
-    });
   }
 
   static async create(

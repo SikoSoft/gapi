@@ -1,6 +1,6 @@
 import { FactOperation, FactRequest } from "api-spec/models/Medal";
 import { prisma } from "..";
-import { Entity } from "./Entity";
+import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
 import { Logger } from "./Logger";
 
 export type FactValue = string | number | boolean;
@@ -13,13 +13,18 @@ export class Fact {
     const { context } = request;
     switch (context.operation) {
       case FactOperation.ENTITY_COUNT: {
-        const where = Entity.getFilteredConditions(userId, context.filter);
-        return prisma.entity.count({ where });
+        const builder = new EntityListQueryBuilder();
+        builder.setUserId(userId);
+        builder.setFilter(context.filter);
+        return builder.runCountQuery();
       }
       case FactOperation.UNIQUE_TAG_COUNT: {
-        const entityWhere = Entity.getFilteredConditions(userId, context.filter);
+        const builder = new EntityListQueryBuilder();
+        builder.setUserId(userId);
+        builder.setFilter(context.filter);
+        const entityIds = await builder.runIdsQuery();
         const tags = await prisma.entityTag.findMany({
-          where: { entity: entityWhere },
+          where: { entityId: { in: entityIds } },
           select: { label: true },
           distinct: ["label"],
         });

@@ -42,9 +42,10 @@ export class Medal {
   static async createConfig(
     body: MedalConfigCreateBody
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
-    if (!Medal.criteriaAliasesAreValid(body.criteria, body.factRequests)) {
+    const invalidAliases = Medal.invalidCriteriaAliases(body.criteria, body.factRequests);
+    if (invalidAliases.length > 0) {
       return err(
-        new Error("Criteria reference fact aliases not defined in factRequests")
+        new Error(`Criteria reference undefined fact aliases: ${invalidAliases.join(", ")}`)
       );
     }
     try {
@@ -70,9 +71,10 @@ export class Medal {
     id: number,
     body: MedalConfigUpdateBody
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
-    if (!Medal.criteriaAliasesAreValid(body.criteria, body.factRequests)) {
+    const invalidAliases = Medal.invalidCriteriaAliases(body.criteria, body.factRequests);
+    if (invalidAliases.length > 0) {
       return err(
-        new Error("Criteria reference fact aliases not defined in factRequests")
+        new Error(`Criteria reference undefined fact aliases: ${invalidAliases.join(", ")}`)
       );
     }
     try {
@@ -225,13 +227,13 @@ export class Medal {
     );
   }
 
-  private static criteriaAliasesAreValid(
+  private static invalidCriteriaAliases(
     criteria: Criterion | Criteria,
     factRequests: FactRequest[]
-  ): boolean {
+  ): string[] {
     const defined = new Set(factRequests.map(fr => fr.alias));
-    return Medal.collectCriteriaAliases(criteria).every(alias =>
-      defined.has(alias)
+    return Medal.collectCriteriaAliases(criteria).filter(
+      alias => !defined.has(alias)
     );
   }
 

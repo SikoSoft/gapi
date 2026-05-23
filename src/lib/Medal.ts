@@ -195,19 +195,22 @@ export class Medal {
         continue;
       }
 
-      const existingCount = await prisma.medal.count({
-        where: { userId, medalConfigId: config.id },
-      });
+      try {
+        await prisma.$transaction(async tx => {
+          const existingCount = await tx.medal.count({
+            where: { userId, medalConfigId: config.id },
+          });
 
-      if (config.recurrence === 0 && existingCount > 0) {
-        continue;
-      }
+          if (config.recurrence > 0 && existingCount >= config.recurrence) {
+            return;
+          }
 
-      const giveRes = await Medal.giveMedal(userId, config.id);
-      if (giveRes.isErr()) {
+          await tx.medal.create({ data: { userId, medalConfigId: config.id } });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      } catch (error) {
         Logger.error(
           `[Medal] Failed to give medal ${config.id} to user ${userId}`,
-          { error: giveRes.error }
+          { error }
         );
       }
     }

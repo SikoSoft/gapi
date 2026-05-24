@@ -59,6 +59,212 @@ export class Entity {
     }
   }
 
+  static async getEntityIdsWithPropertyValue(
+    entityIds: number[],
+    propertyConfigId: number,
+    value: EntityProperty["value"],
+    dataType: DataType
+  ): Promise<number[]> {
+    if (entityIds.length === 0) {
+      return [];
+    }
+
+    switch (dataType) {
+      case DataType.BOOLEAN: {
+        const rows = await prisma.entityBooleanProperty.findMany({
+          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: value as boolean } },
+          select: { entityId: true },
+        });
+        return rows.map((r) => r.entityId);
+      }
+      case DataType.DATE: {
+        const rows = await prisma.entityDateProperty.findMany({
+          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: new Date(value as string) } },
+          select: { entityId: true },
+        });
+        return rows.map((r) => r.entityId);
+      }
+      case DataType.IMAGE: {
+        const v = value as { src: string; alt: string };
+        const rows = await prisma.entityImageProperty.findMany({
+          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { url: v.src, altText: v.alt } },
+          select: { entityId: true },
+        });
+        return rows.map((r) => r.entityId);
+      }
+      case DataType.INT: {
+        const rows = await prisma.entityIntProperty.findMany({
+          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: value as number } },
+          select: { entityId: true },
+        });
+        return rows.map((r) => r.entityId);
+      }
+      case DataType.SHORT_TEXT: {
+        const rows = await prisma.entityShortTextProperty.findMany({
+          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: value as string } },
+          select: { entityId: true },
+        });
+        return rows.map((r) => r.entityId);
+      }
+      case DataType.LONG_TEXT: {
+        const rows = await prisma.entityLongTextProperty.findMany({
+          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: value as string } },
+          select: { entityId: true },
+        });
+        return rows.map((r) => r.entityId);
+      }
+      default:
+        return [];
+    }
+  }
+
+  static async getCurrentPropertyValue(
+    entityId: number,
+    propertyConfigId: number,
+    dataType: DataType
+  ): Promise<EntityProperty["value"] | undefined> {
+    switch (dataType) {
+      case DataType.BOOLEAN: {
+        const row = await prisma.entityBooleanProperty.findFirst({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return row ? row.propertyValue.value : undefined;
+      }
+      case DataType.DATE: {
+        const row = await prisma.entityDateProperty.findFirst({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return row ? row.propertyValue.value.toISOString() : undefined;
+      }
+      case DataType.IMAGE: {
+        const row = await prisma.entityImageProperty.findFirst({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return row ? { src: row.propertyValue.url, alt: row.propertyValue.altText } : undefined;
+      }
+      case DataType.INT: {
+        const row = await prisma.entityIntProperty.findFirst({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return row ? row.propertyValue.value : undefined;
+      }
+      case DataType.SHORT_TEXT: {
+        const row = await prisma.entityShortTextProperty.findFirst({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return row ? row.propertyValue.value : undefined;
+      }
+      case DataType.LONG_TEXT: {
+        const row = await prisma.entityLongTextProperty.findFirst({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return row ? row.propertyValue.value : undefined;
+      }
+      default:
+        return undefined;
+    }
+  }
+
+  static async checkUniqueConstraints(
+    entityConfigId: number,
+    incomingProperties: EntityProperty[],
+    excludeEntityId?: number
+  ): Promise<Result<null, ValidationError>> {
+    try {
+      const entityConfig = await prisma.entityConfig.findUnique({
+        where: { id: entityConfigId },
+        include: { uniqueConstraints: { include: { properties: true } } },
+      });
+
+      if (!entityConfig || entityConfig.uniqueConstraints.length === 0) {
+        return ok(null);
+      }
+
+      const propertyConfigIds = [
+        ...new Set(
+          entityConfig.uniqueConstraints.flatMap((uc) =>
+            uc.properties.map((p) => p.propertyConfigId)
+          )
+        ),
+      ];
+      const propertyConfigRows = await prisma.propertyConfig.findMany({
+        where: { id: { in: propertyConfigIds } },
+        select: { id: true, dataType: true },
+      });
+      const dataTypeMap: Record<number, DataType> = {};
+      for (const row of propertyConfigRows) {
+        dataTypeMap[row.id] = row.dataType as DataType;
+      }
+
+      const candidates = await prisma.entity.findMany({
+        where: {
+          entityConfigId,
+          ...(excludeEntityId !== undefined ? { id: { not: excludeEntityId } } : {}),
+        },
+        select: { id: true },
+      });
+
+      for (const constraint of entityConfig.uniqueConstraints) {
+        const constraintPropertyIds = constraint.properties.map((p) => p.propertyConfigId);
+        const resolvedValues: Map<number, EntityProperty["value"]> = new Map();
+
+        for (const propertyConfigId of constraintPropertyIds) {
+          const incoming = incomingProperties.find((p) => p.propertyConfigId === propertyConfigId);
+          if (incoming !== undefined) {
+            resolvedValues.set(propertyConfigId, incoming.value);
+          } else if (excludeEntityId !== undefined) {
+            const currentValue = await Entity.getCurrentPropertyValue(
+              excludeEntityId,
+              propertyConfigId,
+              dataTypeMap[propertyConfigId]
+            );
+            if (currentValue !== undefined) {
+              resolvedValues.set(propertyConfigId, currentValue);
+            }
+          }
+        }
+
+        if (resolvedValues.size !== constraintPropertyIds.length) {
+          continue;
+        }
+
+        let matchingIds = candidates.map((e) => e.id);
+
+        for (const propertyConfigId of constraintPropertyIds) {
+          const value = resolvedValues.get(propertyConfigId);
+          const dataType = dataTypeMap[propertyConfigId];
+          matchingIds = await Entity.getEntityIdsWithPropertyValue(
+            matchingIds,
+            propertyConfigId,
+            value,
+            dataType
+          );
+          if (matchingIds.length === 0) {
+            break;
+          }
+        }
+
+        if (matchingIds.length > 0) {
+          return err(
+            new ValidationError(
+              `An entity with this combination of properties already exists`
+            )
+          );
+        }
+      }
+
+      return ok(null);
+    } catch (error) {
+      return err(new ValidationError("Failed to check unique constraints"));
+    }
+  }
+
   static async create(
     userId: string,
     data: EntityBodyPayload
@@ -80,6 +286,16 @@ export class Entity {
       );
       if (validation.isErr()) {
         return err(validation.error);
+      }
+
+      if (data.entityConfigId !== undefined) {
+        const uniqueCheck = await Entity.checkUniqueConstraints(
+          data.entityConfigId,
+          properties
+        );
+        if (uniqueCheck.isErr()) {
+          return err(uniqueCheck.error);
+        }
       }
 
       await Hook.trigger({ type: HookType.PRE_CREATE, userId, data });
@@ -157,6 +373,17 @@ export class Entity {
         );
         if (validation.isErr()) {
           return err(validation.error);
+        }
+
+        if (data.entityConfigId !== undefined) {
+          const uniqueCheck = await Entity.checkUniqueConstraints(
+            data.entityConfigId,
+            properties,
+            id
+          );
+          if (uniqueCheck.isErr()) {
+            return err(uniqueCheck.error);
+          }
         }
 
         await Entity.syncEntityProperties(

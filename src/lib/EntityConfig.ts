@@ -33,6 +33,9 @@ const entityConfigInclude = {
       editAccessPolicy: { include: { parties: true } },
     },
   },
+  uniqueConstraints: {
+    include: { properties: true },
+  },
 } as const;
 
 export class EntityConfig {
@@ -336,7 +339,38 @@ export class EntityConfig {
       public: data.public,
       viewAccessPolicy,
       editAccessPolicy,
+      uniqueConstraints: data.uniqueConstraints.map((uc) => ({
+        propertyIds: uc.properties.map((p) => p.propertyConfigId),
+      })),
     };
+  }
+
+  static async setUniqueConstraints(
+    entityConfigId: number,
+    constraints: Entity.EntityConfigUniqueConstraint[]
+  ): Promise<Result<void, Error>> {
+    try {
+      await prisma.entityConfigUniqueConstraint.deleteMany({
+        where: { entityConfigId },
+      });
+
+      for (const constraint of constraints) {
+        await prisma.entityConfigUniqueConstraint.create({
+          data: {
+            entityConfigId,
+            properties: {
+              create: constraint.propertyIds.map((propertyConfigId) => ({
+                propertyConfigId,
+              })),
+            },
+          },
+        });
+      }
+
+      return ok(undefined);
+    } catch (error) {
+      return err(new Error("Failed to set unique constraints", { cause: error }));
+    }
   }
 
   static mapPropertyDataToSpec(

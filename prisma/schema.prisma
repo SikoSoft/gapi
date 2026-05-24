@@ -317,6 +317,8 @@ model PropertyConfig {
   listFilterLongTextProperties  ListFilterLongTextProperty[]
   listFilterShortTextProperties ListFilterShortTextProperty[]
 
+  uniqueConstraintProperties EntityConfigUniqueConstraintProperty[]
+
   @@unique([entityConfigId, id])
 }
 
@@ -338,8 +340,25 @@ model EntityConfig {
   revisions                  EntityConfig[]              @relation("EntityConfigRevisions")
   ListFilterType             ListFilterType[]
   accessPolicy               EntityConfigAccessPolicy?
+  uniqueConstraints          EntityConfigUniqueConstraint[]
 
   @@unique([id, name])
+}
+
+model EntityConfigUniqueConstraint {
+  id             Int                                    @id @default(autoincrement())
+  entityConfigId Int
+  entityConfig   EntityConfig                           @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
+  properties     EntityConfigUniqueConstraintProperty[]
+}
+
+model EntityConfigUniqueConstraintProperty {
+  constraintId     Int
+  propertyConfigId Int
+  constraint       EntityConfigUniqueConstraint @relation(fields: [constraintId], references: [id], onDelete: Cascade)
+  propertyConfig   PropertyConfig               @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([constraintId, propertyConfigId])
 }
 
 model ActionTag {

@@ -97,6 +97,9 @@ export const entityConfigInclude = {
       },
     },
   },
+  uniqueConstraints: {
+    include: { properties: true },
+  },
 } satisfies Prisma.EntityConfigFindUniqueArgs["include"];
 
 const prismaEntityConfig =

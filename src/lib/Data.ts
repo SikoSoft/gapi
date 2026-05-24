@@ -14,6 +14,7 @@ import { Tagging } from "./Tagging";
 import { Entity } from "./Entity";
 import { ListConfig } from "./ListConfig";
 import { PropertyConfig } from "./PropertyConfig";
+import { Medal } from "./Medal";
 import {
   ListFilterTimeType,
   ListSortNativeProperty,
@@ -56,6 +57,7 @@ export class Data {
 
       const entityConfigMap: ImportEntityConfigMap = {};
       const entityPropertyConfigMap: ImportEntityPropertyConfigMap = {};
+      const medalConfigMap: Record<number, number> = {};
 
       const entityConfigsRes = await EntityConfig.getByUser(userId);
       const entityConfigHashMap: { hash: string; id: number }[] = [];
@@ -226,6 +228,93 @@ export class Data {
           listConfig.filter.includeTypes ?? []
         );
         await ListConfig.updateFilter(prismaListConfig.id, listConfig.filter);
+      }
+
+      if (data.medalConfigs) {
+        const existingMedalConfigsRes = await Medal.getConfigs();
+        if (existingMedalConfigsRes.isErr()) {
+          Logger.error(
+            "Failed to retrieve medal configs:",
+            existingMedalConfigsRes.error
+          );
+          return err(new Error("Failed to retrieve medal configs"));
+        }
+        const existingMedalConfigs = existingMedalConfigsRes.value;
+
+        for (const config of data.medalConfigs) {
+          const existingConfig = existingMedalConfigs.find((e) => {
+            return (
+              e.name === config.name &&
+              e.description === config.description &&
+              e.series === config.series &&
+              e.recurrence === config.recurrence &&
+              e.prestige === config.prestige &&
+              e.icon === config.icon &&
+              JSON.stringify(e.factRequests) ===
+                JSON.stringify(config.factRequests) &&
+              JSON.stringify(e.criteria) === JSON.stringify(config.criteria)
+            );
+          });
+
+          if (existingConfig) {
+            Logger.log("MedalConfig already exists, skipping:", config.name);
+            medalConfigMap[config.id] = existingConfig.id;
+            continue;
+          }
+
+          const createResult = await Medal.createConfig({
+            name: config.name,
+            description: config.description,
+            series: config.series,
+            recurrence: config.recurrence,
+            prestige: config.prestige,
+            icon: config.icon,
+            factRequests: config.factRequests,
+            criteria: config.criteria,
+          });
+
+          if (createResult.isErr()) {
+            Logger.error(
+              "Failed to create medal config:",
+              createResult.error
+            );
+            return err(new Error("Failed to create medal config"));
+          }
+
+          medalConfigMap[config.id] = createResult.value.id;
+        }
+      }
+
+      if (data.medals) {
+        for (const medal of data.medals) {
+          const newMedalConfigId = medalConfigMap[medal.medalConfigId];
+          if (newMedalConfigId === undefined) {
+            Logger.error(
+              `Medal references unknown medalConfigId: ${medal.medalConfigId}, skipping`
+            );
+            continue;
+          }
+
+          const existingMedal = await prisma.medal.findFirst({
+            where: {
+              userId,
+              medalConfigId: newMedalConfigId,
+              awardedAt: new Date(medal.awardedAt),
+            },
+          });
+
+          if (existingMedal) {
+            continue;
+          }
+
+          await prisma.medal.create({
+            data: {
+              userId,
+              medalConfigId: newMedalConfigId,
+              awardedAt: new Date(medal.awardedAt),
+            },
+          });
+        }
       }
 
       return ok(null);

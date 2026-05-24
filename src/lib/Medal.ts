@@ -12,6 +12,7 @@ import {
 } from "../models/Medal";
 import { Fact, FactValue } from "./Fact";
 import { Logger } from "./Logger";
+import { Notification } from "./Notification";
 
 export class Medal {
   static mapConfigToSpec(config: PrismaMedalConfig): MedalSpec.MedalConfig {
@@ -195,6 +196,7 @@ export class Medal {
         continue;
       }
 
+      let medalCreated = false;
       try {
         await prisma.$transaction(async tx => {
           const existingCount = await tx.medal.count({
@@ -206,12 +208,28 @@ export class Medal {
           }
 
           await tx.medal.create({ data: { userId, medalConfigId: config.id } });
+          medalCreated = true;
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       } catch (error) {
         Logger.error(
           `[Medal] Failed to give medal ${config.id} to user ${userId}`,
           { error }
         );
+      }
+
+      if (medalCreated) {
+        const notificationResult = await Notification.send({
+          userId,
+          title: `Medal Earned: ${config.name}`,
+          body: config.description,
+          actions: [],
+        });
+        if (notificationResult.isErr()) {
+          Logger.error(
+            `[Medal] Failed to send notification for medal ${config.id} to user ${userId}`,
+            { error: notificationResult.error }
+          );
+        }
       }
     }
   }

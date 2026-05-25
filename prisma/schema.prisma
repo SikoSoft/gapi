@@ -467,7 +467,6 @@ model ListFilter {
   includeAll        Boolean            @default(false)
   includeAllTagging Boolean            @default(false)
   published         Boolean?           @default(false)
-  suggestion        Boolean?           @default(false)
   suggested         Boolean?           @default(false)
   identified        Boolean?           @default(false)
   includeTypes      ListFilterType[]

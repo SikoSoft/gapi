@@ -227,7 +227,6 @@ model Entity {
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
   userId              String?                   @db.Uuid
-  suggestion          Boolean                   @default(false)
   suggested           Boolean                   @default(false)
   published           Boolean                   @default(false)
   identified          Boolean                   @default(false)
@@ -469,6 +468,8 @@ model ListFilter {
   includeAllTagging Boolean            @default(false)
   published         Boolean?           @default(false)
   suggestion        Boolean?           @default(false)
+  suggested         Boolean?           @default(false)
+  identified        Boolean?           @default(false)
   includeTypes      ListFilterType[]
   time              ListFilterTime?
   text              ListFilterText[]

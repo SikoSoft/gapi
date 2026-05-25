@@ -58,11 +58,15 @@ export async function suggestEntity(
   const entities = [];
 
   context.log(
-    `[suggestEntity] received ${body.length} payload(s); userIds present: [${body.map(p => p.userId ?? "(none)").join(", ")}]`
+    `[suggestEntity] received ${
+      body.length
+    } payload(s); userIds present: [${body
+      .map((p) => p.userId ?? "(none)")
+      .join(", ")}]`
   );
 
   for (const payload of body) {
-    const entityRes = await Entity.create("", { ...payload, suggestion: true });
+    const entityRes = await Entity.create("", { ...payload, suggested: true });
 
     if (entityRes.isErr()) {
       context.error(entityRes.error);
@@ -86,7 +90,11 @@ export async function suggestEntity(
 
       context.log(
         `[suggestEntity] enqueuing notification for entity ${entity.id}`,
-        { userId: payload.userId, entityConfigId: entity.type, textValues: textValuesRes.value }
+        {
+          userId: payload.userId,
+          entityConfigId: entity.type,
+          textValues: textValuesRes.value,
+        }
       );
 
       const enqueueRes = await NotificationQueue.enqueue({

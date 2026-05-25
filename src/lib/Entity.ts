@@ -72,14 +72,22 @@ export class Entity {
     switch (dataType) {
       case DataType.BOOLEAN: {
         const rows = await prisma.entityBooleanProperty.findMany({
-          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: value as boolean } },
+          where: {
+            entityId: { in: entityIds },
+            propertyConfigId,
+            propertyValue: { value: value as boolean },
+          },
           select: { entityId: true },
         });
         return rows.map((r) => r.entityId);
       }
       case DataType.DATE: {
         const rows = await prisma.entityDateProperty.findMany({
-          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: new Date(value as string) } },
+          where: {
+            entityId: { in: entityIds },
+            propertyConfigId,
+            propertyValue: { value: new Date(value as string) },
+          },
           select: { entityId: true },
         });
         return rows.map((r) => r.entityId);
@@ -87,28 +95,44 @@ export class Entity {
       case DataType.IMAGE: {
         const v = value as { src: string; alt: string };
         const rows = await prisma.entityImageProperty.findMany({
-          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { url: v.src, altText: v.alt } },
+          where: {
+            entityId: { in: entityIds },
+            propertyConfigId,
+            propertyValue: { url: v.src, altText: v.alt },
+          },
           select: { entityId: true },
         });
         return rows.map((r) => r.entityId);
       }
       case DataType.INT: {
         const rows = await prisma.entityIntProperty.findMany({
-          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: value as number } },
+          where: {
+            entityId: { in: entityIds },
+            propertyConfigId,
+            propertyValue: { value: value as number },
+          },
           select: { entityId: true },
         });
         return rows.map((r) => r.entityId);
       }
       case DataType.SHORT_TEXT: {
         const rows = await prisma.entityShortTextProperty.findMany({
-          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: value as string } },
+          where: {
+            entityId: { in: entityIds },
+            propertyConfigId,
+            propertyValue: { value: value as string },
+          },
           select: { entityId: true },
         });
         return rows.map((r) => r.entityId);
       }
       case DataType.LONG_TEXT: {
         const rows = await prisma.entityLongTextProperty.findMany({
-          where: { entityId: { in: entityIds }, propertyConfigId, propertyValue: { value: value as string } },
+          where: {
+            entityId: { in: entityIds },
+            propertyConfigId,
+            propertyValue: { value: value as string },
+          },
           select: { entityId: true },
         });
         return rows.map((r) => r.entityId);
@@ -143,7 +167,9 @@ export class Entity {
           where: { entityId, propertyConfigId },
           include: { propertyValue: true },
         });
-        return row ? { src: row.propertyValue.url, alt: row.propertyValue.altText } : undefined;
+        return row
+          ? { src: row.propertyValue.url, alt: row.propertyValue.altText }
+          : undefined;
       }
       case DataType.INT: {
         const row = await prisma.entityIntProperty.findFirst({
@@ -205,17 +231,23 @@ export class Entity {
       const candidates = await prisma.entity.findMany({
         where: {
           entityConfigId,
-          ...(excludeEntityId !== undefined ? { id: { not: excludeEntityId } } : {}),
+          ...(excludeEntityId !== undefined
+            ? { id: { not: excludeEntityId } }
+            : {}),
         },
         select: { id: true },
       });
 
       for (const constraint of entityConfig.uniqueConstraints) {
-        const constraintPropertyIds = constraint.properties.map((p) => p.propertyConfigId);
+        const constraintPropertyIds = constraint.properties.map(
+          (p) => p.propertyConfigId
+        );
         const resolvedValues: Map<number, EntityProperty["value"]> = new Map();
 
         for (const propertyConfigId of constraintPropertyIds) {
-          const incoming = incomingProperties.find((p) => p.propertyConfigId === propertyConfigId);
+          const incoming = incomingProperties.find(
+            (p) => p.propertyConfigId === propertyConfigId
+          );
           if (incoming !== undefined) {
             resolvedValues.set(propertyConfigId, incoming.value);
           } else if (excludeEntityId !== undefined) {
@@ -305,7 +337,8 @@ export class Entity {
           userId: data.userId ?? userId,
           entityConfigId: data.entityConfigId,
           published: data.published ?? false,
-          suggestion: data.suggestion ?? false,
+          suggested: data.suggested ?? false,
+          identified: data.identified ?? false,
           ...(data.createdAt
             ? {
                 createdAt: Util.getDateInTimeZone(
@@ -353,7 +386,12 @@ export class Entity {
     data: EntityBodyPayload
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
-      await Hook.trigger({ type: HookType.PRE_UPDATE, userId, entityId: id, data });
+      await Hook.trigger({
+        type: HookType.PRE_UPDATE,
+        userId,
+        entityId: id,
+        data,
+      });
 
       const properties = data.properties ?? [];
 
@@ -398,13 +436,20 @@ export class Entity {
         Tagging.syncEntityTags(id, data.tags);
       }
 
-      if (data.published !== undefined || data.suggestion !== undefined) {
+      if (
+        data.published !== undefined ||
+        data.suggested !== undefined ||
+        data.identified !== undefined
+      ) {
         await prisma.entity.update({
           where: { id, userId },
           data: {
             ...(data.published !== undefined && { published: data.published }),
-            ...(data.suggestion !== undefined && {
-              suggestion: data.suggestion,
+            ...(data.suggested !== undefined && {
+              suggested: data.suggested,
+            }),
+            ...(data.identified !== undefined && {
+              identified: data.identified,
             }),
           },
         });
@@ -415,7 +460,12 @@ export class Entity {
         return err(entityRes.error);
       }
 
-      await Hook.trigger({ type: HookType.POST_UPDATE, userId, entityId: id, data });
+      await Hook.trigger({
+        type: HookType.POST_UPDATE,
+        userId,
+        entityId: id,
+        data,
+      });
 
       return ok(entityRes.value);
     } catch (error) {
@@ -685,8 +735,9 @@ export class Entity {
       editAccessPolicyId: entity.accessPolicy
         ? entity.accessPolicy.editAccessPolicyId
         : 0,
-      suggestion: entity.suggestion,
+      suggested: entity.suggestion,
       published: entity.published,
+      identified: entity.identified,
     };
   }
 

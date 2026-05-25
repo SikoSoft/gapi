@@ -17,7 +17,8 @@ export interface EntityBodyPayload {
   propertyReferences?: PropertyReference[];
   published?: boolean;
   userId?: string;
-  suggestion?: boolean;
+  suggested?: boolean;
+  identified?: boolean;
   createdAt?: string;
 }
 

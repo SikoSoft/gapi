@@ -228,7 +228,9 @@ model Entity {
   updatedAt           DateTime                  @updatedAt
   userId              String?                   @db.Uuid
   suggestion          Boolean                   @default(false)
+  suggested           Boolean                   @default(false)
   published           Boolean                   @default(false)
+  identified          Boolean                   @default(false)
   tags                EntityTag[]
   booleanProperties   EntityBooleanProperty[]
   dateProperties      EntityDateProperty[]
@@ -336,8 +338,8 @@ model EntityConfig {
 
   entityPropertyConfigOrders EntityPropertyConfigOrder[]
   entities                   Entity[]
-  revision                   EntityConfig?               @relation("EntityConfigRevisions", fields: [revisionOf], references: [id])
-  revisions                  EntityConfig[]              @relation("EntityConfigRevisions")
+  revision                   EntityConfig?                  @relation("EntityConfigRevisions", fields: [revisionOf], references: [id])
+  revisions                  EntityConfig[]                 @relation("EntityConfigRevisions")
   ListFilterType             ListFilterType[]
   accessPolicy               EntityConfigAccessPolicy?
   uniqueConstraints          EntityConfigUniqueConstraint[]
@@ -461,18 +463,18 @@ model ListFilterType {
 }
 
 model ListFilter {
-  listConfigId      String           @unique @db.Uuid
-  includeUntagged   Boolean          @default(false)
-  includeAll        Boolean          @default(false)
-  includeAllTagging Boolean          @default(false)
-  published         Boolean?         @default(false)
-  suggestion        Boolean?         @default(false)
+  listConfigId      String             @unique @db.Uuid
+  includeUntagged   Boolean            @default(false)
+  includeAll        Boolean            @default(false)
+  includeAllTagging Boolean            @default(false)
+  published         Boolean?           @default(false)
+  suggestion        Boolean?           @default(false)
   includeTypes      ListFilterType[]
   time              ListFilterTime?
   text              ListFilterText[]
   tagging           ListFilterTag[]
   userIds           ListFilterUserId[]
-  listConfig        ListConfig       @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
+  listConfig        ListConfig         @relation(fields: [listConfigId], references: [id], onDelete: Cascade)
 
   booleanProperties   ListFilterBooleanProperty[]
   dateProperties      ListFilterDateProperty[]

@@ -201,7 +201,7 @@ export class Entity {
     entityConfigId: number,
     incomingProperties: EntityProperty[],
     excludeEntityId?: number
-  ): Promise<Result<null, ValidationError>> {
+  ): Promise<Result<number | null, Error>> {
     try {
       const entityConfig = await prisma.entityConfig.findUnique({
         where: { id: entityConfigId },
@@ -283,17 +283,51 @@ export class Entity {
         }
 
         if (matchingIds.length > 0) {
-          return err(
-            new ValidationError(
-              `An entity with this combination of properties already exists`
-            )
-          );
+          return ok(matchingIds[0]);
         }
       }
 
       return ok(null);
     } catch (error) {
-      return err(new ValidationError("Failed to check unique constraints"));
+      return err(new Error("Failed to check unique constraints", { cause: error }));
+    }
+  }
+
+  static async mergePropertiesIntoEntity(
+    existingEntityId: number,
+    incomingProperties: EntityProperty[],
+    timeZone: number
+  ): Promise<Result<EntitySpec.Entity, Error>> {
+    try {
+      const dataTypesRes = await Entity.getDataTypesForProperties(incomingProperties);
+      if (dataTypesRes.isErr()) {
+        return err(dataTypesRes.error);
+      }
+      const dataTypes = dataTypesRes.value;
+
+      const propertiesToAdd: EntityProperty[] = [];
+      for (const property of incomingProperties) {
+        const dataType = dataTypes[property.propertyConfigId];
+        if (!dataType) {
+          continue;
+        }
+        const existingCount = await Entity.countExistingProperties(
+          existingEntityId,
+          property.propertyConfigId,
+          dataType
+        );
+        if (existingCount === 0) {
+          propertiesToAdd.push({ ...property, id: 0 });
+        }
+      }
+
+      if (propertiesToAdd.length > 0) {
+        await Entity.syncEntityProperties(existingEntityId, propertiesToAdd, [], timeZone);
+      }
+
+      return Entity.getEntity(existingEntityId);
+    } catch (error) {
+      return err(new Error("Failed to merge properties into entity", { cause: error }));
     }
   }
 
@@ -327,6 +361,13 @@ export class Entity {
         );
         if (uniqueCheck.isErr()) {
           return err(uniqueCheck.error);
+        }
+        if (uniqueCheck.value !== null) {
+          return Entity.mergePropertiesIntoEntity(
+            uniqueCheck.value,
+            properties,
+            data.timeZone ?? 0
+          );
         }
       }
 
@@ -421,6 +462,13 @@ export class Entity {
           );
           if (uniqueCheck.isErr()) {
             return err(uniqueCheck.error);
+          }
+          if (uniqueCheck.value !== null) {
+            return err(
+              new ValidationError(
+                `An entity with this combination of properties already exists`
+              )
+            );
           }
         }
 

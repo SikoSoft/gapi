@@ -115,6 +115,7 @@ export class EntityConfig {
           ...(entityConfig.revisionOf
             ? { revision: { connect: { id: entityConfig.revisionOf } } }
             : {}),
+          allowTags: entityConfig.allowTags ?? false,
         },
         include: entityConfigInclude,
       });
@@ -164,6 +165,7 @@ export class EntityConfig {
           aiEnabled: entityConfig.aiEnabled,
           aiIdentifyPrompt: entityConfig.aiIdentifyPrompt,
           public: entityConfig.public,
+          allowTags: entityConfig.allowTags,
         },
         where: { id: entityConfig.id },
         include: entityConfigInclude,

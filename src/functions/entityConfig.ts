@@ -65,6 +65,7 @@ export async function listConfig(
         editAccessPolicy: null,
         public: createBody.public,
         uniqueConstraints: [],
+        allowTags: createBody.allowTags,
       });
 
       if (entityConfigRes.isErr()) {
@@ -76,10 +77,7 @@ export async function listConfig(
       return jsonReply({ ...entityConfigRes.value });
     case HttpMethod.PUT:
       const updateBody = (await request.json()) as EntityConfigUpdateBody;
-      const result = await EntityConfig.update(
-        userId,
-        updateBody
-      );
+      const result = await EntityConfig.update(userId, updateBody);
       if (result.isErr()) {
         context.error(result.error);
 

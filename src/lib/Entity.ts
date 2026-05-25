@@ -735,7 +735,7 @@ export class Entity {
       editAccessPolicyId: entity.accessPolicy
         ? entity.accessPolicy.editAccessPolicyId
         : 0,
-      suggested: entity.suggestion,
+      suggested: entity.suggested,
       published: entity.published,
       identified: entity.identified,
     };
@@ -810,7 +810,7 @@ export class Entity {
       const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const { count } = await prisma.entity.deleteMany({
         where: {
-          suggestion: true,
+          suggested: true,
           createdAt: { lte: cutoff },
         },
       });
@@ -1797,8 +1797,8 @@ export class Entity {
   ): Promise<Result<void, Error>> {
     try {
       await prisma.entity.update({
-        where: { id: entityId, suggestion: true },
-        data: { published: true, suggestion: false },
+        where: { id: entityId, suggested: true },
+        data: { published: true },
       });
       return ok(undefined);
     } catch (error) {

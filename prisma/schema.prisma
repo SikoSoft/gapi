@@ -334,6 +334,7 @@ model EntityConfig {
   aiEnabled             Boolean          @default(false)
   aiIdentifyPrompt      String?          @db.VarChar(255)
   public                Boolean          @default(false)
+  allowTags             Boolean          @default(false)
 
   entityPropertyConfigOrders EntityPropertyConfigOrder[]
   entities                   Entity[]

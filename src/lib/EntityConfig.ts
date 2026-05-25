@@ -342,6 +342,7 @@ export class EntityConfig {
       uniqueConstraints: data.uniqueConstraints.map((uc) => ({
         propertyIds: uc.properties.map((p) => p.propertyConfigId),
       })),
+      allowTags: data.allowTags,
     };
   }
 
@@ -369,7 +370,9 @@ export class EntityConfig {
 
       return ok(undefined);
     } catch (error) {
-      return err(new Error("Failed to set unique constraints", { cause: error }));
+      return err(
+        new Error("Failed to set unique constraints", { cause: error })
+      );
     }
   }
 

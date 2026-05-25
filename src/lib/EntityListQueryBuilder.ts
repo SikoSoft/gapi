@@ -170,7 +170,7 @@ export class EntityListQueryBuilder {
       query,
       ...Object.values(this.params)
     )) as { id: number }[];
-    return result.map(r => r.id);
+    return result.map((r) => r.id);
   }
 
   registerParam(placeholder: string, value: any) {
@@ -348,9 +348,17 @@ export class EntityListQueryBuilder {
       fragment += ` AND e."published" = {published}::boolean `;
     }
 
-    if (this.filter.suggestion !== undefined && this.filter.suggestion !== null) {
-      this.registerParam("suggestion", this.filter.suggestion);
-      fragment += ` AND e."suggestion" = {suggestion}::boolean `;
+    if (this.filter.suggested !== undefined && this.filter.suggested !== null) {
+      this.registerParam("suggested", this.filter.suggested);
+      fragment += ` AND e."suggested" = {suggested}::boolean `;
+    }
+
+    if (
+      this.filter.identified !== undefined &&
+      this.filter.identified !== null
+    ) {
+      this.registerParam("identified", this.filter.identified);
+      fragment += ` AND e."identified" = {identified}::boolean `;
     }
 
     if (this.filter.includeTypes && this.filter.includeTypes.length) {
@@ -468,7 +476,11 @@ export class EntityListQueryBuilder {
     }
 
     if (typeof value === "string") {
-      const textCondition = this.buildTextCondition(prop.operation, value, propValParam);
+      const textCondition = this.buildTextCondition(
+        prop.operation,
+        value,
+        propValParam
+      );
       return `
         AND (
           EXISTS (

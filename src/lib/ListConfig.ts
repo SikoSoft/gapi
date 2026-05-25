@@ -297,7 +297,10 @@ export class ListConfig {
         listConfig.id,
         listConfig.filter.includeTypes ?? []
       );
-      await ListConfig.updateUserIds(listConfig.id, listConfig.filter.userIds ?? []);
+      await ListConfig.updateUserIds(
+        listConfig.id,
+        listConfig.filter.userIds ?? []
+      );
       await ListConfig.updateFilter(listConfig.id, listConfig.filter);
       await ListConfig.updateProperties(
         listConfig.id,
@@ -508,8 +511,8 @@ export class ListConfig {
           includeAllTagging: filter.includeAllTagging ?? false,
           published:
             typeof filter.published === "undefined" ? null : filter.published,
-          suggestion:
-            typeof filter.suggestion === "undefined" ? null : filter.suggestion,
+          suggested:
+            typeof filter.suggested === "undefined" ? null : filter.suggested,
         },
       });
       return ok(null);
@@ -921,7 +924,7 @@ export class ListConfig {
       includeUntagged: data.includeUntagged,
       includeAllTagging: data.includeAllTagging,
       published: data.published,
-      suggestion: data.suggestion,
+      suggested: data.suggestion,
       includeTypes: ListConfig.mapFilterTypesDataToSpec(data.includeTypes),
       tagging: ListConfig.mapFilterTagsDataToSpec(data.tagging),
       properties: ListConfig.mapFilterPropertiesDataToSpec(data),

@@ -290,6 +290,7 @@ model PropertyConfig {
   userId           String?                  @db.Uuid
   entityConfigId   Int                      @default(0)
   optionsOnly      Boolean                  @default(false)
+  calculation      Json?
   optionsShortText OptionsShortTextOption[]
   optionsInt       OptionsIntOption[]
 

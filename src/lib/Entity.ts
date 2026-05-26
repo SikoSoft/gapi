@@ -757,6 +757,21 @@ export class Entity {
     return properties;
   }
 
+  static calculatedPropertiesToSpec(
+    entity: PrismaEntity
+  ): EntitySpec.EntityProperty[] {
+    const raw = (entity as any).calculatedProperties;
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw.map((prop: any) => ({
+      id: 0,
+      propertyConfigId: prop.propertyConfigId,
+      value: prop.propertyValue?.value ?? null,
+      order: prop.order,
+    }));
+  }
+
   static toSpec(entity: PrismaEntity): EntitySpec.Entity {
     //console.log("Entity to spec:", entity);
 
@@ -767,6 +782,7 @@ export class Entity {
       ...Entity.intPropertiesToSpec(entity),
       ...Entity.longTextPropertiesToSpec(entity),
       ...Entity.shortTextPropertiesToSpec(entity),
+      ...Entity.calculatedPropertiesToSpec(entity),
     ].sort((a, b) => a.order - b.order);
 
     return {
@@ -805,6 +821,14 @@ export class Entity {
     listQuery.setFilter(filter);
     listQuery.setSort(sort);
     listQuery.setPagination(start, perPage);
+
+    if (filter.includeTypes && filter.includeTypes.length > 0) {
+      const calculatedConfigs =
+        await PropertyConfig.resolveCalculatedPropertyConfigs(
+          filter.includeTypes
+        );
+      listQuery.setCalculatedPropertyConfigs(calculatedConfigs);
+    }
 
     try {
       const total = await listQuery.runCountQuery();

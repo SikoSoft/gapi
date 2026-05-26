@@ -8,6 +8,9 @@ import { forbiddenReply, introspect, jsonReply } from "..";
 
 import { PropertyConfig } from "../lib/PropertyConfig";
 import {
+  CalculatedPropertyConfigCreateBody,
+  calculatedPropertyConfigCreateSchema,
+  calculatedPropertyConfigUpdateSchema,
   PropertyConfigCreateBody,
   propertyConfigCreateSchema,
   PropertyConfigUpdateBody,
@@ -44,6 +47,23 @@ export async function propertyConfig(
       id = parseInt(request.params.id);
       const createBody = (await request.json()) as PropertyConfigCreateBody;
 
+      if ("calculation" in createBody) {
+        const calcValidation = calculatedPropertyConfigCreateSchema.decode(createBody);
+        if (calcValidation._tag === "Left") {
+          return { status: 400, body: JSON.stringify(calcValidation.left) };
+        }
+        const calcRes = await PropertyConfig.createCalculated(
+          userId,
+          entityConfigId,
+          calcValidation.right as CalculatedPropertyConfigCreateBody
+        );
+        if (calcRes.isErr()) {
+          context.error(calcRes.error);
+          return { status: 500, body: calcRes.error.message };
+        }
+        return jsonReply(calcRes.value);
+      }
+
       validation = propertyConfigCreateSchema.decode(createBody);
       if (validation._tag === "Left") {
         return {
@@ -78,6 +98,24 @@ export async function propertyConfig(
       entityConfigId = parseInt(request.params.entityConfigId);
       id = parseInt(request.params.id);
       const updateBody = (await request.json()) as PropertyConfigUpdateBody;
+
+      if ("calculation" in updateBody) {
+        const calcValidation = calculatedPropertyConfigUpdateSchema.decode(updateBody);
+        if (calcValidation._tag === "Left") {
+          return { status: 400, body: JSON.stringify(calcValidation.left) };
+        }
+        const calcRes = await PropertyConfig.updateCalculated(
+          userId,
+          entityConfigId,
+          id,
+          calcValidation.right
+        );
+        if (calcRes.isErr()) {
+          context.error(calcRes.error);
+          return { status: 500, body: calcRes.error.message };
+        }
+        return jsonReply(calcRes.value);
+      }
 
       validation = propertyConfigUpdateSchema.decode(updateBody);
       if (validation._tag === "Left") {

@@ -3,10 +3,13 @@ import { prisma } from "..";
 import { Logger } from "./Logger";
 import { Entity } from "api-spec/models";
 import {
+  CalculatedPropertyConfigCreateBody,
+  CalculatedPropertyConfigUpdateBody,
   PrismaPropertyConfig,
   PropertyConfigCreateBody,
   propertyConfigInclude,
   PropertyConfigUpdateBody,
+  ResolvedCalculatedConfig,
 } from "../models/PropertyConfig";
 import { EntityConfig } from "./EntityConfig";
 import {
@@ -521,6 +524,195 @@ export class PropertyConfig {
     }
   }
 
+  static async createCalculated(
+    userId: string,
+    entityConfigId: number,
+    body: CalculatedPropertyConfigCreateBody
+  ): Promise<Result<Entity.EntityCalculatedPropertyConfig, Error>> {
+    const isAllowed = await EntityConfig.isEditAllowed(userId, entityConfigId);
+    if (isAllowed.isErr()) {
+      return err(isAllowed.error);
+    }
+    if (!isAllowed.value) {
+      return err(new Error("Not authorized to edit this entity config"));
+    }
+
+    const validationError = await PropertyConfig.validateCalculationRefs(
+      entityConfigId,
+      body.calculation
+    );
+    if (validationError) {
+      return err(validationError);
+    }
+
+    try {
+      const created = await prisma.propertyConfig.create({
+        data: {
+          name: body.name,
+          dataType: DataType.INT,
+          prefix: body.prefix,
+          suffix: body.suffix,
+          hidden: body.hidden,
+          userId,
+          entityConfigId,
+          calculation: body.calculation as object,
+          repeat: 0,
+          allowed: 0,
+          required: 0,
+          optionsOnly: false,
+        },
+        include: propertyConfigInclude,
+      });
+
+      return ok(
+        PropertyConfig.mapDataToSpec(created) as Entity.EntityCalculatedPropertyConfig
+      );
+    } catch (error) {
+      return err(
+        new Error("Failed to create calculated property config", { cause: error })
+      );
+    }
+  }
+
+  static async updateCalculated(
+    userId: string,
+    entityConfigId: number,
+    id: number,
+    body: CalculatedPropertyConfigUpdateBody
+  ): Promise<Result<Entity.EntityCalculatedPropertyConfig | null, Error>> {
+    const isAllowed = await EntityConfig.isEditAllowed(userId, entityConfigId);
+    if (isAllowed.isErr()) {
+      return err(isAllowed.error);
+    }
+    if (!isAllowed.value) {
+      return err(new Error("Not authorized to edit this entity config"));
+    }
+
+    const validationError = await PropertyConfig.validateCalculationRefs(
+      entityConfigId,
+      body.calculation
+    );
+    if (validationError) {
+      return err(validationError);
+    }
+
+    try {
+      const updated = await prisma.propertyConfig.update({
+        where: { id, entityConfigId },
+        data: {
+          name: body.name,
+          prefix: body.prefix,
+          suffix: body.suffix,
+          hidden: body.hidden,
+          calculation: body.calculation as object,
+        },
+        include: propertyConfigInclude,
+      });
+
+      return ok(
+        PropertyConfig.mapDataToSpec(updated) as Entity.EntityCalculatedPropertyConfig
+      );
+    } catch (error) {
+      return err(
+        new Error("Failed to update calculated property config", { cause: error })
+      );
+    }
+  }
+
+  static async validateCalculationRefs(
+    entityConfigId: number,
+    calculation: Entity.EntityPropertyCalculation
+  ): Promise<Error | null> {
+    const refIds: number[] = [];
+    if (
+      typeof calculation.value1 === "object" &&
+      "propertyConfigId" in calculation.value1
+    ) {
+      refIds.push(calculation.value1.propertyConfigId);
+    }
+    if (
+      typeof calculation.value2 === "object" &&
+      "propertyConfigId" in calculation.value2
+    ) {
+      refIds.push(calculation.value2.propertyConfigId);
+    }
+
+    if (refIds.length === 0) {
+      return null;
+    }
+
+    const found = await prisma.propertyConfig.count({
+      where: { entityConfigId, id: { in: refIds } },
+    });
+
+    if (found < refIds.length) {
+      return new Error(
+        "Referenced propertyConfigId does not belong to this entity config"
+      );
+    }
+
+    return null;
+  }
+
+  static async resolveCalculatedPropertyConfigs(
+    entityConfigIds: number[]
+  ): Promise<ResolvedCalculatedConfig[]> {
+    const calculatedConfigs = await prisma.propertyConfig.findMany({
+      where: {
+        entityConfigId: { in: entityConfigIds },
+        NOT: { calculation: null },
+      },
+      include: { entityPropertyConfigOrder: true },
+    });
+
+    if (calculatedConfigs.length === 0) {
+      return [];
+    }
+
+    const refIds = new Set<number>();
+    for (const config of calculatedConfigs) {
+      const calc = config.calculation as Entity.EntityPropertyCalculation;
+      if (typeof calc.value1 === "object" && "propertyConfigId" in calc.value1) {
+        refIds.add(calc.value1.propertyConfigId);
+      }
+      if (typeof calc.value2 === "object" && "propertyConfigId" in calc.value2) {
+        refIds.add(calc.value2.propertyConfigId);
+      }
+    }
+
+    const sourceConfigs =
+      refIds.size > 0
+        ? await prisma.propertyConfig.findMany({
+            where: { id: { in: Array.from(refIds) } },
+            select: { id: true, dataType: true },
+          })
+        : [];
+
+    const dataTypeMap = new Map(
+      sourceConfigs.map((c) => [c.id, c.dataType as DataType])
+    );
+
+    return calculatedConfigs.map((config) => {
+      const calc = config.calculation as Entity.EntityPropertyCalculation;
+      const v1DataType =
+        typeof calc.value1 === "object" && "propertyConfigId" in calc.value1
+          ? (dataTypeMap.get(calc.value1.propertyConfigId) ?? null)
+          : null;
+      const v2DataType =
+        typeof calc.value2 === "object" && "propertyConfigId" in calc.value2
+          ? (dataTypeMap.get(calc.value2.propertyConfigId) ?? null)
+          : null;
+
+      return {
+        id: config.id,
+        order: config.entityPropertyConfigOrder?.order ?? 999,
+        calculation: calc,
+        value1DataType: v1DataType,
+        value2DataType: v2DataType,
+      };
+    });
+  }
+
   static async updateOrder(
     entityConfigId: number,
     propertyConfigId: number,
@@ -558,8 +750,21 @@ export class PropertyConfig {
 
   static mapDataToSpec(
     data: PrismaPropertyConfig
-  ): Entity.EntityPropertyConfig {
-    //console.log("Mapping data to spec:", data);
+  ): Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig {
+    if (data.calculation !== null && data.calculation !== undefined) {
+      return {
+        entityConfigId: data.entityConfigId,
+        id: data.id,
+        userId: data.userId,
+        name: data.name,
+        prefix: data.prefix,
+        suffix: data.suffix,
+        hidden: data.hidden,
+        dataType: DataType.INT,
+        defaultValue: 0,
+        calculation: data.calculation as Entity.EntityPropertyCalculation,
+      } as Entity.EntityCalculatedPropertyConfig;
+    }
 
     const options = PropertyConfig.mapDataToOptions(data);
 
@@ -577,8 +782,6 @@ export class PropertyConfig {
       optionsOnly: data.optionsOnly,
       options,
     };
-
-    //console.log("Common config:", commonConfig);
 
     switch (data.dataType) {
       case DataType.BOOLEAN:

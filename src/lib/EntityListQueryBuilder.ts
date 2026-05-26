@@ -11,8 +11,12 @@ import {
 } from "api-spec/models/List";
 import { getDefaultFilter, prisma } from "..";
 import { PrismaEntity } from "../models/Entity";
+import { ResolvedCalculatedConfig } from "../models/PropertyConfig";
 import { Util } from "./Util";
-import { DataType } from "api-spec/models/Entity";
+import {
+  DataType,
+  EntityPropertyCalculationReference,
+} from "api-spec/models/Entity";
 
 export class EntityListQueryBuilder {
   private params: Record<string, any> = {};
@@ -28,6 +32,7 @@ export class EntityListQueryBuilder {
   };
   private isCustomSort: boolean = false;
   private systemMode: boolean = false;
+  private calculatedPropertyConfigs: ResolvedCalculatedConfig[] = [];
 
   constructor() {}
 
@@ -57,6 +62,10 @@ export class EntityListQueryBuilder {
     this.pagination = { start, perPage };
   }
 
+  setCalculatedPropertyConfigs(configs: ResolvedCalculatedConfig[]) {
+    this.calculatedPropertyConfigs = configs;
+  }
+
   buildQuery(countOnly: boolean = false): string {
     let query = `
       SELECT
@@ -70,7 +79,8 @@ export class EntityListQueryBuilder {
          .map((type) => `"${type}Properties"`)
          .join(", ")},
         "accessPolicy"
-        ${this.isCustomSort ? `, sortPropRows."value" as sortValue` : ""}`
+        ${this.isCustomSort ? `, sortPropRows."value" as sortValue` : ""}
+        ${this.calculatedPropertyConfigs.length > 0 ? `, ${this.getCalculatedPropertiesFragment()}` : ""}`
       }
       FROM
         "Entity" e
@@ -293,6 +303,14 @@ export class EntityListQueryBuilder {
 
   getCustomSortJoinFragment(): string {
     const sortProperty = this.sort.property as ListSortCustomProperty;
+
+    const calcConfig = this.calculatedPropertyConfigs.find(
+      (c) => c.id === sortProperty.propertyId
+    );
+    if (calcConfig) {
+      return this.getCalculatedSortJoinFragment(calcConfig);
+    }
+
     const propTypeCamelCase = sortProperty.dataType;
     const propTypePascalCase = Util.capitalize(sortProperty.dataType);
 
@@ -338,6 +356,84 @@ export class EntityListQueryBuilder {
     }
 
     return this.getCustomSortFragment();
+  }
+
+  getCalcOperandExpr(
+    operand: EntityPropertyCalculationReference | number,
+    dataType: DataType | null
+  ): string {
+    if (typeof operand === "number") {
+      return `${operand}`;
+    }
+    const id = operand.propertyConfigId;
+    switch (dataType) {
+      case DataType.INT:
+        return `(SELECT ipv."value" FROM "EntityIntProperty" eip JOIN "IntPropertyValue" ipv ON eip."propertyValueId" = ipv."id" WHERE eip."entityId" = e."id" AND eip."propertyConfigId" = ${id} LIMIT 1)`;
+      case DataType.DATE:
+        return `(SELECT (EXTRACT(EPOCH FROM dpv."value") * 1000)::bigint FROM "EntityDateProperty" edp JOIN "DatePropertyValue" dpv ON edp."propertyValueId" = dpv."id" WHERE edp."entityId" = e."id" AND edp."propertyConfigId" = ${id} LIMIT 1)`;
+      default:
+        return "NULL";
+    }
+  }
+
+  getCalculatedPropertiesFragment(): string {
+    const entries = this.calculatedPropertyConfigs.map((config) => {
+      const v1Expr = this.getCalcOperandExpr(
+        config.calculation.value1,
+        config.value1DataType
+      );
+      const v2Expr = this.getCalcOperandExpr(
+        config.calculation.value2,
+        config.value2DataType
+      );
+      const op = config.calculation.operation;
+      return `json_build_object(
+        'propertyConfigId', ${config.id},
+        'order', ${config.order},
+        'propertyValue', json_build_object('value', (${v1Expr} ${op} ${v2Expr}))
+      )`;
+    });
+
+    return `json_build_array(${entries.join(", ")}) AS "calculatedProperties"`;
+  }
+
+  getFilterCalculatedPropertyFragment(
+    prop: FilterProperty,
+    index: number,
+    calcConfig: ResolvedCalculatedConfig
+  ): string {
+    if (typeof prop.value !== "number") {
+      return "";
+    }
+    const propValParam = `filterPropVal${index}`;
+    this.registerParam(propValParam, prop.value);
+    const v1Expr = this.getCalcOperandExpr(
+      calcConfig.calculation.value1,
+      calcConfig.value1DataType
+    );
+    const v2Expr = this.getCalcOperandExpr(
+      calcConfig.calculation.value2,
+      calcConfig.value2DataType
+    );
+    const op = calcConfig.calculation.operation;
+    return `AND (${v1Expr} ${op} ${v2Expr}) = {${propValParam}}::numeric`;
+  }
+
+  getCalculatedSortJoinFragment(calcConfig: ResolvedCalculatedConfig): string {
+    const v1Expr = this.getCalcOperandExpr(
+      calcConfig.calculation.value1,
+      calcConfig.value1DataType
+    );
+    const v2Expr = this.getCalcOperandExpr(
+      calcConfig.calculation.value2,
+      calcConfig.value2DataType
+    );
+    const op = calcConfig.calculation.operation;
+    return `
+      LEFT JOIN LATERAL (
+        SELECT (${v1Expr} ${op} ${v2Expr}) AS "value"
+      ) sortPropRows ON true
+    `;
   }
 
   getFilterFragment(): string {
@@ -441,6 +537,13 @@ export class EntityListQueryBuilder {
   }
 
   getFilterPropertyFragment(prop: FilterProperty, index: number): string {
+    const calcConfig = this.calculatedPropertyConfigs.find(
+      (c) => c.id === prop.propertyId
+    );
+    if (calcConfig) {
+      return this.getFilterCalculatedPropertyFragment(prop, index, calcConfig);
+    }
+
     const propIdParam = `filterPropId${index}`;
     const propValParam = `filterPropVal${index}`;
     const value = prop.value;

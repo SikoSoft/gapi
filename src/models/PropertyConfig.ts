@@ -1,6 +1,7 @@
 import * as t from "io-ts";
 import { Prisma } from "@prisma/client";
 import { Entity } from "api-spec/models";
+import { DataType } from "api-spec/models/Entity";
 
 export const propertyConfigInclude = {
     defaultBooleanValue: {
@@ -170,3 +171,44 @@ export const propertyConfigUpdateOrderSchema = t.array(
 export type PropertyConfigUpdateOrderBody = t.TypeOf<
   typeof propertyConfigUpdateOrderSchema
 >;
+
+const CalculationOperandReference = t.type({ propertyConfigId: t.number });
+const CalculationOperand = t.union([CalculationOperandReference, t.number]);
+const CalculationOperation = t.union([
+  t.literal("*"),
+  t.literal("/"),
+  t.literal("+"),
+  t.literal("-"),
+]);
+
+export const calculatedPropertyConfigCreateSchema = t.exact(
+  t.type({
+    name: t.string,
+    prefix: t.string,
+    suffix: t.string,
+    hidden: t.boolean,
+    calculation: t.type({
+      value1: CalculationOperand,
+      value2: CalculationOperand,
+      operation: CalculationOperation,
+    }),
+  })
+);
+
+export type CalculatedPropertyConfigCreateBody = t.TypeOf<
+  typeof calculatedPropertyConfigCreateSchema
+>;
+
+export const calculatedPropertyConfigUpdateSchema =
+  calculatedPropertyConfigCreateSchema;
+
+export type CalculatedPropertyConfigUpdateBody =
+  CalculatedPropertyConfigCreateBody;
+
+export interface ResolvedCalculatedConfig {
+  id: number;
+  order: number;
+  calculation: Entity.EntityPropertyCalculation;
+  value1DataType: DataType | null;
+  value2DataType: DataType | null;
+}

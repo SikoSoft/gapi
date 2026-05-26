@@ -657,13 +657,11 @@ export class PropertyConfig {
   static async resolveCalculatedPropertyConfigs(
     entityConfigIds: number[]
   ): Promise<ResolvedCalculatedConfig[]> {
-    const calculatedConfigs = await prisma.propertyConfig.findMany({
-      where: {
-        entityConfigId: { in: entityConfigIds },
-        NOT: { calculation: null },
-      },
+    const allConfigs = await prisma.propertyConfig.findMany({
+      where: { entityConfigId: { in: entityConfigIds } },
       include: { entityPropertyConfigOrder: true },
     });
+    const calculatedConfigs = allConfigs.filter((c) => c.calculation !== null);
 
     if (calculatedConfigs.length === 0) {
       return [];

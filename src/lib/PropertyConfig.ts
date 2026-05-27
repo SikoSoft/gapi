@@ -659,7 +659,6 @@ export class PropertyConfig {
   ): Promise<ResolvedCalculatedConfig[]> {
     const allConfigs = await prisma.propertyConfig.findMany({
       where: { entityConfigId: { in: entityConfigIds } },
-      include: { entityPropertyConfigOrder: true },
     });
     const calculatedConfigs = allConfigs.filter((c) => c.calculation !== null);
 
@@ -703,7 +702,6 @@ export class PropertyConfig {
 
       return {
         id: config.id,
-        order: config.entityPropertyConfigOrder?.order ?? 999,
         calculation: calc,
         value1DataType: v1DataType,
         value2DataType: v2DataType,

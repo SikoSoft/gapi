@@ -221,22 +221,36 @@ model SuggestionLock {
   @@id([yyyy, mm, dd])
 }
 
+model EntityCalculatedProperty {
+  id               Int @id @default(autoincrement())
+  entityId         Int
+  propertyConfigId Int
+  order            Int @default(0)
+
+  entity         Entity         @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyConfig PropertyConfig @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, propertyConfigId])
+  @@index([entityId, order], map: "idx_entitycalculatedprop_entityid_order")
+}
+
 model Entity {
-  id                  Int                       @id @default(autoincrement())
-  entityConfigId      Int
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
-  userId              String?                   @db.Uuid
-  suggested           Boolean                   @default(false)
-  published           Boolean                   @default(false)
-  identified          Boolean                   @default(false)
-  tags                EntityTag[]
-  booleanProperties   EntityBooleanProperty[]
-  dateProperties      EntityDateProperty[]
-  imageProperties     EntityImageProperty[]
-  intProperties       EntityIntProperty[]
-  longTextProperties  EntityLongTextProperty[]
-  shortTextProperties EntityShortTextProperty[]
+  id                    Int                         @id @default(autoincrement())
+  entityConfigId        Int
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  userId                String?                     @db.Uuid
+  suggested             Boolean                     @default(false)
+  published             Boolean                     @default(false)
+  identified            Boolean                     @default(false)
+  tags                  EntityTag[]
+  booleanProperties     EntityBooleanProperty[]
+  dateProperties        EntityDateProperty[]
+  imageProperties       EntityImageProperty[]
+  intProperties         EntityIntProperty[]
+  longTextProperties    EntityLongTextProperty[]
+  shortTextProperties   EntityShortTextProperty[]
+  calculatedProperties  EntityCalculatedProperty[]
 
   entityConfig EntityConfig        @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
   accessPolicy EntityAccessPolicy?
@@ -305,12 +319,13 @@ model PropertyConfig {
 
   entityPropertyConfigOrder EntityPropertyConfigOrder?
 
-  entityBooleanProperties   EntityBooleanProperty[]
-  entityImageProperties     EntityImageProperty[]
-  entityDateProperties      EntityDateProperty[]
-  entityIntProperties       EntityIntProperty[]
-  entityLongTextProperties  EntityLongTextProperty[]
-  entityShortTextProperties EntityShortTextProperty[]
+  entityBooleanProperties     EntityBooleanProperty[]
+  entityImageProperties       EntityImageProperty[]
+  entityDateProperties        EntityDateProperty[]
+  entityIntProperties         EntityIntProperty[]
+  entityLongTextProperties    EntityLongTextProperty[]
+  entityShortTextProperties   EntityShortTextProperty[]
+  entityCalculatedProperties  EntityCalculatedProperty[]
 
   listFilterBooleanProperties   ListFilterBooleanProperty[]
   listFilterDateProperties      ListFilterDateProperty[]

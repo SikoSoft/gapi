@@ -377,24 +377,40 @@ export class EntityListQueryBuilder {
   }
 
   getCalculatedPropertiesFragment(): string {
-    const entries = this.calculatedPropertyConfigs.map((config) => {
-      const v1Expr = this.getCalcOperandExpr(
-        config.calculation.value1,
-        config.value1DataType
-      );
-      const v2Expr = this.getCalcOperandExpr(
-        config.calculation.value2,
-        config.value2DataType
-      );
-      const op = config.calculation.operation;
-      return `json_build_object(
-        'propertyConfigId', ${config.id},
-        'order', ${config.order},
-        'propertyValue', json_build_object('value', (${v1Expr} ${op} ${v2Expr}))
-      )`;
-    });
+    const configIds = this.calculatedPropertyConfigs.map((c) => c.id).join(", ");
 
-    return `json_build_array(${entries.join(", ")}) AS "calculatedProperties"`;
+    const caseEntries = this.calculatedPropertyConfigs
+      .map((config) => {
+        const v1Expr = this.getCalcOperandExpr(
+          config.calculation.value1,
+          config.value1DataType
+        );
+        const v2Expr = this.getCalcOperandExpr(
+          config.calculation.value2,
+          config.value2DataType
+        );
+        const op = config.calculation.operation;
+        return `WHEN ${config.id} THEN (${v1Expr} ${op} ${v2Expr})`;
+      })
+      .join("\n            ");
+
+    return `(
+      SELECT COALESCE(json_agg(
+        json_build_object(
+          'propertyConfigId', ecp."propertyConfigId",
+          'order', ecp."order",
+          'propertyValue', json_build_object('value',
+            CASE ecp."propertyConfigId"
+              ${caseEntries}
+              ELSE NULL
+            END
+          )
+        ) ORDER BY ecp."order"
+      ), '[]'::json)
+      FROM "EntityCalculatedProperty" ecp
+      WHERE ecp."entityId" = e."id"
+      AND ecp."propertyConfigId" = ANY(ARRAY[${configIds}]::int[])
+    ) AS "calculatedProperties"`;
   }
 
   getFilterCalculatedPropertyFragment(

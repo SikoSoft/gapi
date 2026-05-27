@@ -145,6 +145,7 @@ export const entityInclude = {
       propertyValue: true,
     },
   },
+  calculatedProperties: true,
   accessPolicy: {
     include: {
       viewAccessPolicy: {

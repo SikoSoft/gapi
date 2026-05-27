@@ -207,7 +207,6 @@ export type CalculatedPropertyConfigUpdateBody =
 
 export interface ResolvedCalculatedConfig {
   id: number;
-  order: number;
   calculation: Entity.EntityPropertyCalculation;
   value1DataType: DataType | null;
   value2DataType: DataType | null;

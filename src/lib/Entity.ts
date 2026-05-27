@@ -19,6 +19,8 @@ import {
 import {
   DataType,
   EntityProperty,
+  EntityPropertyCalculation,
+  EntityPropertyCalculationReference,
   ImageDataValue,
 } from "api-spec/models/Entity";
 import { Access, Entity as EntitySpec } from "api-spec/models";
@@ -289,7 +291,9 @@ export class Entity {
 
       return ok(null);
     } catch (error) {
-      return err(new Error("Failed to check unique constraints", { cause: error }));
+      return err(
+        new Error("Failed to check unique constraints", { cause: error })
+      );
     }
   }
 
@@ -299,14 +303,26 @@ export class Entity {
     timeZone: number
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
-      const dataTypesRes = await Entity.getDataTypesForProperties(incomingProperties);
+      const calculatedIds = await Entity.getCalculatedConfigIds(
+        incomingProperties.map((p) => p.propertyConfigId)
+      );
+      const regularIncoming = incomingProperties.filter(
+        (p) => !calculatedIds.has(p.propertyConfigId)
+      );
+      const calculatedIncoming = incomingProperties.filter((p) =>
+        calculatedIds.has(p.propertyConfigId)
+      );
+
+      const dataTypesRes = await Entity.getDataTypesForProperties(
+        regularIncoming
+      );
       if (dataTypesRes.isErr()) {
         return err(dataTypesRes.error);
       }
       const dataTypes = dataTypesRes.value;
 
       const propertiesToAdd: EntityProperty[] = [];
-      for (const property of incomingProperties) {
+      for (const property of regularIncoming) {
         const dataType = dataTypes[property.propertyConfigId];
         if (!dataType) {
           continue;
@@ -322,12 +338,36 @@ export class Entity {
       }
 
       if (propertiesToAdd.length > 0) {
-        await Entity.syncEntityProperties(existingEntityId, propertiesToAdd, [], timeZone);
+        await Entity.syncEntityProperties(
+          existingEntityId,
+          propertiesToAdd,
+          [],
+          timeZone
+        );
+      }
+
+      for (const property of calculatedIncoming) {
+        await prisma.entityCalculatedProperty.upsert({
+          where: {
+            entityId_propertyConfigId: {
+              entityId: existingEntityId,
+              propertyConfigId: property.propertyConfigId,
+            },
+          },
+          update: {},
+          create: {
+            entityId: existingEntityId,
+            propertyConfigId: property.propertyConfigId,
+            order: property.order,
+          },
+        });
       }
 
       return Entity.getEntity(existingEntityId);
     } catch (error) {
-      return err(new Error("Failed to merge properties into entity", { cause: error }));
+      return err(
+        new Error("Failed to merge properties into entity", { cause: error })
+      );
     }
   }
 
@@ -337,17 +377,25 @@ export class Entity {
   ): Promise<Result<EntitySpec.Entity, Error>> {
     try {
       const properties = data.properties ?? [];
-      const propertyConfigIds = properties.map((p) => p.propertyConfigId);
+      const calculatedIds = await Entity.getCalculatedConfigIds(
+        properties.map((p) => p.propertyConfigId)
+      );
+      const regularProps = properties.filter(
+        (p) => !calculatedIds.has(p.propertyConfigId)
+      );
+      const calculatedProps = properties.filter((p) =>
+        calculatedIds.has(p.propertyConfigId)
+      );
 
       const propertyConfigs = await Entity.getPropertyConfigs(
-        propertyConfigIds
+        regularProps.map((p) => p.propertyConfigId)
       );
       if (propertyConfigs.isErr()) {
         return err(propertyConfigs.error);
       }
 
       const validation = Entity.validateDataAgainstPropertyConfigs(
-        properties,
+        regularProps,
         propertyConfigs.value
       );
       if (validation.isErr()) {
@@ -357,7 +405,7 @@ export class Entity {
       if (data.entityConfigId !== undefined) {
         const uniqueCheck = await Entity.checkUniqueConstraints(
           data.entityConfigId,
-          properties
+          regularProps
         );
         if (uniqueCheck.isErr()) {
           return err(uniqueCheck.error);
@@ -398,10 +446,16 @@ export class Entity {
       Tagging.syncEntityTags(entity.id, data.tags ?? []);
       await Entity.syncEntityProperties(
         entity.id,
-        properties,
+        regularProps,
         [],
         data.timeZone ?? 0
       );
+      if (calculatedProps.length > 0) {
+        await Entity.syncAllCalculatedEntityProperties(
+          entity.id,
+          calculatedProps
+        );
+      }
 
       const entityRes = await Entity.getEntity(entity.id);
       if (entityRes.isErr()) {
@@ -437,47 +491,65 @@ export class Entity {
       const properties = data.properties ?? [];
 
       if (properties.length > 0) {
-        const propertyConfigIds = properties.map((p) => p.propertyConfigId);
-
-        const propertyConfigs = await Entity.getPropertyConfigs(
-          propertyConfigIds
+        const calculatedIds = await Entity.getCalculatedConfigIds(
+          properties.map((p) => p.propertyConfigId)
         );
-        if (propertyConfigs.isErr()) {
-          return err(propertyConfigs.error);
-        }
-
-        const validation = Entity.validateDataAgainstPropertyConfigs(
-          properties,
-          propertyConfigs.value
+        const regularProps = properties.filter(
+          (p) => !calculatedIds.has(p.propertyConfigId)
         );
-        if (validation.isErr()) {
-          return err(validation.error);
-        }
+        const calculatedProps = properties.filter((p) =>
+          calculatedIds.has(p.propertyConfigId)
+        );
 
-        if (data.entityConfigId !== undefined) {
-          const uniqueCheck = await Entity.checkUniqueConstraints(
-            data.entityConfigId,
-            properties,
-            id
+        if (regularProps.length > 0) {
+          const propertyConfigs = await Entity.getPropertyConfigs(
+            regularProps.map((p) => p.propertyConfigId)
           );
-          if (uniqueCheck.isErr()) {
-            return err(uniqueCheck.error);
+          if (propertyConfigs.isErr()) {
+            return err(propertyConfigs.error);
           }
-          if (uniqueCheck.value !== null) {
-            return err(
-              new ValidationError(
-                `An entity with this combination of properties already exists`
-              )
+
+          const validation = Entity.validateDataAgainstPropertyConfigs(
+            regularProps,
+            propertyConfigs.value
+          );
+          if (validation.isErr()) {
+            return err(validation.error);
+          }
+
+          if (data.entityConfigId !== undefined) {
+            const uniqueCheck = await Entity.checkUniqueConstraints(
+              data.entityConfigId,
+              regularProps,
+              id
             );
+            if (uniqueCheck.isErr()) {
+              return err(uniqueCheck.error);
+            }
+            if (uniqueCheck.value !== null) {
+              return err(
+                new ValidationError(
+                  `An entity with this combination of properties already exists`
+                )
+              );
+            }
           }
+
+          await Entity.syncEntityProperties(
+            id,
+            regularProps,
+            data.propertyReferences ?? [],
+            data.timeZone ?? 0
+          );
         }
 
-        await Entity.syncEntityProperties(
+        const replaceResult = await Entity.replaceCalculatedEntityProperties(
           id,
-          properties,
-          data.propertyReferences ?? [],
-          data.timeZone ?? 0
+          calculatedProps
         );
+        if (replaceResult.isErr()) {
+          return err(replaceResult.error);
+        }
       }
 
       if (data.tags !== undefined) {
@@ -592,7 +664,7 @@ export class Entity {
       if (!entity) {
         return err(new Error("Entity not found"));
       }
-      return ok(Entity.toSpec(entity));
+      return ok(await Entity.computeAndAugmentSpec(entity));
     } catch (error) {
       return err(error);
     }
@@ -613,7 +685,7 @@ export class Entity {
       }
 
       if (entity.userId === userId) {
-        return ok(Entity.toSpec(entity));
+        return ok(await Entity.computeAndAugmentSpec(entity));
       }
 
       const viewPolicy = entity.accessPolicy?.viewAccessPolicy;
@@ -635,7 +707,7 @@ export class Entity {
         return err(new AccessError("Access denied"));
       }
 
-      return ok(Entity.toSpec(entity));
+      return ok(await Entity.computeAndAugmentSpec(entity));
     } catch (error) {
       return err(error);
     }
@@ -772,8 +844,81 @@ export class Entity {
     }));
   }
 
+  static computeCalculatedValue(
+    calc: EntityPropertyCalculation,
+    properties: EntitySpec.EntityProperty[]
+  ): number | null {
+    const resolveOperand = (
+      operand: EntityPropertyCalculationReference | number
+    ): number | null => {
+      if (typeof operand === "number") {
+        return operand;
+      }
+      const sourceProp = properties.find(
+        (p) => p.propertyConfigId === operand.propertyConfigId
+      );
+      if (!sourceProp || sourceProp.value === null) {
+        return null;
+      }
+      return sourceProp.value as number;
+    };
+
+    const v1 = resolveOperand(calc.value1);
+    const v2 = resolveOperand(calc.value2);
+
+    if (v1 === null || v2 === null) {
+      return null;
+    }
+
+    switch (calc.operation) {
+      case "*":
+        return v1 * v2;
+      case "/":
+        return v2 !== 0 ? v1 / v2 : null;
+      case "+":
+        return v1 + v2;
+      case "-":
+        return v1 - v2;
+      default:
+        return null;
+    }
+  }
+
+  static async computeAndAugmentSpec(
+    entity: PrismaEntity
+  ): Promise<EntitySpec.Entity> {
+    const spec = Entity.toSpec(entity);
+    const calcRecords = entity.calculatedProperties;
+    if (!calcRecords || calcRecords.length === 0) {
+      return spec;
+    }
+
+    const configs = await prisma.propertyConfig.findMany({
+      where: { id: { in: calcRecords.map((r) => r.propertyConfigId) } },
+      select: { id: true, calculation: true },
+    });
+
+    for (const record of calcRecords) {
+      const config = configs.find((c) => c.id === record.propertyConfigId);
+      if (!config?.calculation) {
+        continue;
+      }
+      const value = Entity.computeCalculatedValue(
+        config.calculation as EntityPropertyCalculation,
+        spec.properties
+      );
+      const prop = spec.properties.find(
+        (p) => p.propertyConfigId === record.propertyConfigId && p.id === 0
+      );
+      if (prop) {
+        prop.value = value;
+      }
+    }
+
+    return spec;
+  }
+
   static toSpec(entity: PrismaEntity): EntitySpec.Entity {
-    //console.log("Entity to spec:", entity);
 
     const properties: EntitySpec.EntityProperty[] = [
       ...Entity.booleanPropertiesToSpec(entity),
@@ -854,23 +999,25 @@ export class Entity {
     let entities: EntitySpec.Entity[];
 
     try {
-      entities = (
-        await prisma.entity.findMany({
-          where: {
-            userId,
-            entityConfigId: { in: entityConfigIds },
-            ...(startDate || endDate
-              ? {
-                  createdAt: {
-                    ...(startDate ? { gte: startDate } : {}),
-                    ...(endDate ? { lte: endDate } : {}),
-                  },
-                }
-              : {}),
-          },
-          include: entityInclude,
-        })
-      ).map((entity) => Entity.toSpec(entity));
+      entities = await Promise.all(
+        (
+          await prisma.entity.findMany({
+            where: {
+              userId,
+              entityConfigId: { in: entityConfigIds },
+              ...(startDate || endDate
+                ? {
+                    createdAt: {
+                      ...(startDate ? { gte: startDate } : {}),
+                      ...(endDate ? { lte: endDate } : {}),
+                    },
+                  }
+                : {}),
+            },
+            include: entityInclude,
+          })
+        ).map((entity) => Entity.computeAndAugmentSpec(entity))
+      );
       return ok(entities);
     } catch (error) {
       return err(error);
@@ -939,7 +1086,7 @@ export class Entity {
 
       await Hook.trigger({ type: HookType.POST_DELETE, userId, entityId: id });
 
-      return ok(Entity.toSpec(entity));
+      return ok(await Entity.computeAndAugmentSpec(entity));
     } catch (error) {
       return err(error);
     }
@@ -1126,7 +1273,14 @@ export class Entity {
   ): Promise<Result<null, Error>> {
     Logger.log("Syncing entity properties:", { entityId, properties });
 
-    const dataTypesRes = await Entity.getDataTypesForProperties(properties);
+    const calculatedIds = await Entity.getCalculatedConfigIds(
+      properties.map((p) => p.propertyConfigId)
+    );
+    const regularProperties = properties.filter(
+      (p) => !calculatedIds.has(p.propertyConfigId)
+    );
+
+    const dataTypesRes = await Entity.getDataTypesForProperties(regularProperties);
     if (dataTypesRes.isErr()) {
       Logger.error(
         "Error getting data types for properties:",
@@ -1140,12 +1294,12 @@ export class Entity {
       await Entity.cleanOrphanedProperties(
         entityId,
         propertyReferences,
-        properties,
+        regularProperties,
         dataTypes
       );
     }
 
-    for (const property of properties) {
+    for (const property of regularProperties) {
       switch (dataTypes[property.propertyConfigId]) {
         case DataType.BOOLEAN:
           await Entity.syncBooleanProperty(entityId, property);
@@ -1478,6 +1632,90 @@ export class Entity {
         });
       default:
         return 0;
+    }
+  }
+
+  static async getCalculatedConfigIds(
+    propertyConfigIds: number[]
+  ): Promise<Set<number>> {
+    if (propertyConfigIds.length === 0) {
+      return new Set();
+    }
+    const rows = await prisma.propertyConfig.findMany({
+      where: { id: { in: propertyConfigIds } },
+      select: { id: true, calculation: true },
+    });
+    return new Set(
+      rows.filter((r) => r.calculation !== null).map((r) => r.id)
+    );
+  }
+
+  static async syncAllCalculatedEntityProperties(
+    entityId: number,
+    properties: EntityProperty[]
+  ): Promise<Result<null, Error>> {
+    try {
+      for (const property of properties) {
+        await prisma.entityCalculatedProperty.upsert({
+          where: {
+            entityId_propertyConfigId: {
+              entityId,
+              propertyConfigId: property.propertyConfigId,
+            },
+          },
+          update: { order: property.order },
+          create: {
+            entityId,
+            propertyConfigId: property.propertyConfigId,
+            order: property.order,
+          },
+        });
+      }
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to sync calculated entity properties", {
+          cause: error,
+        })
+      );
+    }
+  }
+
+  static async replaceCalculatedEntityProperties(
+    entityId: number,
+    properties: EntityProperty[]
+  ): Promise<Result<null, Error>> {
+    try {
+      const incomingConfigIds = properties.map((p) => p.propertyConfigId);
+      await prisma.entityCalculatedProperty.deleteMany({
+        where: {
+          entityId,
+          propertyConfigId: { notIn: incomingConfigIds },
+        },
+      });
+      for (const property of properties) {
+        await prisma.entityCalculatedProperty.upsert({
+          where: {
+            entityId_propertyConfigId: {
+              entityId,
+              propertyConfigId: property.propertyConfigId,
+            },
+          },
+          update: { order: property.order },
+          create: {
+            entityId,
+            propertyConfigId: property.propertyConfigId,
+            order: property.order,
+          },
+        });
+      }
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to replace calculated entity properties", {
+          cause: error,
+        })
+      );
     }
   }
 

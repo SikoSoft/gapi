@@ -5,6 +5,17 @@ import { prismaListConfigInclude } from "../models/ListConfig";
 import { Setting } from "./Setting";
 
 export class Assist {
+  static async getAnalysisClassification(): Promise<Result<void, Error>> {
+    try {
+      // Placeholder for future implementation
+      return ok(undefined);
+    } catch (error) {
+      return err(
+        new Error("Failed to get analysis classification", { cause: error })
+      );
+    }
+  }
+
   static async getSuggestionLock(
     yyyy: number,
     mm: number,
@@ -16,7 +27,9 @@ export class Assist {
       });
       return ok(lock !== null);
     } catch (error) {
-      return err(new Error("Failed to check suggestion lock", { cause: error }));
+      return err(
+        new Error("Failed to check suggestion lock", { cause: error })
+      );
     }
   }
 

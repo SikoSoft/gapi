@@ -43,10 +43,17 @@ export class Medal {
   static async createConfig(
     body: MedalConfigCreateBody
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
-    const invalidAliases = Medal.invalidCriteriaAliases(body.criteria, body.factRequests);
+    const invalidAliases = Medal.invalidCriteriaAliases(
+      body.criteria,
+      body.factRequests
+    );
     if (invalidAliases.length > 0) {
       return err(
-        new Error(`Criteria reference undefined fact aliases: ${invalidAliases.join(", ")}`)
+        new Error(
+          `Criteria reference undefined fact aliases: ${invalidAliases.join(
+            ", "
+          )}`
+        )
       );
     }
     try {
@@ -72,10 +79,17 @@ export class Medal {
     id: number,
     body: MedalConfigUpdateBody
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
-    const invalidAliases = Medal.invalidCriteriaAliases(body.criteria, body.factRequests);
+    const invalidAliases = Medal.invalidCriteriaAliases(
+      body.criteria,
+      body.factRequests
+    );
     if (invalidAliases.length > 0) {
       return err(
-        new Error(`Criteria reference undefined fact aliases: ${invalidAliases.join(", ")}`)
+        new Error(
+          `Criteria reference undefined fact aliases: ${invalidAliases.join(
+            ", "
+          )}`
+        )
       );
     }
     try {
@@ -176,7 +190,7 @@ export class Medal {
       let factsResolved = true;
 
       for (const factRequest of config.factRequests) {
-        const value = await Fact.resolve(factRequest, userId);
+        const value = await Fact.resolve(factRequest.context, userId);
         if (value === undefined) {
           Logger.error(
             `[Medal] Unresolved fact '${factRequest.alias}' for medalConfig ${config.id} — skipping config`
@@ -198,18 +212,23 @@ export class Medal {
 
       let medalCreated = false;
       try {
-        await prisma.$transaction(async tx => {
-          const existingCount = await tx.medal.count({
-            where: { userId, medalConfigId: config.id },
-          });
+        await prisma.$transaction(
+          async (tx) => {
+            const existingCount = await tx.medal.count({
+              where: { userId, medalConfigId: config.id },
+            });
 
-          if (config.recurrence > 0 && existingCount >= config.recurrence) {
-            return;
-          }
+            if (config.recurrence > 0 && existingCount >= config.recurrence) {
+              return;
+            }
 
-          await tx.medal.create({ data: { userId, medalConfigId: config.id } });
-          medalCreated = true;
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+            await tx.medal.create({
+              data: { userId, medalConfigId: config.id },
+            });
+            medalCreated = true;
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+        );
       } catch (error) {
         Logger.error(
           `[Medal] Failed to give medal ${config.id} to user ${userId}`,
@@ -240,10 +259,7 @@ export class Medal {
     if ("fact" in criteria) {
       return [criteria.fact];
     }
-    return [
-      ...(criteria.all ?? []),
-      ...(criteria.any ?? []),
-    ].flatMap(child =>
+    return [...(criteria.all ?? []), ...(criteria.any ?? [])].flatMap((child) =>
       Medal.collectCriteriaAliases(child as Criterion | Criteria)
     );
   }
@@ -252,9 +268,9 @@ export class Medal {
     criteria: Criterion | Criteria,
     factRequests: FactRequest[]
   ): string[] {
-    const defined = new Set(factRequests.map(fr => fr.alias));
+    const defined = new Set(factRequests.map((fr) => fr.alias));
     return Medal.collectCriteriaAliases(criteria).filter(
-      alias => !defined.has(alias)
+      (alias) => !defined.has(alias)
     );
   }
 
@@ -266,12 +282,12 @@ export class Medal {
       return Medal.evaluateCriterion(criteria, facts);
     }
     if (criteria.all) {
-      return criteria.all.every(child =>
+      return criteria.all.every((child) =>
         Medal.evaluateCriteria(child as Criterion | Criteria, facts)
       );
     }
     if (criteria.any) {
-      return criteria.any.some(child =>
+      return criteria.any.some((child) =>
         Medal.evaluateCriteria(child as Criterion | Criteria, facts)
       );
     }

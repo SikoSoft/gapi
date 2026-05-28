@@ -524,7 +524,9 @@ export class EntityListQueryBuilder {
 
     if (time.type === ListFilterTimeType.RANGE) {
       const startTime = new Date(time.start);
-      const endTime = new Date(new Date(time.end).getTime() + 86400000);
+      const endTime = time.end.includes("T")
+        ? new Date(time.end)
+        : new Date(new Date(time.end).getTime() + 86400000);
       this.registerParam("timeStart", startTime);
       this.registerParam("timeEnd", endTime);
       return ` AND e."createdAt" >= {timeStart}::timestamptz AND e."createdAt" <= {timeEnd}::timestamptz `;

@@ -883,3 +883,15 @@ model Medal {
   awardedAt     DateTime    @default(now())
   medalConfig   MedalConfig @relation(fields: [medalConfigId], references: [id], onDelete: Cascade)
 }
+
+model FactCache {
+  id         Int      @id @default(autoincrement())
+  userId     String   @db.Uuid
+  contextKey String   @db.VarChar(64)
+  value      String
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@unique([userId, contextKey])
+  @@index([expiresAt])
+}

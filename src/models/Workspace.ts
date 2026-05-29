@@ -1,14 +1,17 @@
+import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
-export interface WorkspaceCreateBody {
-  name: string;
-  listConfigs: string[];
-}
+export const WorkspaceCreateBodySchema = z.object({
+  name: z.string(),
+  listConfigs: z.array(z.string()),
+});
+export type WorkspaceCreateBody = z.infer<typeof WorkspaceCreateBodySchema>;
 
-export interface WorkspaceUpdateBody {
-  name: string;
-  listConfigs: string[];
-}
+export const WorkspaceUpdateBodySchema = z.object({
+  name: z.string(),
+  listConfigs: z.array(z.string()),
+});
+export type WorkspaceUpdateBody = z.infer<typeof WorkspaceUpdateBodySchema>;
 
 const prismaWorkspaceValidator = Prisma.validator<Prisma.WorkspaceFindManyArgs>()({
   include: {

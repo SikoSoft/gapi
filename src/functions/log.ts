@@ -4,9 +4,7 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
-import { Validation } from "io-ts";
 import {
-  FrontEndLogPayload,
   frontEndLogSchema,
 } from "../models/FrontEndLog";
 import { FrontEndLog } from "../lib/FrontEndLog";
@@ -23,14 +21,13 @@ export async function log(
     return { status: 400, body: JSON.stringify({ message: "Invalid JSON" }) };
   }
 
-  const validation: Validation<FrontEndLogPayload> =
-    frontEndLogSchema.decode(body);
+  const parseResult = frontEndLogSchema.safeParse(body);
 
-  if (validation._tag === "Left") {
-    return { status: 400, body: JSON.stringify(validation.left) };
+  if (!parseResult.success) {
+    return { status: 400, body: JSON.stringify(parseResult.error.issues) };
   }
 
-  const payload = validation.right;
+  const payload = parseResult.data;
 
   context.log("front-end error report", {
     type: payload.type,

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
 export const prismaListConfigInclude = {
@@ -80,3 +81,18 @@ const prismaListFilter = Prisma.validator<Prisma.ListFilterFindManyArgs>()({
 export type PrismaListFilter = Prisma.ListFilterGetPayload<
   typeof prismaListFilter
 >;
+
+export const ListConfigCreateBodySchema = z.object({
+  name: z.string(),
+});
+export type ListConfigCreateBody = z.infer<typeof ListConfigCreateBodySchema>;
+
+export const ListConfigUpdateBodySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  userId: z.string(),
+  filter: z.record(z.string(), z.unknown()),
+  sort: z.record(z.string(), z.unknown()),
+  themes: z.array(z.string()),
+});
+export type ListConfigUpdateBody = z.infer<typeof ListConfigUpdateBodySchema>;

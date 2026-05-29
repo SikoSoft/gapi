@@ -13,11 +13,9 @@ import {
   calculatedPropertyConfigUpdateSchema,
   PropertyConfigCreateBody,
   propertyConfigCreateSchema,
-  PropertyConfigUpdateBody,
   propertyConfigUpdateSchema,
 } from "../models/PropertyConfig";
 import { EntityPropertyConfig } from "api-spec/models/Entity";
-import { Validation } from "io-ts";
 import { Revision } from "api-spec/lib/Revision";
 
 export async function propertyConfig(
@@ -31,7 +29,6 @@ export async function propertyConfig(
   const userId = introspection.user.id;
   let entityConfigId: number;
   let id: number;
-  let validation: Validation<PropertyConfigCreateBody>;
 
   switch (request.method) {
     case "GET":
@@ -48,14 +45,14 @@ export async function propertyConfig(
       const createBody = (await request.json()) as PropertyConfigCreateBody;
 
       if ("calculation" in createBody) {
-        const calcValidation = calculatedPropertyConfigCreateSchema.decode(createBody);
-        if (calcValidation._tag === "Left") {
-          return { status: 400, body: JSON.stringify(calcValidation.left) };
+        const calcResult = calculatedPropertyConfigCreateSchema.safeParse(createBody);
+        if (!calcResult.success) {
+          return { status: 400, body: JSON.stringify(calcResult.error.issues) };
         }
         const calcRes = await PropertyConfig.createCalculated(
           userId,
           entityConfigId,
-          calcValidation.right as CalculatedPropertyConfigCreateBody
+          calcResult.data as CalculatedPropertyConfigCreateBody
         );
         if (calcRes.isErr()) {
           context.error(calcRes.error);
@@ -64,18 +61,18 @@ export async function propertyConfig(
         return jsonReply(calcRes.value);
       }
 
-      validation = propertyConfigCreateSchema.decode(createBody);
-      if (validation._tag === "Left") {
+      const createResult = propertyConfigCreateSchema.safeParse(createBody);
+      if (!createResult.success) {
         return {
           status: 400,
-          body: JSON.stringify(validation.left),
+          body: JSON.stringify(createResult.error.issues),
         };
       }
 
       const createdRes = await PropertyConfig.create(
         userId,
         entityConfigId,
-        createBody
+        createResult.data
       );
 
       if (createdRes.isErr()) {
@@ -97,18 +94,18 @@ export async function propertyConfig(
 
       entityConfigId = parseInt(request.params.entityConfigId);
       id = parseInt(request.params.id);
-      const updateBody = (await request.json()) as PropertyConfigUpdateBody;
+      const updateBody = (await request.json()) as PropertyConfigCreateBody;
 
       if ("calculation" in updateBody) {
-        const calcValidation = calculatedPropertyConfigUpdateSchema.decode(updateBody);
-        if (calcValidation._tag === "Left") {
-          return { status: 400, body: JSON.stringify(calcValidation.left) };
+        const calcResult = calculatedPropertyConfigUpdateSchema.safeParse(updateBody);
+        if (!calcResult.success) {
+          return { status: 400, body: JSON.stringify(calcResult.error.issues) };
         }
         const calcRes = await PropertyConfig.updateCalculated(
           userId,
           entityConfigId,
           id,
-          calcValidation.right
+          calcResult.data as CalculatedPropertyConfigCreateBody
         );
         if (calcRes.isErr()) {
           context.error(calcRes.error);
@@ -117,19 +114,19 @@ export async function propertyConfig(
         return jsonReply(calcRes.value);
       }
 
-      validation = propertyConfigUpdateSchema.decode(updateBody);
-      if (validation._tag === "Left") {
+      const updateResult = propertyConfigUpdateSchema.safeParse(updateBody);
+      if (!updateResult.success) {
         console.error(
           "Validation failed:",
-          JSON.stringify(validation.left, null, 2)
+          JSON.stringify(updateResult.error.issues, null, 2)
         );
         return {
           status: 400,
-          body: JSON.stringify(validation.left),
+          body: JSON.stringify(updateResult.error.issues),
         };
       }
 
-      if (validation.right.performDriftCheck) {
+      if (updateResult.data.performDriftCheck) {
         const currentRes = await PropertyConfig.getById(userId, id);
         if (currentRes.isErr()) {
           context.error(currentRes.error);
@@ -140,7 +137,7 @@ export async function propertyConfig(
         }
 
         const revisionCheck = Revision.propertyIsSafe(currentRes.value, {
-          ...validation.right,
+          ...updateResult.data,
           id,
           entityConfigId,
           userId,
@@ -163,7 +160,7 @@ export async function propertyConfig(
         userId,
         entityConfigId,
         id,
-        validation.right
+        updateResult.data
       );
 
       if (updatedRes.isErr()) {

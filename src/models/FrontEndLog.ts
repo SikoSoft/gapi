@@ -1,19 +1,15 @@
-import * as t from "io-ts";
+import { z } from "zod";
 
-export const frontEndLogSchema = t.intersection([
-  t.type({
-    type: t.union([t.literal("error"), t.literal("unhandledrejection")]),
-    message: t.string,
-    url: t.string,
-    userAgent: t.string,
-    timestamp: t.number,
-  }),
-  t.partial({
-    stack: t.string,
-    source: t.string,
-    lineno: t.number,
-    colno: t.number,
-  }),
-]);
+export const frontEndLogSchema = z.object({
+  type: z.enum(["error", "unhandledrejection"]),
+  message: z.string(),
+  url: z.string(),
+  userAgent: z.string(),
+  timestamp: z.number(),
+  stack: z.string().optional(),
+  source: z.string().optional(),
+  lineno: z.number().optional(),
+  colno: z.number().optional(),
+});
 
-export type FrontEndLogPayload = t.TypeOf<typeof frontEndLogSchema>;
+export type FrontEndLogPayload = z.infer<typeof frontEndLogSchema>;

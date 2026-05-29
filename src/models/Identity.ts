@@ -1,6 +1,6 @@
 import { OneTimeTokenScope, Prisma } from "@prisma/client";
 import { calendar_v3 } from "googleapis";
-import * as t from "io-ts";
+import { z } from "zod";
 
 export { OneTimeTokenScope };
 
@@ -34,14 +34,6 @@ const prismaSession = Prisma.validator<Prisma.SessionFindUniqueArgs>()({
 
 export type PrismaSession = Prisma.SessionGetPayload<typeof prismaSession>;
 
-export interface UserCreateBody {
-  username: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  ott: string;
-}
-
 const prismaOneTimeToken = Prisma.validator<Prisma.OneTimeTokenDefaultArgs>()(
   {}
 );
@@ -50,48 +42,66 @@ export type PrismaOneTimeToken = Prisma.OneTimeTokenGetPayload<
   typeof prismaOneTimeToken
 >;
 
+export const LoginBodySchema = z.object({
+  username: z.string(),
+  password: z.string(),
+});
+export type LoginBody = z.infer<typeof LoginBodySchema>;
+
+export const UserCreateBodySchema = z.object({
+  username: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  password: z.string(),
+  ott: z.string(),
+});
+export type UserCreateBody = z.infer<typeof UserCreateBodySchema>;
+
+export const UserUpdateBodySchema = z.object({
+  userId: z.string(),
+  roles: z.array(z.string()),
+});
+export type UserUpdateBody = z.infer<typeof UserUpdateBodySchema>;
+
+export const UserSelfUpdateBodySchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  password: z.string().optional(),
+  currentPassword: z.string().optional(),
+  username: z.string().optional(),
+});
+export type UserSelfUpdateBody = z.infer<typeof UserSelfUpdateBodySchema>;
+
+export const UserSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  roles: z.array(z.string()),
+}).strict();
+
+export const userSchema = UserSchema;
+export type UserType = z.infer<typeof UserSchema>;
+
+export const MfaVerifySetupBodySchema = z.object({
+  secret: z.string(),
+  code: z.string(),
+});
+export type MfaVerifySetupBody = z.infer<typeof MfaVerifySetupBodySchema>;
+
+export const MfaVerifyBodySchema = z.object({
+  pendingMfaToken: z.string(),
+  code: z.string(),
+});
+export type MfaVerifyBody = z.infer<typeof MfaVerifyBodySchema>;
+
 export interface SuggestAcceptQuery {
   token: string;
 }
 
-export interface UserUpdateBody {
-  userId: string;
-  roles: string[];
-}
-
-export interface UserSelfUpdateBody {
-  firstName?: string;
-  lastName?: string;
-  password?: string;
-  currentPassword?: string;
-  username?: string;
-}
-
-export const userSchema = t.exact(
-  t.type({
-    id: t.string,
-    username: t.string,
-    firstName: t.string,
-    lastName: t.string,
-    roles: t.array(t.string),
-  })
-);
-
-export type UserType = t.TypeOf<typeof userSchema>;
-
 export interface GoogleState {
   userId: string;
   returnUrl: string;
-}
-
-export interface MfaVerifySetupBody {
-  secret: string;
-  code: string;
-}
-
-export interface MfaVerifyBody {
-  pendingMfaToken: string;
-  code: string;
 }
 
 export type GoogleEvent = calendar_v3.Schema$Event;

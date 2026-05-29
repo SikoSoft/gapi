@@ -1,4 +1,4 @@
-import * as t from "io-ts";
+import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { Entity } from "api-spec/models";
 import { DataType } from "api-spec/models/Entity";
@@ -66,144 +66,100 @@ export type PrismaFullPropertyConfig = Prisma.PropertyConfigGetPayload<
   typeof prismaFullPropertyConfig
 >;
 
-export type PropertyConfigCreateBody = Omit<
-  Entity.EntityPropertyConfig,
-  "id" | "userId" | "entityConfigId"
-> & { timeZone: number; performDriftCheck: boolean };
-
-export type PropertyConfigUpdateBody = PropertyConfigCreateBody; //Entity.EntityPropertyConfig;
-
-const ImageDataValue = t.type({
-  src: t.string,
-  alt: t.string,
+const ImageDataValueSchema = z.object({
+  src: z.string(),
+  alt: z.string(),
 });
 
-const CommonPropertyConfig = t.type({
-  performDriftCheck: t.boolean,
-  timeZone: t.number,
-  name: t.string,
-  required: t.number,
-  repeat: t.number,
-  allowed: t.number,
-  prefix: t.string,
-  suffix: t.string,
-  hidden: t.boolean,
-  optionsOnly: t.boolean,
+const CommonPropertyConfigSchema = z.object({
+  performDriftCheck: z.boolean(),
+  timeZone: z.number(),
+  name: z.string(),
+  required: z.number(),
+  repeat: z.number(),
+  allowed: z.number(),
+  prefix: z.string(),
+  suffix: z.string(),
+  hidden: z.boolean(),
+  optionsOnly: z.boolean(),
 });
 
-export const propertyConfigCreateSchema = t.union([
-  t.exact(
-    t.intersection([
-      CommonPropertyConfig,
-      t.type({
-        dataType: t.literal(Entity.DataType.BOOLEAN),
-        defaultValue: t.boolean,
-        options: t.array(t.boolean),
-      }),
-    ])
-  ),
-  t.exact(
-    t.intersection([
-      CommonPropertyConfig,
-      t.type({
-        dataType: t.literal(Entity.DataType.DATE),
-        defaultValue: t.union([t.string, t.null]),
-        options: t.array(t.union([t.string, t.null])),
-      }),
-    ])
-  ),
-  t.exact(
-    t.intersection([
-      CommonPropertyConfig,
-      t.type({
-        dataType: t.literal(Entity.DataType.INT),
-        defaultValue: t.number,
-        options: t.array(t.number),
-      }),
-    ])
-  ),
-  t.exact(
-    t.intersection([
-      CommonPropertyConfig,
-      t.type({
-        dataType: t.literal(Entity.DataType.IMAGE),
-        defaultValue: ImageDataValue,
-        options: t.array(ImageDataValue),
-      }),
-    ])
-  ),
-  t.exact(
-    t.intersection([
-      CommonPropertyConfig,
-      t.type({
-        dataType: t.literal(Entity.DataType.LONG_TEXT),
-        defaultValue: t.string,
-        options: t.array(t.string),
-      }),
-    ])
-  ),
-  t.exact(
-    t.intersection([
-      CommonPropertyConfig,
-      t.type({
-        dataType: t.literal(Entity.DataType.SHORT_TEXT),
-        defaultValue: t.string,
-        options: t.array(t.string),
-      }),
-    ])
-  ),
+export const propertyConfigCreateSchema = z.discriminatedUnion("dataType", [
+  CommonPropertyConfigSchema.extend({
+    dataType: z.literal(DataType.BOOLEAN),
+    defaultValue: z.boolean(),
+    options: z.array(z.boolean()),
+  }),
+  CommonPropertyConfigSchema.extend({
+    dataType: z.literal(DataType.DATE),
+    defaultValue: z.string().nullable(),
+    options: z.array(z.string().nullable()),
+  }),
+  CommonPropertyConfigSchema.extend({
+    dataType: z.literal(DataType.INT),
+    defaultValue: z.number(),
+    options: z.array(z.number()),
+  }),
+  CommonPropertyConfigSchema.extend({
+    dataType: z.literal(DataType.IMAGE),
+    defaultValue: ImageDataValueSchema,
+    options: z.array(ImageDataValueSchema),
+  }),
+  CommonPropertyConfigSchema.extend({
+    dataType: z.literal(DataType.LONG_TEXT),
+    defaultValue: z.string(),
+    options: z.array(z.string()),
+  }),
+  CommonPropertyConfigSchema.extend({
+    dataType: z.literal(DataType.SHORT_TEXT),
+    defaultValue: z.string(),
+    options: z.array(z.string()),
+  }),
 ]);
 
-export type PropertyConfigCreateBodyType = t.TypeOf<
-  typeof propertyConfigCreateSchema
->;
+export type PropertyConfigCreateBody = z.infer<typeof propertyConfigCreateSchema>;
+export type PropertyConfigCreateBodyType = PropertyConfigCreateBody;
 
 export const propertyConfigUpdateSchema = propertyConfigCreateSchema;
+export type PropertyConfigUpdateBody = PropertyConfigCreateBody;
+export type PropertyConfigUpdateBodyType = PropertyConfigCreateBody;
 
-export type PropertyConfigUpdateBodyType = t.TypeOf<
-  typeof propertyConfigUpdateSchema
->;
-
-export const propertyConfigUpdateOrderSchema = t.array(
-  t.type({ id: t.number, order: t.number })
+export const propertyConfigUpdateOrderSchema = z.array(
+  z.object({ id: z.number(), order: z.number() })
 );
+export type PropertyConfigUpdateOrderBody = z.infer<typeof propertyConfigUpdateOrderSchema>;
 
-export type PropertyConfigUpdateOrderBody = t.TypeOf<
-  typeof propertyConfigUpdateOrderSchema
->;
+const CalculationOperandReference = z.object({ propertyConfigId: z.number() });
+const CalculationOperand = z.union([CalculationOperandReference, z.number()]);
+const CalculationOperation = z.enum(["*", "/", "+", "-"]);
 
-const CalculationOperandReference = t.type({ propertyConfigId: t.number });
-const CalculationOperand = t.union([CalculationOperandReference, t.number]);
-const CalculationOperation = t.union([
-  t.literal("*"),
-  t.literal("/"),
-  t.literal("+"),
-  t.literal("-"),
-]);
+export const calculatedPropertyConfigCreateSchema = z.object({
+  name: z.string(),
+  prefix: z.string(),
+  suffix: z.string(),
+  hidden: z.boolean(),
+  calculation: z.object({
+    value1: CalculationOperand,
+    value2: CalculationOperand,
+    operation: CalculationOperation,
+  }),
+});
 
-export const calculatedPropertyConfigCreateSchema = t.exact(
-  t.type({
-    name: t.string,
-    prefix: t.string,
-    suffix: t.string,
-    hidden: t.boolean,
-    calculation: t.type({
-      value1: CalculationOperand,
-      value2: CalculationOperand,
-      operation: CalculationOperation,
-    }),
-  })
-);
+// Explicit interface avoids a Zod v4 inference quirk that marks value1/value2 as optional
+export interface CalculatedPropertyConfigCreateBody {
+  name: string;
+  prefix: string;
+  suffix: string;
+  hidden: boolean;
+  calculation: {
+    value1: { propertyConfigId: number } | number;
+    value2: { propertyConfigId: number } | number;
+    operation: "*" | "/" | "+" | "-";
+  };
+}
 
-export type CalculatedPropertyConfigCreateBody = t.TypeOf<
-  typeof calculatedPropertyConfigCreateSchema
->;
-
-export const calculatedPropertyConfigUpdateSchema =
-  calculatedPropertyConfigCreateSchema;
-
-export type CalculatedPropertyConfigUpdateBody =
-  CalculatedPropertyConfigCreateBody;
+export const calculatedPropertyConfigUpdateSchema = calculatedPropertyConfigCreateSchema;
+export type CalculatedPropertyConfigUpdateBody = CalculatedPropertyConfigCreateBody;
 
 export interface ResolvedCalculatedConfig {
   id: number;

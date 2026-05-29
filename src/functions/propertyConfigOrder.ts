@@ -8,13 +8,8 @@ import { forbiddenReply, introspect, jsonReply } from "..";
 
 import { PropertyConfig } from "../lib/PropertyConfig";
 import {
-  PropertyConfigCreateBody,
-  PropertyConfigUpdateBody,
-  PropertyConfigUpdateOrderBody,
   propertyConfigUpdateOrderSchema,
-  propertyConfigUpdateSchema,
 } from "../models/PropertyConfig";
-import { EntityPropertyConfig } from "api-spec/models/Entity";
 
 export async function propertyConfigOrder(
   request: HttpRequest,
@@ -27,17 +22,17 @@ export async function propertyConfigOrder(
   const userId = introspection.user.id;
   const entityConfigId = parseInt(request.params.entityConfigId);
 
-  const orderBody = (await request.json()) as PropertyConfigUpdateOrderBody;
+  const orderBody = (await request.json()) as unknown;
 
-  const validation = propertyConfigUpdateOrderSchema.decode(orderBody);
-  if (validation._tag === "Left") {
+  const result = propertyConfigUpdateOrderSchema.safeParse(orderBody);
+  if (!result.success) {
     return {
       status: 400,
-      body: JSON.stringify(validation.left),
+      body: JSON.stringify(result.error.issues),
     };
   }
 
-  for (const item of orderBody) {
+  for (const item of result.data) {
     const updatedRes = await PropertyConfig.updateOrder(
       entityConfigId,
       item.id,

@@ -919,7 +919,6 @@ export class Entity {
   }
 
   static toSpec(entity: PrismaEntity): EntitySpec.Entity {
-
     const properties: EntitySpec.EntityProperty[] = [
       ...Entity.booleanPropertiesToSpec(entity),
       ...Entity.datePropertiesToSpec(entity),
@@ -1280,7 +1279,9 @@ export class Entity {
       (p) => !calculatedIds.has(p.propertyConfigId)
     );
 
-    const dataTypesRes = await Entity.getDataTypesForProperties(regularProperties);
+    const dataTypesRes = await Entity.getDataTypesForProperties(
+      regularProperties
+    );
     if (dataTypesRes.isErr()) {
       Logger.error(
         "Error getting data types for properties:",
@@ -1645,9 +1646,7 @@ export class Entity {
       where: { id: { in: propertyConfigIds } },
       select: { id: true, calculation: true },
     });
-    return new Set(
-      rows.filter((r) => r.calculation !== null).map((r) => r.id)
-    );
+    return new Set(rows.filter((r) => r.calculation !== null).map((r) => r.id));
   }
 
   static async syncAllCalculatedEntityProperties(
@@ -2091,7 +2090,7 @@ export class Entity {
   ): Promise<Result<boolean, Error>> {
     try {
       const entity = await prisma.entity.findUnique({
-        where: { id: entityId, suggestion: true },
+        where: { id: entityId, suggested: true },
         select: { id: true },
       });
       return ok(entity !== null);

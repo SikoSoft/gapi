@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Workspace" ADD COLUMN "color" VARCHAR(32) NOT NULL DEFAULT '';
+ALTER TABLE "Workspace" ALTER COLUMN "color" DROP DEFAULT;

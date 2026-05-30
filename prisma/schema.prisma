@@ -698,6 +698,7 @@ model Setting {
 model Workspace {
   id                   String                @id @db.Uuid
   name                 String                @db.VarChar(128)
+  color                String                @db.VarChar(32)
   userId               String                @db.Uuid
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt

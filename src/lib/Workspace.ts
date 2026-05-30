@@ -8,6 +8,7 @@ export class Workspace {
   static async create(
     userId: string,
     name: string,
+    color: string,
     listConfigs: string[]
   ): Promise<Result<WorkspaceSpec.Workspace, Error>> {
     try {
@@ -16,6 +17,7 @@ export class Workspace {
         data: {
           id,
           name,
+          color,
           userId,
           workspaceListConfigs: {
             create: listConfigs.map(listConfigId => ({ listConfigId })),
@@ -36,6 +38,7 @@ export class Workspace {
     userId: string,
     id: string,
     name: string,
+    color: string,
     listConfigs: string[]
   ): Promise<Result<WorkspaceSpec.Workspace, Error>> {
     try {
@@ -45,6 +48,7 @@ export class Workspace {
         where: { id, userId },
         data: {
           name,
+          color,
           workspaceListConfigs: {
             create: listConfigs.map(listConfigId => ({ listConfigId })),
           },
@@ -108,6 +112,7 @@ export class Workspace {
     return {
       id: data.id,
       name: data.name,
+      color: data.color,
       userId: data.userId,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,

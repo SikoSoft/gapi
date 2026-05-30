@@ -5,7 +5,7 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import { forbiddenReply, introspect, jsonReply, prisma } from "..";
-import { Entity } from "../lib/Entity";
+import { EntitySuggestion } from "../lib/EntitySuggestion";
 
 export async function propertySuggestion(
   request: HttpRequest,
@@ -17,7 +17,7 @@ export async function propertySuggestion(
     return forbiddenReply();
   }
 
-  const suggestionsRes = await Entity.getPropertySuggestions(
+  const suggestionsRes = await EntitySuggestion.getPropertySuggestions(
     introspection.user.id,
     parseInt(request.params.propertyConfigId, 10),
     request.params.query

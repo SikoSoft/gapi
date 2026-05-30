@@ -1,5 +1,5 @@
 import { app, InvocationContext } from "@azure/functions";
-import { Entity } from "../lib/Entity";
+import { EntitySuggestion } from "../lib/EntitySuggestion";
 import { IdentityManager } from "../lib/IdentityManager";
 import { Notification } from "../lib/Notification";
 import { OneTimeTokenScope } from "../models/Identity";
@@ -28,7 +28,7 @@ async function notificationQueueHandler(
     receivedAt: new Date().toISOString(),
   });
 
-  const entityExistsRes = await Entity.suggestionExists(
+  const entityExistsRes = await EntitySuggestion.suggestionExists(
     queueMessage.suggestionEntityId
   );
 
@@ -50,7 +50,7 @@ async function notificationQueueHandler(
     return;
   }
 
-  const alreadyLoggedRes = await Entity.hasMatchingEntityLoggedInPastHour(
+  const alreadyLoggedRes = await EntitySuggestion.hasMatchingEntityLoggedInPastHour(
     queueMessage.userId,
     queueMessage.entityConfigId,
     queueMessage.textValues

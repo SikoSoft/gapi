@@ -5,7 +5,7 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import { jsonReply } from "..";
-import { Entity } from "../lib/Entity";
+import { EntitySuggestion } from "../lib/EntitySuggestion";
 import { IdentityManager } from "../lib/IdentityManager";
 import { OneTimeTokenScope, SuggestAcceptQuery } from "../models/Identity";
 
@@ -31,7 +31,7 @@ export async function suggestAccept(
     return jsonReply({ success: false }, 403);
   }
 
-  const acceptRes = await Entity.acceptSuggestion(ottRes.value.entityId);
+  const acceptRes = await EntitySuggestion.acceptSuggestion(ottRes.value.entityId);
   if (acceptRes.isErr()) {
     context.error(acceptRes.error);
     return { status: 500 };

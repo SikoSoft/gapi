@@ -7,6 +7,8 @@ import {
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { EntityBodyPayload } from "../models/Entity";
 import { Entity } from "../lib/Entity";
+import { EntityProperty } from "../lib/EntityProperty";
+import { EntitySuggestion } from "../lib/EntitySuggestion";
 import { Assist } from "../lib/Assist";
 import { NotificationQueue } from "../lib/NotificationQueue";
 
@@ -48,7 +50,7 @@ export async function suggestEntity(
     }
   }
 
-  const deleteRes = await Entity.deleteStaleSuggestions();
+  const deleteRes = await EntitySuggestion.deleteStaleSuggestions();
   if (deleteRes.isErr()) {
     context.error(deleteRes.error);
     return { status: 500 };
@@ -81,7 +83,7 @@ export async function suggestEntity(
         `[suggestEntity] entity ${entity.id} has userId=${payload.userId} — enqueuing push notification`
       );
 
-      const textValuesRes = await Entity.getTextValues(entity.id);
+      const textValuesRes = await EntityProperty.getTextValues(entity.id);
 
       if (textValuesRes.isErr()) {
         context.error(textValuesRes.error);

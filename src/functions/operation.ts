@@ -8,6 +8,7 @@ import { forbiddenReply, introspect, jsonReply, prisma } from "..";
 import { BulkOperation, OperationType } from "api-spec/models/Operation";
 import { Tagging } from "../lib/Tagging";
 import { Entity } from "../lib/Entity";
+import { EntityProperty } from "../lib/EntityProperty";
 import { ValidationError } from "../errors/ValidationError";
 
 export type RequestBody = BulkOperation;
@@ -103,7 +104,7 @@ export async function operation(
       break;
     case OperationType.ADD_PROPERTIES:
       for (const entityId of body.entities) {
-        const addPropertiesRes = await Entity.addProperties(
+        const addPropertiesRes = await EntityProperty.addProperties(
           entityId,
           body.operation.properties,
           0
@@ -119,7 +120,7 @@ export async function operation(
       break;
     case OperationType.REMOVE_PROPERTIES:
       for (const entityId of body.entities) {
-        const removePropertiesRes = await Entity.removeProperties(
+        const removePropertiesRes = await EntityProperty.removeProperties(
           entityId,
           body.operation.properties
         );
@@ -131,7 +132,7 @@ export async function operation(
       break;
     case OperationType.REPLACE_PROPERTIES:
       for (const entityId of body.entities) {
-        const replacePropertiesRes = await Entity.replaceProperties(
+        const replacePropertiesRes = await EntityProperty.replaceProperties(
           entityId,
           body.operation.properties,
           0

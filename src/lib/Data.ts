@@ -12,6 +12,7 @@ import {
 } from "../models/Data";
 import { Tagging } from "./Tagging";
 import { Entity } from "./Entity";
+import { EntityProperty } from "./EntityProperty";
 import { ListConfig } from "./ListConfig";
 import { PropertyConfig } from "./PropertyConfig";
 import { Medal } from "./Medal";
@@ -169,7 +170,7 @@ export class Data {
         });
 
         Tagging.syncEntityTags(prismaEntity.id, entity.tags);
-        await Entity.syncEntityProperties(
+        await EntityProperty.syncEntityProperties(
           prismaEntity.id,
           entity.properties.map((p) => ({
             id: 0,

@@ -1,6 +1,10 @@
 import { z } from "zod";
-import { ChartRequest } from "api-spec/models/Statistic";
-import { SegmentationType, SegmentationTimeUnit } from "api-spec/models/Statistic";
+import {
+  ChartRequest,
+  SegmentationType,
+  SegmentationTimeUnit,
+} from "api-spec/models/Statistic";
+import { AnalysisClassificationType } from "api-spec/models/Fact";
 
 export interface ChartSegment {
   key: string;
@@ -27,3 +31,36 @@ export type ChartRequestBody = Omit<ChartRequest, "dataWindow"> & {
     end: string;
   };
 };
+
+export interface ChartEntityProperty {
+  propertyConfigId: number;
+  value: string | number | boolean | null;
+}
+
+export interface ChartEntity {
+  id: number;
+  createdAt: string;
+  tags: string[];
+  properties: ChartEntityProperty[];
+}
+
+export interface AssistSegment {
+  key: string;
+  start: string;
+  end: string;
+}
+
+export interface AssistAnalyzeChartRequest {
+  analysisType: AnalysisClassificationType;
+  entities: ChartEntity[];
+  segments: AssistSegment[];
+}
+
+export interface AssistSegmentResult {
+  key: string;
+  value: number | null;
+}
+
+export interface AssistAnalyzeChartResponse {
+  results: AssistSegmentResult[];
+}

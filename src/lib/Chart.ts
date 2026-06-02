@@ -1,39 +1,247 @@
 import { Result, err, ok } from "neverthrow";
 import {
   ChartRequest,
-  SegmentedData,
+  DataWindow,
   SegmentedDataPoint,
   SegmentationType,
   SegmentationTimeUnit,
 } from "api-spec/models/Statistic";
-import { FactContext, FactOperation } from "api-spec/models/Fact";
+import {
+  AnalysisClassificationFactContext,
+  FactContext,
+  FactOperation,
+} from "api-spec/models/Fact";
 import { ListFilterTimeType } from "api-spec/models/List";
-import { ChartSegment } from "../models/Chart";
+import { prisma } from "..";
+import {
+  AssistSegment,
+  ChartEntity,
+  ChartEntityProperty,
+  ChartSegment,
+} from "../models/Chart";
+import { Assist } from "./Assist";
+import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
 import { Fact } from "./Fact";
+import { Logger } from "./Logger";
+
+type WorkingValue = number | string | null;
+type WorkingResult = Map<string, WorkingValue[]>;
 
 export class Chart {
   static async getChartData(
     request: ChartRequest,
     userId: string
-  ): Promise<Result<SegmentedData, Error>> {
+  ): Promise<Result<SegmentedDataPoint[], Error>> {
     try {
       const segments = Chart.generateSegments(request);
-      const result: SegmentedData = {};
 
+      const working: WorkingResult = new Map();
       for (const segment of segments) {
-        const segmentValues: SegmentedDataPoint[] = [];
-        for (const dataPoint of request.dataPoints) {
-          const scopedContext = Chart.applySegmentToContext(dataPoint, segment);
-          const value = await Fact.resolve(scopedContext, userId);
-          segmentValues.push({ value: value ?? null });
+        working.set(segment.key, request.dataPoints.map(() => null));
+      }
+
+      const aiDataPointIndices: number[] = [];
+
+      for (let i = 0; i < request.dataPoints.length; i++) {
+        const dataPoint = request.dataPoints[i];
+
+        if (dataPoint.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
+          aiDataPointIndices.push(i);
+          continue;
         }
-        result[segment.key] = segmentValues;
+
+        for (const segment of segments) {
+          const scopedContext = Chart.applySegmentToContext(dataPoint, segment);
+          const raw = await Fact.resolve(scopedContext, userId);
+          working.get(segment.key)![i] = Chart.toWorkingValue(raw);
+        }
+      }
+
+      for (const i of aiDataPointIndices) {
+        const dataPoint =
+          request.dataPoints[i] as AnalysisClassificationFactContext;
+        await Chart.resolveAnalysisClassificationDataPoint(
+          dataPoint,
+          i,
+          segments,
+          request.dataWindow,
+          userId,
+          working
+        );
+      }
+
+      const result: SegmentedDataPoint[] = [];
+      for (const segment of segments) {
+        for (const value of working.get(segment.key)!) {
+          result.push({ segment: segment.key, value: { value } });
+        }
       }
 
       return ok(result);
     } catch (error) {
       return err(new Error("Failed to compute chart data", { cause: error }));
     }
+  }
+
+  private static toWorkingValue(raw: number | string | boolean | undefined | null): WorkingValue {
+    if (raw === undefined || raw === null) {
+      return null;
+    }
+    if (typeof raw === "boolean") {
+      return raw ? 1 : 0;
+    }
+    return raw;
+  }
+
+  private static async resolveAnalysisClassificationDataPoint(
+    dataPoint: AnalysisClassificationFactContext,
+    dataPointIndex: number,
+    segments: ChartSegment[],
+    dataWindow: DataWindow,
+    userId: string,
+    working: WorkingResult
+  ): Promise<void> {
+    const uncachedSegments: ChartSegment[] = [];
+
+    for (const segment of segments) {
+      const scopedContext = Chart.applySegmentToContext(dataPoint, segment);
+      const cached = await Fact.fromCache(scopedContext, userId);
+      if (cached !== undefined) {
+        working.get(segment.key)![dataPointIndex] = cached as number;
+      } else {
+        uncachedSegments.push(segment);
+      }
+    }
+
+    if (uncachedSegments.length === 0) {
+      return;
+    }
+
+    const entities = await Chart.prefetchEntities(dataPoint, dataWindow, userId);
+
+    const assistSegments: AssistSegment[] = [];
+    for (const segment of uncachedSegments) {
+      const hasEntities = entities.some(e => {
+        const t = new Date(e.createdAt).getTime();
+        return t >= segment.start.getTime() && t <= segment.end.getTime();
+      });
+      if (hasEntities) {
+        assistSegments.push({
+          key: segment.key,
+          start: segment.start.toISOString(),
+          end: segment.end.toISOString(),
+        });
+      }
+    }
+
+    if (assistSegments.length === 0) {
+      return;
+    }
+
+    const assistResult = await Assist.analyzeChart({
+      analysisType: dataPoint.analysisType,
+      entities,
+      segments: assistSegments,
+    });
+
+    if (assistResult.isErr()) {
+      Logger.error("[Chart] Assist analyzeChart failed", {
+        error: assistResult.error,
+      });
+      return;
+    }
+
+    for (const { key, value } of assistResult.value.results) {
+      if (value === null) {
+        continue;
+      }
+      const segment = uncachedSegments.find(s => s.key === key);
+      if (!segment) {
+        continue;
+      }
+      await Fact.writeCache(
+        Chart.applySegmentToContext(dataPoint, segment),
+        userId,
+        value
+      );
+      working.get(key)![dataPointIndex] = value;
+    }
+  }
+
+  private static async prefetchEntities(
+    dataPoint: AnalysisClassificationFactContext,
+    dataWindow: DataWindow,
+    userId: string
+  ): Promise<ChartEntity[]> {
+    const builder = new EntityListQueryBuilder();
+    builder.setUserId(userId);
+    builder.setFilter({
+      ...dataPoint.filter,
+      time: {
+        type: ListFilterTimeType.RANGE,
+        start: dataWindow.start.toISOString(),
+        end: dataWindow.end.toISOString(),
+      },
+    });
+    const entityIds = await builder.runIdsQuery();
+
+    if (entityIds.length === 0) {
+      return [];
+    }
+
+    const entities = await prisma.entity.findMany({
+      where: { id: { in: entityIds } },
+      include: {
+        tags: { select: { label: true } },
+        booleanProperties: {
+          include: { propertyValue: { select: { value: true } } },
+        },
+        dateProperties: {
+          include: { propertyValue: { select: { value: true } } },
+        },
+        intProperties: {
+          include: { propertyValue: { select: { value: true } } },
+        },
+        longTextProperties: {
+          include: { propertyValue: { select: { value: true } } },
+        },
+        shortTextProperties: {
+          include: { propertyValue: { select: { value: true } } },
+        },
+      },
+    });
+
+    return entities.map(entity => {
+      const properties: ChartEntityProperty[] = [
+        ...entity.booleanProperties.map(p => ({
+          propertyConfigId: p.propertyConfigId,
+          value: p.propertyValue.value,
+        })),
+        ...entity.dateProperties.map(p => ({
+          propertyConfigId: p.propertyConfigId,
+          value: p.propertyValue.value.toISOString(),
+        })),
+        ...entity.intProperties.map(p => ({
+          propertyConfigId: p.propertyConfigId,
+          value: p.propertyValue.value,
+        })),
+        ...entity.longTextProperties.map(p => ({
+          propertyConfigId: p.propertyConfigId,
+          value: p.propertyValue.value,
+        })),
+        ...entity.shortTextProperties.map(p => ({
+          propertyConfigId: p.propertyConfigId,
+          value: p.propertyValue.value,
+        })),
+      ];
+
+      return {
+        id: entity.id,
+        createdAt: entity.createdAt.toISOString(),
+        tags: entity.tags.map(t => t.label),
+        properties,
+      };
+    });
   }
 
   private static generateSegments(request: ChartRequest): ChartSegment[] {

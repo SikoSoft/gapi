@@ -38,7 +38,7 @@ export async function chart(
         return { status: 500 };
       }
 
-      return jsonReply({ segments: res.value });
+      return jsonReply({ segmentedData: res.value });
     }
 
     default:

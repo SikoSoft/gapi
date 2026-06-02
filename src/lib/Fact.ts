@@ -77,6 +77,21 @@ export class Fact {
     }
   }
 
+  static async fromCache(
+    context: FactContext,
+    userId: string
+  ): Promise<FactValue | undefined> {
+    return Fact.getCached(context, userId);
+  }
+
+  static async writeCache(
+    context: FactContext,
+    userId: string,
+    value: FactValue
+  ): Promise<void> {
+    return Fact.setCached(context, userId, value);
+  }
+
   private static async getCached(
     context: FactContext,
     userId: string

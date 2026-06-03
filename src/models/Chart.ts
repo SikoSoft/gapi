@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   ChartRequest,
+  DataWindowType,
   SegmentationType,
   SegmentationTimeUnit,
 } from "api-spec/models/Statistic";
@@ -13,10 +14,23 @@ export interface ChartSegment {
 }
 
 export const ChartRequestBodySchema = z.object({
-  dataWindow: z.object({
-    start: z.string(),
-    end: z.string(),
-  }),
+  dataWindow: z.union([
+    z.object({
+      type: z.literal(DataWindowType.CUSTOM),
+      start: z.string(),
+      end: z.string(),
+    }),
+    z.object({
+      type: z.enum([
+        DataWindowType.YEAR_TO_DATE,
+        DataWindowType.MONTH_TO_DATE,
+        DataWindowType.WEEK_TO_DATE,
+        DataWindowType.LAST_365_DAYS,
+        DataWindowType.LAST_30_DAYS,
+        DataWindowType.LAST_7_DAYS,
+      ]),
+    }),
+  ]),
   segmentation: z.object({
     type: z.nativeEnum(SegmentationType),
     unit: z.nativeEnum(SegmentationTimeUnit),
@@ -24,12 +38,12 @@ export const ChartRequestBodySchema = z.object({
   dataPoints: z.array(z.record(z.string(), z.unknown())),
 });
 
-// Preserves api-spec type compatibility for the handler
+export type ChartRequestBodyDataWindow =
+  | { type: DataWindowType.CUSTOM; start: string; end: string }
+  | { type: Exclude<DataWindowType, DataWindowType.CUSTOM> };
+
 export type ChartRequestBody = Omit<ChartRequest, "dataWindow"> & {
-  dataWindow: {
-    start: string;
-    end: string;
-  };
+  dataWindow: ChartRequestBodyDataWindow;
 };
 
 export interface ChartEntityProperty {

@@ -7,7 +7,7 @@ import {
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { Chart } from "../lib/Chart";
 import { ChartRequestBody } from "../models/Chart";
-import { ChartRequest } from "api-spec/models/Statistic";
+import { ChartRequest, DataWindow, DataWindowType } from "api-spec/models/Statistic";
 
 export async function chart(
   request: HttpRequest,
@@ -24,12 +24,20 @@ export async function chart(
     case "POST": {
       const body = (await request.json()) as ChartRequestBody;
 
-      const chartRequest: ChartRequest = {
-        ...body,
-        dataWindow: {
+      let dataWindow: DataWindow;
+      if (body.dataWindow.type === DataWindowType.CUSTOM) {
+        dataWindow = {
+          type: DataWindowType.CUSTOM,
           start: new Date(body.dataWindow.start),
           end: new Date(body.dataWindow.end),
-        },
+        };
+      } else {
+        dataWindow = { type: body.dataWindow.type };
+      }
+
+      const chartRequest: ChartRequest = {
+        ...body,
+        dataWindow,
       };
 
       const res = await Chart.getChartData(chartRequest, userId);

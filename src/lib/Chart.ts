@@ -2,6 +2,7 @@ import { Result, err, ok } from "neverthrow";
 import {
   ChartRequest,
   DataWindow,
+  DataWindowType,
   SegmentedDataPoint,
   SegmentationType,
   SegmentationTimeUnit,
@@ -33,7 +34,8 @@ export class Chart {
     userId: string
   ): Promise<Result<SegmentedDataPoint[], Error>> {
     try {
-      const segments = Chart.generateSegments(request);
+      const resolvedWindow = Chart.resolveDataWindow(request.dataWindow);
+      const segments = Chart.generateSegments(request, resolvedWindow);
 
       const working: WorkingResult = new Map();
       for (const segment of segments) {
@@ -64,7 +66,7 @@ export class Chart {
           dataPoint,
           i,
           segments,
-          request.dataWindow,
+          resolvedWindow,
           userId,
           working
         );
@@ -97,7 +99,7 @@ export class Chart {
     dataPoint: AnalysisClassificationFactContext,
     dataPointIndex: number,
     segments: ChartSegment[],
-    dataWindow: DataWindow,
+    resolvedWindow: { start: Date; end: Date },
     userId: string,
     working: WorkingResult
   ): Promise<void> {
@@ -117,7 +119,7 @@ export class Chart {
       return;
     }
 
-    const entities = await Chart.prefetchEntities(dataPoint, dataWindow, userId);
+    const entities = await Chart.prefetchEntities(dataPoint, resolvedWindow, userId);
 
     const assistSegments: AssistSegment[] = [];
     for (const segment of uncachedSegments) {
@@ -170,7 +172,7 @@ export class Chart {
 
   private static async prefetchEntities(
     dataPoint: AnalysisClassificationFactContext,
-    dataWindow: DataWindow,
+    resolvedWindow: { start: Date; end: Date },
     userId: string
   ): Promise<ChartEntity[]> {
     const builder = new EntityListQueryBuilder();
@@ -179,8 +181,8 @@ export class Chart {
       ...dataPoint.filter,
       time: {
         type: ListFilterTimeType.RANGE,
-        start: dataWindow.start.toISOString(),
-        end: dataWindow.end.toISOString(),
+        start: resolvedWindow.start.toISOString(),
+        end: resolvedWindow.end.toISOString(),
       },
     });
     const entityIds = await builder.runIdsQuery();
@@ -244,15 +246,52 @@ export class Chart {
     });
   }
 
-  private static generateSegments(request: ChartRequest): ChartSegment[] {
+  private static generateSegments(
+    request: ChartRequest,
+    resolvedWindow: { start: Date; end: Date }
+  ): ChartSegment[] {
     if (request.segmentation.type === SegmentationType.TIME) {
       return Chart.generateTimeSegments(
-        request.dataWindow.start,
-        request.dataWindow.end,
+        resolvedWindow.start,
+        resolvedWindow.end,
         request.segmentation.unit
       );
     }
     return [];
+  }
+
+  private static resolveDataWindow(dataWindow: DataWindow): { start: Date; end: Date } {
+    if (dataWindow.type === DataWindowType.CUSTOM) {
+      return { start: dataWindow.start, end: dataWindow.end };
+    }
+
+    const now = new Date();
+
+    switch (dataWindow.type) {
+      case DataWindowType.YEAR_TO_DATE:
+        return {
+          start: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)),
+          end: now,
+        };
+      case DataWindowType.MONTH_TO_DATE:
+        return {
+          start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
+          end: now,
+        };
+      case DataWindowType.WEEK_TO_DATE: {
+        const daysBack = (now.getUTCDay() + 6) % 7;
+        return {
+          start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysBack)),
+          end: now,
+        };
+      }
+      case DataWindowType.LAST_365_DAYS:
+        return { start: new Date(now.getTime() - 365 * 86400000), end: now };
+      case DataWindowType.LAST_30_DAYS:
+        return { start: new Date(now.getTime() - 30 * 86400000), end: now };
+      case DataWindowType.LAST_7_DAYS:
+        return { start: new Date(now.getTime() - 7 * 86400000), end: now };
+    }
   }
 
   private static generateTimeSegments(

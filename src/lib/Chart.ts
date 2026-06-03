@@ -19,6 +19,8 @@ import {
   ChartEntity,
   ChartEntityProperty,
   ChartSegment,
+  PrismaChart,
+  SavedChart,
 } from "../models/Chart";
 import { Assist } from "./Assist";
 import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
@@ -374,6 +376,56 @@ export class Chart {
     d.setUTCDate(d.getUTCDate() + 4 - dayOfWeek);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  }
+
+  static async saveChart(
+    userId: string,
+    name: string,
+    config: object
+  ): Promise<Result<SavedChart, Error>> {
+    try {
+      const chart = await prisma.chart.create({
+        data: {
+          name,
+          config,
+          userId,
+        },
+      });
+      return ok(Chart.mapDataToSpec(chart));
+    } catch (error) {
+      return err(new Error("Failed to save chart", { cause: error }));
+    }
+  }
+
+  static async updateChart(
+    userId: string,
+    id: number,
+    name: string,
+    config: object
+  ): Promise<Result<SavedChart, Error>> {
+    try {
+      const chart = await prisma.chart.update({
+        where: { id, userId },
+        data: {
+          name,
+          config,
+        },
+      });
+      return ok(Chart.mapDataToSpec(chart));
+    } catch (error) {
+      return err(new Error("Failed to update chart", { cause: error }));
+    }
+  }
+
+  static mapDataToSpec(data: PrismaChart): SavedChart {
+    return {
+      id: data.id,
+      name: data.name,
+      config: data.config,
+      userId: data.userId,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
   }
 
   private static applySegmentToContext(

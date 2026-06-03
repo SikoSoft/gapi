@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import {
   ChartRequest,
   DataWindowType,
@@ -44,7 +45,26 @@ export type ChartRequestBodyDataWindow =
 
 export type ChartRequestBody = Omit<ChartRequest, "dataWindow"> & {
   dataWindow: ChartRequestBodyDataWindow;
+  save?: boolean;
+  name?: string;
 };
+
+export interface SavedChart {
+  id: number;
+  name: string;
+  config: Prisma.JsonValue;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const prismaChartValidator = Prisma.validator<Prisma.ChartDefaultArgs>()({});
+export type PrismaChart = Prisma.ChartGetPayload<typeof prismaChartValidator>;
+
+export interface ChartUpdateBody {
+  name: string;
+  config: object;
+}
 
 export interface ChartEntityProperty {
   propertyConfigId: number;

@@ -6,8 +6,20 @@ import {
 } from "@azure/functions";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { Chart } from "../lib/Chart";
-import { ChartRequestBody } from "../models/Chart";
+import { ChartRequestBody, ChartUpdateBody } from "../models/Chart";
 import { ChartRequest, DataWindow, DataWindowType } from "api-spec/models/Statistic";
+import { HttpMethod } from "../models/Endpoint";
+
+function buildDataWindow(body: ChartRequestBody): DataWindow {
+  if (body.dataWindow.type === DataWindowType.CUSTOM) {
+    return {
+      type: DataWindowType.CUSTOM,
+      start: new Date(body.dataWindow.start),
+      end: new Date(body.dataWindow.end),
+    };
+  }
+  return { type: body.dataWindow.type };
+}
 
 export async function chart(
   request: HttpRequest,
@@ -21,23 +33,12 @@ export async function chart(
   const userId = introspection.user.id;
 
   switch (request.method) {
-    case "POST": {
+    case HttpMethod.POST: {
       const body = (await request.json()) as ChartRequestBody;
-
-      let dataWindow: DataWindow;
-      if (body.dataWindow.type === DataWindowType.CUSTOM) {
-        dataWindow = {
-          type: DataWindowType.CUSTOM,
-          start: new Date(body.dataWindow.start),
-          end: new Date(body.dataWindow.end),
-        };
-      } else {
-        dataWindow = { type: body.dataWindow.type };
-      }
 
       const chartRequest: ChartRequest = {
         ...body,
-        dataWindow,
+        dataWindow: buildDataWindow(body),
       };
 
       const res = await Chart.getChartData(chartRequest, userId);
@@ -46,7 +47,38 @@ export async function chart(
         return { status: 500 };
       }
 
+      if (body.save && body.name) {
+        const { save: _save, name, dataWindow: _dw, ...config } = body;
+        const saveRes = await Chart.saveChart(userId, name, { ...config, dataWindow: body.dataWindow });
+        if (saveRes.isErr()) {
+          context.error(saveRes.error);
+          return { status: 500 };
+        }
+        return jsonReply({ segmentedData: res.value, chart: saveRes.value });
+      }
+
       return jsonReply({ segmentedData: res.value });
+    }
+
+    case HttpMethod.PUT: {
+      const idParam = request.params.id;
+      if (!idParam) {
+        return { status: 400 };
+      }
+      const id = parseInt(idParam, 10);
+      if (isNaN(id)) {
+        return { status: 400 };
+      }
+
+      const body = (await request.json()) as ChartUpdateBody;
+
+      const updateRes = await Chart.updateChart(userId, id, body.name, body.config);
+      if (updateRes.isErr()) {
+        context.error(updateRes.error);
+        return { status: 500 };
+      }
+
+      return jsonReply({ chart: updateRes.value });
     }
 
     default:
@@ -55,8 +87,8 @@ export async function chart(
 }
 
 app.http("chart", {
-  methods: ["POST"],
+  methods: ["POST", "PUT"],
   authLevel: "anonymous",
   handler: chart,
-  route: "chart",
+  route: "chart/{id?}",
 });

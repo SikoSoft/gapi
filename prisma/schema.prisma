@@ -897,3 +897,14 @@ model FactCache {
   @@unique([userId, contextKey])
   @@index([expiresAt])
 }
+
+model Chart {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  config    Json
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}

@@ -11,14 +11,14 @@ import { ChartRequest, DataWindow, DataWindowType } from "api-spec/models/Statis
 import { HttpMethod } from "../models/Endpoint";
 
 function buildDataWindow(body: ChartRequestBody): DataWindow {
-  if (body.dataWindow.type === DataWindowType.CUSTOM) {
+  if (body.config.dataWindow.type === DataWindowType.CUSTOM) {
     return {
       type: DataWindowType.CUSTOM,
-      start: new Date(body.dataWindow.start),
-      end: new Date(body.dataWindow.end),
+      start: new Date(body.config.dataWindow.start),
+      end: new Date(body.config.dataWindow.end),
     };
   }
-  return { type: body.dataWindow.type };
+  return { type: body.config.dataWindow.type };
 }
 
 export async function chart(
@@ -37,8 +37,12 @@ export async function chart(
       const body = (await request.json()) as ChartRequestBody;
 
       const chartRequest: ChartRequest = {
-        ...body,
-        dataWindow: buildDataWindow(body),
+        config: {
+          ...body.config,
+          dataWindow: buildDataWindow(body),
+        },
+        name: body.name,
+        save: body.save,
       };
 
       const res = await Chart.getChartData(chartRequest, userId);
@@ -48,8 +52,7 @@ export async function chart(
       }
 
       if (body.save && body.name) {
-        const { save: _save, name, dataWindow: _dw, ...config } = body;
-        const saveRes = await Chart.saveChart(userId, name, { ...config, dataWindow: body.dataWindow });
+        const saveRes = await Chart.saveChart(userId, body.name, body.config);
         if (saveRes.isErr()) {
           context.error(saveRes.error);
           return { status: 500 };

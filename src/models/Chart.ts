@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import {
-  ChartRequest,
+  ChartConfig,
+  ChartVersion,
   DataWindowType,
   SegmentationType,
   SegmentationTimeUnit,
@@ -14,40 +15,49 @@ export interface ChartSegment {
   end: Date;
 }
 
-export const ChartRequestBodySchema = z.object({
-  dataWindow: z.union([
-    z.object({
-      type: z.literal(DataWindowType.CUSTOM),
-      start: z.string(),
-      end: z.string(),
-    }),
-    z.object({
-      type: z.enum([
-        DataWindowType.YEAR_TO_DATE,
-        DataWindowType.MONTH_TO_DATE,
-        DataWindowType.WEEK_TO_DATE,
-        DataWindowType.LAST_365_DAYS,
-        DataWindowType.LAST_30_DAYS,
-        DataWindowType.LAST_7_DAYS,
-      ]),
-    }),
-  ]),
-  segmentation: z.object({
-    type: z.nativeEnum(SegmentationType),
-    unit: z.nativeEnum(SegmentationTimeUnit),
-  }),
-  dataPoints: z.array(z.record(z.string(), z.unknown())),
-});
-
 export type ChartRequestBodyDataWindow =
   | { type: DataWindowType.CUSTOM; start: string; end: string }
   | { type: Exclude<DataWindowType, DataWindowType.CUSTOM> };
 
-export type ChartRequestBody = Omit<ChartRequest, "dataWindow"> & {
+export type ChartRequestBodyConfig = Omit<ChartConfig, "dataWindow"> & {
   dataWindow: ChartRequestBodyDataWindow;
-  save?: boolean;
-  name?: string;
 };
+
+export type ChartRequestBody = {
+  config: ChartRequestBodyConfig;
+  name?: string;
+  save?: boolean;
+};
+
+export const ChartRequestBodySchema = z.object({
+  config: z.object({
+    version: z.nativeEnum(ChartVersion),
+    dataWindow: z.union([
+      z.object({
+        type: z.literal(DataWindowType.CUSTOM),
+        start: z.string(),
+        end: z.string(),
+      }),
+      z.object({
+        type: z.enum([
+          DataWindowType.YEAR_TO_DATE,
+          DataWindowType.MONTH_TO_DATE,
+          DataWindowType.WEEK_TO_DATE,
+          DataWindowType.LAST_365_DAYS,
+          DataWindowType.LAST_30_DAYS,
+          DataWindowType.LAST_7_DAYS,
+        ]),
+      }),
+    ]),
+    segmentation: z.object({
+      type: z.nativeEnum(SegmentationType),
+      unit: z.nativeEnum(SegmentationTimeUnit),
+    }),
+    dataPoints: z.array(z.record(z.string(), z.unknown())),
+  }),
+  name: z.string().optional(),
+  save: z.boolean().optional(),
+});
 
 export interface SavedChart {
   id: number;

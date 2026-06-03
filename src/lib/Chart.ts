@@ -36,18 +36,18 @@ export class Chart {
     userId: string
   ): Promise<Result<SegmentedDataPoint[], Error>> {
     try {
-      const resolvedWindow = Chart.resolveDataWindow(request.dataWindow);
+      const resolvedWindow = Chart.resolveDataWindow(request.config.dataWindow);
       const segments = Chart.generateSegments(request, resolvedWindow);
 
       const working: WorkingResult = new Map();
       for (const segment of segments) {
-        working.set(segment.key, request.dataPoints.map(() => null));
+        working.set(segment.key, request.config.dataPoints.map(() => null));
       }
 
       const aiDataPointIndices: number[] = [];
 
-      for (let i = 0; i < request.dataPoints.length; i++) {
-        const dataPoint = request.dataPoints[i];
+      for (let i = 0; i < request.config.dataPoints.length; i++) {
+        const dataPoint = request.config.dataPoints[i];
 
         if (dataPoint.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
           aiDataPointIndices.push(i);
@@ -63,7 +63,7 @@ export class Chart {
 
       for (const i of aiDataPointIndices) {
         const dataPoint =
-          request.dataPoints[i] as AnalysisClassificationFactContext;
+          request.config.dataPoints[i] as AnalysisClassificationFactContext;
         await Chart.resolveAnalysisClassificationDataPoint(
           dataPoint,
           i,
@@ -252,11 +252,11 @@ export class Chart {
     request: ChartRequest,
     resolvedWindow: { start: Date; end: Date }
   ): ChartSegment[] {
-    if (request.segmentation.type === SegmentationType.TIME) {
+    if (request.config.segmentation.type === SegmentationType.TIME) {
       return Chart.generateTimeSegments(
         resolvedWindow.start,
         resolvedWindow.end,
-        request.segmentation.unit
+        request.config.segmentation.unit
       );
     }
     return [];

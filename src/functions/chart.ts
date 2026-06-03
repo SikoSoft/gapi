@@ -33,6 +33,32 @@ export async function chart(
   const userId = introspection.user.id;
 
   switch (request.method) {
+    case HttpMethod.GET: {
+      const idParam = request.params.id;
+      if (idParam) {
+        const id = parseInt(idParam, 10);
+        if (isNaN(id)) {
+          return { status: 400 };
+        }
+        const res = await Chart.getChart(userId, id);
+        if (res.isErr()) {
+          context.error(res.error);
+          return { status: 500 };
+        }
+        if (!res.value) {
+          return { status: 404 };
+        }
+        return jsonReply({ ...res.value });
+      } else {
+        const res = await Chart.getCharts(userId);
+        if (res.isErr()) {
+          context.error(res.error);
+          return { status: 500 };
+        }
+        return jsonReply({ charts: res.value });
+      }
+    }
+
     case HttpMethod.POST: {
       const body = (await request.json()) as ChartRequestBody;
 
@@ -84,13 +110,30 @@ export async function chart(
       return jsonReply({ chart: updateRes.value });
     }
 
+    case HttpMethod.DELETE: {
+      const idParam = request.params.id;
+      if (!idParam) {
+        return { status: 400 };
+      }
+      const id = parseInt(idParam, 10);
+      if (isNaN(id)) {
+        return { status: 400 };
+      }
+      const res = await Chart.deleteChart(userId, id);
+      if (res.isErr()) {
+        context.error(res.error);
+        return { status: 500 };
+      }
+      return { status: 204 };
+    }
+
     default:
       return { status: 405 };
   }
 }
 
 app.http("chart", {
-  methods: ["POST", "PUT"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
   authLevel: "anonymous",
   handler: chart,
   route: "chart/{id?}",

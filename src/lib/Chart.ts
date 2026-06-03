@@ -378,6 +378,39 @@ export class Chart {
     return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 
+  static async getCharts(userId: string): Promise<Result<SavedChart[], Error>> {
+    try {
+      const charts = await prisma.chart.findMany({
+        where: { userId },
+      });
+      return ok(charts.map(Chart.mapDataToSpec));
+    } catch (error) {
+      return err(new Error("Failed to get charts", { cause: error }));
+    }
+  }
+
+  static async getChart(userId: string, id: number): Promise<Result<SavedChart | null, Error>> {
+    try {
+      const chart = await prisma.chart.findFirst({
+        where: { id, userId },
+      });
+      return ok(chart ? Chart.mapDataToSpec(chart) : null);
+    } catch (error) {
+      return err(new Error("Failed to get chart", { cause: error }));
+    }
+  }
+
+  static async deleteChart(userId: string, id: number): Promise<Result<void, Error>> {
+    try {
+      await prisma.chart.delete({
+        where: { id, userId },
+      });
+      return ok(undefined);
+    } catch (error) {
+      return err(new Error("Failed to delete chart", { cause: error }));
+    }
+  }
+
   static async saveChart(
     userId: string,
     name: string,

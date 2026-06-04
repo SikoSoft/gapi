@@ -7,7 +7,7 @@ import {
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { Chart } from "../lib/Chart";
 import { ChartRequestBody, ChartUpdateBody } from "../models/Chart";
-import { ChartRequest, DataWindow, DataWindowType } from "api-spec/models/Statistic";
+import { ChartConfig, ChartRequest, ChartVersion, DataWindow, DataWindowType } from "api-spec/models/Statistic";
 import { HttpMethod } from "../models/Endpoint";
 
 function buildDataWindow(body: ChartRequestBody): DataWindow {
@@ -19,6 +19,14 @@ function buildDataWindow(body: ChartRequestBody): DataWindow {
     };
   }
   return { type: body.config.dataWindow.type };
+}
+
+function buildConfig(body: ChartRequestBody): ChartConfig {
+  const dataWindow = buildDataWindow(body);
+  if (body.config.version === ChartVersion.V2) {
+    return { ...body.config, dataWindow };
+  }
+  return { ...body.config, dataWindow };
 }
 
 export async function chart(
@@ -63,10 +71,7 @@ export async function chart(
       const body = (await request.json()) as ChartRequestBody;
 
       const chartRequest: ChartRequest = {
-        config: {
-          ...body.config,
-          dataWindow: buildDataWindow(body),
-        },
+        config: buildConfig(body),
         name: body.name,
         save: body.save,
       };

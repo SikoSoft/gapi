@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import {
-  ChartConfig,
+  ChartConfigType,
+  ChartConfigV1,
+  ChartConfigV2,
   ChartVersion,
   DataWindowType,
   SegmentationType,
@@ -19,9 +21,15 @@ export type ChartRequestBodyDataWindow =
   | { type: DataWindowType.CUSTOM; start: string; end: string }
   | { type: Exclude<DataWindowType, DataWindowType.CUSTOM> };
 
-export type ChartRequestBodyConfig = Omit<ChartConfig, "dataWindow"> & {
+export type ChartRequestBodyConfigV1 = Omit<ChartConfigV1, "dataWindow"> & {
   dataWindow: ChartRequestBodyDataWindow;
 };
+
+export type ChartRequestBodyConfigV2 = Omit<ChartConfigV2, "dataWindow"> & {
+  dataWindow: ChartRequestBodyDataWindow;
+};
+
+export type ChartRequestBodyConfig = ChartRequestBodyConfigV1 | ChartRequestBodyConfigV2;
 
 export type ChartRequestBody = {
   config: ChartRequestBodyConfig;
@@ -29,32 +37,47 @@ export type ChartRequestBody = {
   save?: boolean;
 };
 
-export const ChartRequestBodySchema = z.object({
-  config: z.object({
-    version: z.nativeEnum(ChartVersion),
-    dataWindow: z.union([
-      z.object({
-        type: z.literal(DataWindowType.CUSTOM),
-        start: z.string(),
-        end: z.string(),
-      }),
-      z.object({
-        type: z.enum([
-          DataWindowType.YEAR_TO_DATE,
-          DataWindowType.MONTH_TO_DATE,
-          DataWindowType.WEEK_TO_DATE,
-          DataWindowType.LAST_365_DAYS,
-          DataWindowType.LAST_30_DAYS,
-          DataWindowType.LAST_7_DAYS,
-        ]),
-      }),
-    ]),
-    segmentation: z.object({
-      type: z.nativeEnum(SegmentationType),
-      unit: z.nativeEnum(SegmentationTimeUnit),
-    }),
-    dataPoints: z.array(z.record(z.string(), z.unknown())),
+const dataWindowSchema = z.union([
+  z.object({
+    type: z.literal(DataWindowType.CUSTOM),
+    start: z.string(),
+    end: z.string(),
   }),
+  z.object({
+    type: z.enum([
+      DataWindowType.YEAR_TO_DATE,
+      DataWindowType.MONTH_TO_DATE,
+      DataWindowType.WEEK_TO_DATE,
+      DataWindowType.LAST_365_DAYS,
+      DataWindowType.LAST_30_DAYS,
+      DataWindowType.LAST_7_DAYS,
+    ]),
+  }),
+]);
+
+const segmentationSchema = z.object({
+  type: z.nativeEnum(SegmentationType),
+  unit: z.nativeEnum(SegmentationTimeUnit),
+});
+
+const dataPointsSchema = z.array(z.record(z.string(), z.unknown()));
+
+export const ChartRequestBodySchema = z.object({
+  config: z.union([
+    z.object({
+      version: z.literal(ChartVersion.V1),
+      dataWindow: dataWindowSchema,
+      segmentation: segmentationSchema,
+      dataPoints: dataPointsSchema,
+    }),
+    z.object({
+      version: z.literal(ChartVersion.V2),
+      type: z.nativeEnum(ChartConfigType),
+      dataWindow: dataWindowSchema,
+      segmentation: segmentationSchema,
+      dataPoints: dataPointsSchema,
+    }),
+  ]),
   name: z.string().optional(),
   save: z.boolean().optional(),
 });

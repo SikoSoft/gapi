@@ -37,7 +37,9 @@ export class Chart {
   ): Promise<Result<SegmentedDataPoint[], Error>> {
     try {
       const resolvedWindow = Chart.resolveDataWindow(request.config.dataWindow);
+      Logger.log(`[Chart] getChartData userId=${userId} dataPoints=${request.config.dataPoints.length} window=${resolvedWindow.start.toISOString()}..${resolvedWindow.end.toISOString()}`);
       const segments = Chart.generateSegments(request, resolvedWindow);
+      Logger.log(`[Chart] generated ${segments.length} segments`);
 
       const working: WorkingResult = new Map();
       for (const segment of segments) {
@@ -50,13 +52,17 @@ export class Chart {
         const dataPoint = request.config.dataPoints[i];
 
         if (dataPoint.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
+          Logger.log(`[Chart] dataPoint[${i}] op=${dataPoint.operation} — deferred to AI path`);
           aiDataPointIndices.push(i);
           continue;
         }
 
+        Logger.log(`[Chart] dataPoint[${i}] op=${dataPoint.operation} segments=${segments.length}`);
         for (const segment of segments) {
           const scopedContext = Chart.applySegmentToContext(dataPoint, segment);
+          Logger.log(`[Chart] resolving segment=${segment.key} dataPointIndex=${i} op=${dataPoint.operation}`);
           const raw = await Fact.resolve(scopedContext, userId);
+          Logger.log(`[Chart] resolved segment=${segment.key} dataPointIndex=${i} op=${dataPoint.operation} raw=${JSON.stringify(raw)}`);
           working.get(segment.key)![i] = Chart.toWorkingValue(raw);
         }
       }
@@ -107,16 +113,20 @@ export class Chart {
   ): Promise<void> {
     const uncachedSegments: ChartSegment[] = [];
 
+    Logger.log(`[Chart] ANALYSIS_CLASSIFICATION checking cache for ${segments.length} segments`);
     for (const segment of segments) {
       const scopedContext = Chart.applySegmentToContext(dataPoint, segment);
       const cached = await Fact.fromCache(scopedContext, userId);
       if (cached !== undefined) {
+        Logger.log(`[Chart] AI segment cache HIT segment=${segment.key} value=${JSON.stringify(cached)}`);
         working.get(segment.key)![dataPointIndex] = cached as number;
       } else {
+        Logger.log(`[Chart] AI segment cache MISS segment=${segment.key} — queuing for Assist`);
         uncachedSegments.push(segment);
       }
     }
 
+    Logger.log(`[Chart] AI cache check done: ${segments.length - uncachedSegments.length} hits, ${uncachedSegments.length} misses`);
     if (uncachedSegments.length === 0) {
       return;
     }
@@ -268,31 +278,32 @@ export class Chart {
     }
 
     const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
     switch (dataWindow.type) {
       case DataWindowType.YEAR_TO_DATE:
         return {
-          start: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)),
-          end: now,
+          start: new Date(Date.UTC(today.getUTCFullYear(), 0, 1)),
+          end: today,
         };
       case DataWindowType.MONTH_TO_DATE:
         return {
-          start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
-          end: now,
+          start: new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1)),
+          end: today,
         };
       case DataWindowType.WEEK_TO_DATE: {
-        const daysBack = (now.getUTCDay() + 6) % 7;
+        const daysBack = (today.getUTCDay() + 6) % 7;
         return {
-          start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysBack)),
-          end: now,
+          start: new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - daysBack)),
+          end: today,
         };
       }
       case DataWindowType.LAST_365_DAYS:
-        return { start: new Date(now.getTime() - 365 * 86400000), end: now };
+        return { start: new Date(today.getTime() - 365 * 86400000), end: today };
       case DataWindowType.LAST_30_DAYS:
-        return { start: new Date(now.getTime() - 30 * 86400000), end: now };
+        return { start: new Date(today.getTime() - 30 * 86400000), end: today };
       case DataWindowType.LAST_7_DAYS:
-        return { start: new Date(now.getTime() - 7 * 86400000), end: now };
+        return { start: new Date(today.getTime() - 7 * 86400000), end: today };
     }
   }
 

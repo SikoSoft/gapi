@@ -185,11 +185,14 @@ export class Medal {
       return;
     }
 
+    Logger.log(`[Medal] checkForDisbursement userId=${userId} configs=${configsRes.value.length}`);
     for (const config of configsRes.value) {
       const facts: Record<string, FactValue> = {};
       let factsResolved = true;
 
+      Logger.log(`[Medal] processing config id=${config.id} name=${config.name} factRequests=${config.factRequests.length}`);
       for (const factRequest of config.factRequests) {
+        Logger.log(`[Medal] resolving fact alias=${factRequest.alias} op=${factRequest.context.operation} configId=${config.id}`);
         const value = await Fact.resolve(factRequest.context, userId);
         if (value === undefined) {
           Logger.error(
@@ -198,6 +201,7 @@ export class Medal {
           factsResolved = false;
           break;
         }
+        Logger.log(`[Medal] resolved fact alias=${factRequest.alias} op=${factRequest.context.operation} configId=${config.id} value=${JSON.stringify(value)}`);
         facts[factRequest.alias] = value;
       }
 

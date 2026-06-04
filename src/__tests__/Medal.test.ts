@@ -30,7 +30,7 @@ vi.mock('../lib/Notification', () => ({
 }));
 
 vi.mock('../lib/Logger', () => ({
-  Logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+  Logger: { log: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
 import { prisma } from '../index';

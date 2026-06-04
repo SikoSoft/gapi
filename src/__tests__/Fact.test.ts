@@ -15,7 +15,7 @@ vi.mock('../index', () => ({
 }));
 
 vi.mock('../lib/Logger', () => ({
-  Logger: { error: vi.fn() },
+  Logger: { log: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('../lib/EntityListQueryBuilder', () => ({

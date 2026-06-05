@@ -30,33 +30,20 @@ jobs:
         id: version
         run: echo "version=$(node -e "console.log(require('./openapi.json').info.version)")" >> $GITHUB_OUTPUT
 
-      - name: "Verify Azure Storage access"
-        run: |
-          echo "Target container: ${{ env.AZURE_STORAGE_CONTAINER }}"
-          echo "Resolved account name:"
-          echo "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" | grep -oE 'AccountName=[^;]+' | cut -d= -f2
-          echo "Listing containers:"
-          az storage container list \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --query "[].name" \
-            -o tsv
-
       - name: "Upload versioned spec to Azure Storage"
         run: |
           az storage blob upload \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --connection-string "${{ secrets.GAPI_SPEC_STORAGE_CONNECTION_STRING }}" \
             --container-name "${{ env.AZURE_STORAGE_CONTAINER }}" \
             --name "openapi.${{ steps.version.outputs.version }}.json" \
             --file openapi.json \
-            --overwrite \
-            --verbose
+            --overwrite
 
       - name: "Upload latest spec to Azure Storage"
         run: |
           az storage blob upload \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --connection-string "${{ secrets.GAPI_SPEC_STORAGE_CONNECTION_STRING }}" \
             --container-name "${{ env.AZURE_STORAGE_CONTAINER }}" \
             --name "openapi.latest.json" \
             --file openapi.json \
-            --overwrite \
-            --verbose
+            --overwrite

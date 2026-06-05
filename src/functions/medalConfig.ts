@@ -17,19 +17,20 @@ export async function medalConfig(
     return forbiddenReply();
   }
 
+  const userId = introspection.user.id;
   const id = request.params.id ? parseInt(request.params.id, 10) : undefined;
 
   switch (request.method) {
     case "GET": {
       if (id !== undefined) {
-        const res = await Medal.getConfig(id);
+        const res = await Medal.getConfigWithProgress(id, userId);
         if (res.isErr()) {
           context.error(res.error);
           return { status: 500 };
         }
         return jsonReply({ ...res.value });
       }
-      const res = await Medal.getConfigs();
+      const res = await Medal.getConfigsWithProgress(userId);
       if (res.isErr()) {
         context.error(res.error);
         return { status: 500 };

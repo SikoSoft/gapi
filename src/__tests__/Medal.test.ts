@@ -325,6 +325,80 @@ describe('Medal', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // getConfigWithProgress
+  // ---------------------------------------------------------------------------
+
+  describe('getConfigWithProgress', () => {
+    it('returns err when the config is not found', async () => {
+      vi.mocked(prisma.medalConfig.findUnique).mockResolvedValue(null as any);
+
+      const result = await Medal.getConfigWithProgress(99, 'user1');
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().message).toContain('not found');
+    });
+
+    it('includes resolved fact values in criteriaProgress', async () => {
+      const now = new Date();
+      vi.mocked(prisma.medalConfig.findUnique).mockResolvedValue(
+        makePrismaConfig({ createdAt: now, updatedAt: now }) as any
+      );
+      vi.mocked(Fact.resolve).mockResolvedValue(42);
+
+      const result = await Medal.getConfigWithProgress(1, 'user1');
+
+      expect(result.isOk()).toBe(true);
+      const config = result._unsafeUnwrap();
+      expect(config.criteriaProgress).toEqual([{ alias: 'count', value: 42 }]);
+    });
+
+    it('omits entries for facts that could not be resolved', async () => {
+      const now = new Date();
+      vi.mocked(prisma.medalConfig.findUnique).mockResolvedValue(
+        makePrismaConfig({ createdAt: now, updatedAt: now }) as any
+      );
+      vi.mocked(Fact.resolve).mockResolvedValue(undefined);
+
+      const result = await Medal.getConfigWithProgress(1, 'user1');
+
+      expect(result.isOk()).toBe(true);
+      expect(result._unsafeUnwrap().criteriaProgress).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getConfigsWithProgress
+  // ---------------------------------------------------------------------------
+
+  describe('getConfigsWithProgress', () => {
+    it('returns an empty array when there are no configs', async () => {
+      vi.mocked(prisma.medalConfig.findMany).mockResolvedValue([]);
+
+      const result = await Medal.getConfigsWithProgress('user1');
+
+      expect(result.isOk()).toBe(true);
+      expect(result._unsafeUnwrap()).toEqual([]);
+    });
+
+    it('resolves criteriaProgress for each config', async () => {
+      const now = new Date();
+      vi.mocked(prisma.medalConfig.findMany).mockResolvedValue([
+        makePrismaConfig({ id: 1, createdAt: now, updatedAt: now }),
+        makePrismaConfig({ id: 2, createdAt: now, updatedAt: now }),
+      ] as any);
+      vi.mocked(Fact.resolve).mockResolvedValue(7);
+
+      const result = await Medal.getConfigsWithProgress('user1');
+
+      expect(result.isOk()).toBe(true);
+      const configs = result._unsafeUnwrap();
+      expect(configs).toHaveLength(2);
+      expect(configs[0].criteriaProgress).toEqual([{ alias: 'count', value: 7 }]);
+      expect(configs[1].criteriaProgress).toEqual([{ alias: 'count', value: 7 }]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // checkForDisbursement
   // ---------------------------------------------------------------------------
 

@@ -2,6 +2,15 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { Medal as MedalSpec } from "api-spec/models";
 
+export interface CriteriaProgress {
+  alias: string;
+  value: string | number | boolean;
+}
+
+export interface MedalConfigWithProgress extends MedalSpec.MedalConfig {
+  criteriaProgress: CriteriaProgress[];
+}
+
 const CriterionSchema = z.object({
   fact: z.string(),
   operator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),

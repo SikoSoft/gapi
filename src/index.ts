@@ -1,7 +1,6 @@
 import crypto from "crypto";
 import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
 import { PrismaClient } from "@prisma/client";
-import { Logger } from "./lib/Logger";
 import {
   ListContext,
   ListFilter,
@@ -13,10 +12,6 @@ import {
 } from "api-spec/models/List";
 import { Introspection } from "api-spec/models/Introspection";
 import { IdentityManager } from "./lib/IdentityManager";
-
-app.hook.preInvocation((hookCtx) => {
-  Logger.setContext(hookCtx.invocationContext);
-});
 
 export const ENABLE_NUKE = process.env.ENABLE_NUKE === "1" || false;
 

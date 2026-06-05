@@ -5,8 +5,10 @@ import { Medal as MedalSpec } from "api-spec/models";
 import { Criteria, Criterion, FactRequest } from "api-spec/models/Medal";
 import { HookContext } from "../models/Hook";
 import {
+  CriteriaProgress,
   MedalConfigCreateBody,
   MedalConfigUpdateBody,
+  MedalConfigWithProgress,
   PrismaMedal,
   PrismaMedalConfig,
 } from "../models/Medal";
@@ -146,6 +148,49 @@ export class Medal {
     }
   }
 
+  static async getConfigWithProgress(
+    id: number,
+    userId: string
+  ): Promise<Result<MedalConfigWithProgress, Error>> {
+    try {
+      const config = await prisma.medalConfig.findUnique({ where: { id } });
+      if (!config) {
+        return err(new Error("Medal config not found"));
+      }
+      const base = Medal.mapConfigToSpec(config);
+      const criteriaProgress = await Medal.resolveCriteriaProgress(
+        base.factRequests,
+        userId
+      );
+      return ok({ ...base, criteriaProgress });
+    } catch (error) {
+      return err(new Error("Failed to fetch medal config", { cause: error }));
+    }
+  }
+
+  static async getConfigsWithProgress(
+    userId: string
+  ): Promise<Result<MedalConfigWithProgress[], Error>> {
+    try {
+      const configs = await prisma.medalConfig.findMany({
+        orderBy: { prestige: "desc" },
+      });
+      const results = await Promise.all(
+        configs.map(async (config) => {
+          const base = Medal.mapConfigToSpec(config);
+          const criteriaProgress = await Medal.resolveCriteriaProgress(
+            base.factRequests,
+            userId
+          );
+          return { ...base, criteriaProgress };
+        })
+      );
+      return ok(results);
+    } catch (error) {
+      return err(new Error("Failed to fetch medal configs", { cause: error }));
+    }
+  }
+
   static async getMedals(
     userId: string
   ): Promise<Result<MedalSpec.Medal[], Error>> {
@@ -255,6 +300,20 @@ export class Medal {
         }
       }
     }
+  }
+
+  private static async resolveCriteriaProgress(
+    factRequests: MedalSpec.FactRequest[],
+    userId: string
+  ): Promise<CriteriaProgress[]> {
+    const progress: CriteriaProgress[] = [];
+    for (const factRequest of factRequests) {
+      const value = await Fact.resolve(factRequest.context, userId);
+      if (value !== undefined) {
+        progress.push({ alias: factRequest.alias, value });
+      }
+    }
+    return progress;
   }
 
   private static collectCriteriaAliases(

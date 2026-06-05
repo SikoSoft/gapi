@@ -6,6 +6,7 @@ on:
 
 env:
   NODE_VERSION: "22.x"
+  AZURE_STORAGE_CONTAINER: "gapi-spec"
 
 jobs:
   publish-spec:
@@ -33,7 +34,7 @@ jobs:
         run: |
           az storage blob upload \
             --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --container-name "${{ secrets.AZURE_STORAGE_CONTAINER }}" \
+            --container-name "${{ env.AZURE_STORAGE_CONTAINER }}" \
             --name "openapi.${{ steps.version.outputs.version }}.json" \
             --file openapi.json \
             --overwrite
@@ -42,7 +43,7 @@ jobs:
         run: |
           az storage blob upload \
             --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --container-name "${{ secrets.AZURE_STORAGE_CONTAINER }}" \
+            --container-name "${{ env.AZURE_STORAGE_CONTAINER }}" \
             --name "openapi.latest.json" \
             --file openapi.json \
             --overwrite

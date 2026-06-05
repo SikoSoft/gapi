@@ -1,0 +1,48 @@
+name: Generate and Publish OpenAPI Spec
+
+on:
+  push:
+    branches: ["master"]
+
+env:
+  NODE_VERSION: "22.x"
+
+jobs:
+  publish-spec:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout GitHub Action"
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }} Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: "Install dependencies"
+        run: npm ci
+
+      - name: "Generate OpenAPI spec"
+        run: npm run spec
+
+      - name: "Extract version from spec"
+        id: version
+        run: echo "version=$(node -e "console.log(require('./openapi.json').info.version)")" >> $GITHUB_OUTPUT
+
+      - name: "Upload versioned spec to Azure Storage"
+        run: |
+          az storage blob upload \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --container-name "${{ secrets.AZURE_STORAGE_CONTAINER }}" \
+            --name "openapi.${{ steps.version.outputs.version }}.json" \
+            --file openapi.json \
+            --overwrite
+
+      - name: "Upload latest spec to Azure Storage"
+        run: |
+          az storage blob upload \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --container-name "${{ secrets.AZURE_STORAGE_CONTAINER }}" \
+            --name "openapi.latest.json" \
+            --file openapi.json \
+            --overwrite

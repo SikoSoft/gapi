@@ -513,6 +513,8 @@ export class ListConfig {
             typeof filter.published === "undefined" ? null : filter.published,
           suggested:
             typeof filter.suggested === "undefined" ? null : filter.suggested,
+          identified:
+            typeof filter.identified === "undefined" ? null : filter.identified,
         },
       });
       return ok(null);

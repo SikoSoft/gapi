@@ -7,7 +7,7 @@ import {
 import { forbiddenReply, introspect } from "..";
 import { FileStorage } from "../lib/FileStorage";
 
-export async function file(
+export async function assistEntity(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
@@ -129,6 +129,6 @@ export async function file(
 app.http("assistEntity", {
   methods: ["POST"],
   authLevel: "anonymous",
-  handler: file,
+  handler: assistEntity,
   route: "assist/entity",
 });

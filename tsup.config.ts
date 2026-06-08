@@ -5,7 +5,6 @@ const externals = [
   "argon2",
   "@prisma/client",
   "@azure/functions",
-  "@azure/storage-common",
   "node:",
   ...builtinModules.filter((m) => !m.startsWith("_")),
 ];
@@ -15,7 +14,6 @@ export default defineConfig({
   format: "esm",
   platform: "node",
   noExternal: [new RegExp(`^(?!(${externals.join("|")}))`)],
-  external: ["@azure/storage-common"],
   banner: {
     js: `import { createRequire as __tsupCreateRequire } from 'module'; const require = __tsupCreateRequire(import.meta.url);`,
   },

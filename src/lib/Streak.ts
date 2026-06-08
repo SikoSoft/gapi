@@ -1,9 +1,11 @@
-import { FactOperation } from "api-spec/models/Fact";
+import { FactContext, FactOperation } from "api-spec/models/Fact";
 import { StreakRequest } from "api-spec/models/Medal";
+import { ListFilterTimeType } from "api-spec/models/List";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 import { prisma } from "..";
-import { FactValue } from "./Fact";
+import { Fact, FactValue } from "./Fact";
 import { Logger } from "./Logger";
+import { SegmentInfo } from "../models/Streak";
 
 export class Streak {
   static segmentKey(unit: SegmentationTimeUnit, utcDate: Date, utcOffsetMinutes: number): string {
@@ -36,12 +38,7 @@ export class Streak {
     now: Date,
     utcOffsetMinutes: number
   ): string[] {
-    const keys: string[] = [];
-    for (let i = 0; i < length; i++) {
-      const segmentDate = Streak.subtractSegment(now, unit, i, utcOffsetMinutes);
-      keys.push(Streak.segmentKey(unit, segmentDate, utcOffsetMinutes));
-    }
-    return keys;
+    return Streak.generateLookbackSegments(unit, length, now, utcOffsetMinutes).map(s => s.key);
   }
 
   static async resolveStreaks(
@@ -53,40 +50,48 @@ export class Streak {
     const now = new Date();
 
     for (const req of streakRequests) {
-      const innerCtx = req.innerContext;
-      if (innerCtx.operation !== FactOperation.ANALYSIS_CLASSIFICATION) {
-        Logger.error(
-          `[Streak] Unsupported innerContext operation '${innerCtx.operation}' for alias=${req.alias} — only analysisClassification is supported`
-        );
-        results[req.alias] = 0;
-        continue;
-      }
-
-      const keys = Streak.generateLookbackKeys(req.segmentUnit, req.length, now, utcOffsetMinutes);
-
-      const rows = await prisma.analysisClassificationResult.findMany({
-        where: {
-          userId,
-          analysisType: innerCtx.analysisType,
-          segmentUnit: req.segmentUnit,
-          segmentKey: { in: keys },
-        },
-      });
-
-      const byKey = new Map(
-        rows.map(r => [r.segmentKey, JSON.parse(r.value) as FactValue])
-      );
-
+      const segments = Streak.generateLookbackSegments(req.segmentUnit, req.length, now, utcOffsetMinutes);
       let count = 0;
-      for (const key of keys) {
-        const value = byKey.get(key);
-        if (value === undefined) {
-          break;
+
+      if (req.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
+        const keys = segments.map(s => s.key);
+        const rows = await prisma.analysisClassificationResult.findMany({
+          where: {
+            userId,
+            analysisType: req.innerContext.analysisType,
+            segmentUnit: req.segmentUnit,
+            segmentKey: { in: keys },
+          },
+        });
+        const byKey = new Map(rows.map(r => [r.segmentKey, JSON.parse(r.value) as FactValue]));
+        for (const segment of segments) {
+          const value = byKey.get(segment.key);
+          if (value === undefined) {
+            break;
+          }
+          if (!Streak.evalInner(value, req.innerOperator, req.innerValue)) {
+            break;
+          }
+          count++;
         }
-        if (!Streak.evalInner(value, req.innerOperator, req.innerValue)) {
-          break;
+      } else {
+        for (const segment of segments) {
+          const ctx = Streak.injectDateRange(req.innerContext, segment.start, segment.end);
+          if (!ctx) {
+            Logger.error(
+              `[Streak] Cannot inject date range into operation '${req.innerContext.operation}' for alias=${req.alias} — skipping`
+            );
+            break;
+          }
+          const value = await Fact.resolve(ctx, userId);
+          if (value === undefined) {
+            break;
+          }
+          if (!Streak.evalInner(value, req.innerOperator, req.innerValue)) {
+            break;
+          }
+          count++;
         }
-        count++;
       }
 
       Logger.log(
@@ -96,6 +101,98 @@ export class Streak {
     }
 
     return results;
+  }
+
+  private static generateLookbackSegments(
+    unit: SegmentationTimeUnit,
+    length: number,
+    now: Date,
+    utcOffsetMinutes: number
+  ): SegmentInfo[] {
+    const segments: SegmentInfo[] = [];
+    for (let i = 0; i < length; i++) {
+      const pivotUtc = Streak.subtractSegment(now, unit, i, utcOffsetMinutes);
+      const key = Streak.segmentKey(unit, pivotUtc, utcOffsetMinutes);
+      const { start, end } = Streak.segmentDateRange(unit, pivotUtc, utcOffsetMinutes);
+      segments.push({ key, start, end });
+    }
+    return segments;
+  }
+
+  private static segmentDateRange(
+    unit: SegmentationTimeUnit,
+    pivotUtc: Date,
+    utcOffsetMinutes: number
+  ): { start: Date; end: Date } {
+    const localMs = pivotUtc.getTime() + utcOffsetMinutes * 60 * 1000;
+    const local = new Date(localMs);
+
+    let startLocalMs: number;
+    let endLocalMs: number;
+
+    switch (unit) {
+      case SegmentationTimeUnit.HOUR: {
+        const s = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), local.getUTCHours()));
+        startLocalMs = s.getTime();
+        endLocalMs = startLocalMs + 3600 * 1000 - 1;
+        break;
+      }
+      case SegmentationTimeUnit.DAY: {
+        const s = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()));
+        startLocalMs = s.getTime();
+        endLocalMs = startLocalMs + 86400 * 1000 - 1;
+        break;
+      }
+      case SegmentationTimeUnit.WEEK: {
+        const dayOfWeek = local.getUTCDay() || 7;
+        const s = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() - (dayOfWeek - 1)));
+        startLocalMs = s.getTime();
+        endLocalMs = startLocalMs + 7 * 86400 * 1000 - 1;
+        break;
+      }
+      case SegmentationTimeUnit.MONTH: {
+        const s = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1));
+        startLocalMs = s.getTime();
+        endLocalMs = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 1)).getTime() - 1;
+        break;
+      }
+      case SegmentationTimeUnit.YEAR: {
+        const s = new Date(Date.UTC(local.getUTCFullYear(), 0, 1));
+        startLocalMs = s.getTime();
+        endLocalMs = new Date(Date.UTC(local.getUTCFullYear() + 1, 0, 1)).getTime() - 1;
+        break;
+      }
+    }
+
+    return {
+      start: new Date(startLocalMs - utcOffsetMinutes * 60 * 1000),
+      end: new Date(endLocalMs - utcOffsetMinutes * 60 * 1000),
+    };
+  }
+
+  private static injectDateRange(
+    ctx: FactContext,
+    start: Date,
+    end: Date
+  ): FactContext | null {
+    const startIso = start.toISOString();
+    const endIso = end.toISOString();
+
+    switch (ctx.operation) {
+      case FactOperation.ENTITY_COUNT:
+      case FactOperation.UNIQUE_TAG_COUNT:
+        return {
+          ...ctx,
+          filter: {
+            ...ctx.filter,
+            time: { type: ListFilterTimeType.RANGE, start: startIso, end: endIso },
+          },
+        };
+      case FactOperation.MEDAL_COUNT:
+        return { ...ctx, start: startIso, end: endIso };
+      default:
+        return null;
+    }
   }
 
   private static subtractSegment(

@@ -43,6 +43,24 @@ noExternal: [new RegExp(`^(?!(${externals.join("|")}))`)]
 
 ---
 
+## THE CRITICAL RULE: Two-File Contract for External Packages
+
+**Every time a package is added to `externals` in `tsup.config.ts`, it MUST also be added to the package list in `.github/workflows/deploy.yml`.**
+
+The deploy workflow uses a custom Node.js script (lines ~62–65) that prunes `node_modules` down to only the packages listed there (plus their transitive deps). If a package is external in tsup but not in this list, it gets deleted from node_modules before the zip is created and will not be present on Azure at runtime.
+
+```js
+// .github/workflows/deploy.yml — update this list whenever tsup externals changes
+const needed = new Set(['.prisma']);
+for (const pkg of ['argon2', '@prisma/client', '@azure/functions', '@azure/storage-blob', '@azure/storage-queue']) {
+  getAllDeps(pkg, needed);
+}
+```
+
+**Note:** `@azure/storage-common` does not need to be listed — it is a transitive dep of storage-blob and storage-queue, so `getAllDeps` will include it automatically.
+
+---
+
 ## Recurring Issue: Azure Storage Package Externals
 
 **Root cause (confirmed June 2026):** `@azure/storage-blob` and `@azure/storage-queue` both depend on `@azure/storage-common` as a shared internal package. These three packages do NOT bundle cleanly — when esbuild processes them, internal calls to `createRequire(import.meta.url)` fail because `import.meta.url` is lost in the chunk output context.
@@ -143,3 +161,4 @@ Do not remove this banner — several bundled dependencies use `require()` inter
 | 2026-06-08 | (Claude) | Externalized all three: storage-blob, storage-queue, storage-common | Should fix module-load errors |
 | 2026-06-08 | (Claude) | Fixed FileStorage.ts module-level BlobServiceClient.fromConnectionString call | Prevents crash when env var missing |
 | 2026-06-08 | (Claude) | Added `/api/diagnostics` endpoint and startup logging | Better diagnostics going forward |
+| 2026-06-08 | (Claude) | Added `@azure/storage-blob` and `@azure/storage-queue` to the `needed` list in `deploy.yml` | **Root cause fixed** — packages were being deleted from node_modules before zip was created |

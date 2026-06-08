@@ -89,7 +89,7 @@ tsup compiles all `src/**/*.ts` to ESM `.mjs` files in `dist/`. `api-spec` is bu
 
 **Deployment issues:** See [`failed-deployment-issues.md`](./failed-deployment-issues.md) for a detailed record of recurring Azure deployment failures, tsup bundling rules, and how to diagnose problems. Read it before touching `tsup.config.ts` or adding new npm packages that use native binaries or Azure SDK packages.
 
-**Critical bundling rule:** Never externalize a transitive dependency without also externalizing the parent package that depends on it. All Azure storage packages (`@azure/storage-blob`, `@azure/storage-queue`, `@azure/storage-common`) must be treated identically in `tsup.config.ts`.
+**Critical two-file rule:** Adding a package to `externals` in `tsup.config.ts` requires a matching addition to the package list in `.github/workflows/deploy.yml` (lines ~62–65). The deploy workflow prunes `node_modules` to only what's listed there — if a package is external in tsup but missing from the deploy list, it gets deleted before the zip is built and Azure cannot find it at runtime. This is the most common cause of "Cannot find package X" errors after deployment.
 
 **Critical module-level rule:** Never call code that can throw at the top level of any `src/lib/` or `src/functions/` file. Azure Functions ESM loads all function files at worker startup — a single module-level exception kills all functions. Use lazy initialization patterns instead.
 

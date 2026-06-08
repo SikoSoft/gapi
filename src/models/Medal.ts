@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { Medal as MedalSpec } from "api-spec/models";
+import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 
 export interface CriteriaProgress {
   alias: string;
@@ -22,6 +23,15 @@ const FactRequestSchema = z.object({
   context: z.unknown(),
 });
 
+const StreakRequestSchema = z.object({
+  alias: z.string(),
+  segmentUnit: z.nativeEnum(SegmentationTimeUnit),
+  length: z.number().int().positive(),
+  innerContext: z.unknown(),
+  innerOperator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),
+  innerValue: z.union([z.string(), z.number(), z.boolean()]),
+});
+
 export const MedalConfigCreateBodySchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -30,6 +40,7 @@ export const MedalConfigCreateBodySchema = z.object({
   prestige: z.number(),
   icon: z.string(),
   factRequests: z.array(FactRequestSchema),
+  streakRequests: z.array(StreakRequestSchema),
   criteria: z.unknown(),
 });
 
@@ -42,6 +53,7 @@ export interface MedalConfigCreateBody {
   prestige: number;
   icon: string;
   factRequests: MedalSpec.FactRequest[];
+  streakRequests: MedalSpec.StreakRequest[];
   criteria: MedalSpec.Criterion | MedalSpec.Criteria;
 }
 export type MedalConfigUpdateBody = MedalConfigCreateBody;

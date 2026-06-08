@@ -864,18 +864,19 @@ model MfaAttempt {
 }
 
 model MedalConfig {
-  id           Int      @id @default(autoincrement())
-  name         String   @db.VarChar(255)
-  description  String   @db.VarChar(1000)
-  series       String   @db.VarChar(255)
-  recurrence   Int      @default(0)
-  prestige     Int      @default(0)
-  icon         String   @db.VarChar(255)
-  factRequests Json     @default("[]")
-  criteria     Json
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  medals       Medal[]
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(255)
+  description    String   @db.VarChar(1000)
+  series         String   @db.VarChar(255)
+  recurrence     Int      @default(0)
+  prestige       Int      @default(0)
+  icon           String   @db.VarChar(255)
+  factRequests   Json     @default("[]")
+  streakRequests Json     @default("[]")
+  criteria       Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  medals         Medal[]
 }
 
 model Medal {
@@ -896,6 +897,19 @@ model FactCache {
 
   @@unique([userId, contextKey])
   @@index([expiresAt])
+}
+
+model AnalysisClassificationResult {
+  id           Int      @id @default(autoincrement())
+  userId       String   @db.Uuid
+  analysisType String   @db.VarChar(100)
+  segmentUnit  String   @db.VarChar(20)
+  segmentKey   String   @db.VarChar(20)
+  value        String
+  computedAt   DateTime @updatedAt
+
+  @@unique([userId, analysisType, segmentUnit, segmentKey])
+  @@index([userId, analysisType, segmentUnit])
 }
 
 model Chart {

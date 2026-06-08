@@ -2,7 +2,8 @@ import { Result, err, ok } from "neverthrow";
 import { Prisma } from "@prisma/client";
 import { prisma } from "..";
 import { Medal as MedalSpec } from "api-spec/models";
-import { Criteria, Criterion, FactRequest } from "api-spec/models/Medal";
+import { Criteria, Criterion, FactRequest, StreakRequest } from "api-spec/models/Medal";
+import { SettingName } from "api-spec/models/Setting";
 import { HookContext } from "../models/Hook";
 import {
   CriteriaProgress,
@@ -15,6 +16,8 @@ import {
 import { Fact, FactValue } from "./Fact";
 import { Logger } from "./Logger";
 import { Notification } from "./Notification";
+import { Setting } from "./Setting";
+import { Streak } from "./Streak";
 
 export class Medal {
   static mapConfigToSpec(config: PrismaMedalConfig): MedalSpec.MedalConfig {
@@ -27,6 +30,7 @@ export class Medal {
       prestige: config.prestige,
       icon: config.icon,
       factRequests: config.factRequests as unknown as MedalSpec.FactRequest[],
+      streakRequests: config.streakRequests as unknown as MedalSpec.StreakRequest[],
       criteria: config.criteria as MedalSpec.Criterion | MedalSpec.Criteria,
       createdAt: config.createdAt.toISOString(),
       updatedAt: config.updatedAt.toISOString(),
@@ -47,14 +51,13 @@ export class Medal {
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
     const invalidAliases = Medal.invalidCriteriaAliases(
       body.criteria,
-      body.factRequests
+      body.factRequests,
+      body.streakRequests
     );
     if (invalidAliases.length > 0) {
       return err(
         new Error(
-          `Criteria reference undefined fact aliases: ${invalidAliases.join(
-            ", "
-          )}`
+          `Criteria reference undefined aliases: ${invalidAliases.join(", ")}`
         )
       );
     }
@@ -68,6 +71,7 @@ export class Medal {
           prestige: body.prestige,
           icon: body.icon,
           factRequests: body.factRequests as unknown as Prisma.InputJsonValue,
+          streakRequests: body.streakRequests as unknown as Prisma.InputJsonValue,
           criteria: body.criteria as Prisma.InputJsonValue,
         },
       });
@@ -83,14 +87,13 @@ export class Medal {
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
     const invalidAliases = Medal.invalidCriteriaAliases(
       body.criteria,
-      body.factRequests
+      body.factRequests,
+      body.streakRequests
     );
     if (invalidAliases.length > 0) {
       return err(
         new Error(
-          `Criteria reference undefined fact aliases: ${invalidAliases.join(
-            ", "
-          )}`
+          `Criteria reference undefined aliases: ${invalidAliases.join(", ")}`
         )
       );
     }
@@ -105,6 +108,7 @@ export class Medal {
           prestige: body.prestige,
           icon: body.icon,
           factRequests: body.factRequests as unknown as Prisma.InputJsonValue,
+          streakRequests: body.streakRequests as unknown as Prisma.InputJsonValue,
           criteria: body.criteria as Prisma.InputJsonValue,
         },
       });
@@ -230,12 +234,17 @@ export class Medal {
       return;
     }
 
-    Logger.log(`[Medal] checkForDisbursement userId=${userId} configs=${configsRes.value.length}`);
+    const settingsRes = await Setting.getForUser(userId);
+    const utcOffsetMinutes = settingsRes.isOk()
+      ? (settingsRes.value[SettingName.TIMEZONE] as number ?? 0)
+      : 0;
+
+    Logger.log(`[Medal] checkForDisbursement userId=${userId} configs=${configsRes.value.length} utcOffset=${utcOffsetMinutes}`);
     for (const config of configsRes.value) {
       const facts: Record<string, FactValue> = {};
       let factsResolved = true;
 
-      Logger.log(`[Medal] processing config id=${config.id} name=${config.name} factRequests=${config.factRequests.length}`);
+      Logger.log(`[Medal] processing config id=${config.id} name=${config.name} factRequests=${config.factRequests.length} streakRequests=${config.streakRequests.length}`);
       for (const factRequest of config.factRequests) {
         Logger.log(`[Medal] resolving fact alias=${factRequest.alias} op=${factRequest.context.operation} configId=${config.id}`);
         const value = await Fact.resolve(factRequest.context, userId);
@@ -252,6 +261,15 @@ export class Medal {
 
       if (!factsResolved) {
         continue;
+      }
+
+      if (config.streakRequests.length > 0) {
+        const streakFacts = await Streak.resolveStreaks(
+          config.streakRequests,
+          userId,
+          utcOffsetMinutes
+        );
+        Object.assign(facts, streakFacts);
       }
 
       const criteria = config.criteria as Criterion | Criteria;
@@ -329,9 +347,13 @@ export class Medal {
 
   private static invalidCriteriaAliases(
     criteria: Criterion | Criteria,
-    factRequests: FactRequest[]
+    factRequests: FactRequest[],
+    streakRequests: StreakRequest[]
   ): string[] {
-    const defined = new Set(factRequests.map((fr) => fr.alias));
+    const defined = new Set([
+      ...factRequests.map(fr => fr.alias),
+      ...streakRequests.map(sr => sr.alias),
+    ]);
     return Medal.collectCriteriaAliases(criteria).filter(
       (alias) => !defined.has(alias)
     );

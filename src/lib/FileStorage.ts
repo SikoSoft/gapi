@@ -1,11 +1,24 @@
 import { BlobServiceClient, BlockBlobClient } from "@azure/storage-blob";
 import intoStream from "into-stream";
 
+let blobService: BlobServiceClient | null = null;
+
+function getBlobService(): BlobServiceClient {
+  if (!blobService) {
+    const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+    if (!connectionString) {
+      throw new Error("AZURE_STORAGE_CONNECTION_STRING is not set");
+    }
+    blobService = BlobServiceClient.fromConnectionString(connectionString);
+  }
+  return blobService;
+}
+
 export class FileStorage {
   static containerName = "images";
 
   static getBlobClient(file: string): BlockBlobClient {
-    return blobService
+    return getBlobService()
       .getContainerClient(FileStorage.containerName)
       .getBlockBlobClient(file);
   }
@@ -73,7 +86,3 @@ export class FileStorage {
     return `${FileStorage.shortDate()}/${fileName}`;
   };
 }
-
-const blobService = BlobServiceClient.fromConnectionString(
-  process.env.AZURE_STORAGE_CONNECTION_STRING
-);

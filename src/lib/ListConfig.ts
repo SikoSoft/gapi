@@ -37,9 +37,21 @@ export class ListConfig {
           //public: false,
           filter: {
             create: {
-              includeAll: true,
-              includeUntagged: true,
-              includeAllTagging: true,
+              includeAll: defaultListFilter.includeAll ?? true,
+              includeUntagged: defaultListFilter.includeUntagged ?? true,
+              includeAllTagging: defaultListFilter.includeAllTagging ?? true,
+              published:
+                typeof defaultListFilter.published === "undefined"
+                  ? null
+                  : defaultListFilter.published,
+              suggested:
+                typeof defaultListFilter.suggested === "undefined"
+                  ? null
+                  : defaultListFilter.suggested,
+              identified:
+                typeof defaultListFilter.identified === "undefined"
+                  ? null
+                  : defaultListFilter.identified,
               time: { create: { type: ListFilterTimeType.ALL_TIME } },
             },
           },

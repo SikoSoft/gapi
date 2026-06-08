@@ -5,6 +5,9 @@ const externals = [
   "argon2",
   "@prisma/client",
   "@azure/functions",
+  "@azure/storage-blob",
+  "@azure/storage-queue",
+  "@azure/storage-common",
   "node:",
   ...builtinModules.filter((m) => !m.startsWith("_")),
 ];

@@ -87,6 +87,12 @@ All queries are scoped by `userId`. No cross-user data access; `introspect()` pr
 
 tsup compiles all `src/**/*.ts` to ESM `.mjs` files in `dist/`. `api-spec` is bundled (not left as external) because Azure Functions runtime cannot resolve GitHub package URLs at runtime.
 
+**Deployment issues:** See [`failed-deployment-issues.md`](./failed-deployment-issues.md) for a detailed record of recurring Azure deployment failures, tsup bundling rules, and how to diagnose problems. Read it before touching `tsup.config.ts` or adding new npm packages that use native binaries or Azure SDK packages.
+
+**Critical bundling rule:** Never externalize a transitive dependency without also externalizing the parent package that depends on it. All Azure storage packages (`@azure/storage-blob`, `@azure/storage-queue`, `@azure/storage-common`) must be treated identically in `tsup.config.ts`.
+
+**Critical module-level rule:** Never call code that can throw at the top level of any `src/lib/` or `src/functions/` file. Azure Functions ESM loads all function files at worker startup — a single module-level exception kills all functions. Use lazy initialization patterns instead.
+
 ### Guidelines
 
 - mapDataToSpec functions should never be async

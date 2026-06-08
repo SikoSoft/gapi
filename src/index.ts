@@ -1,6 +1,11 @@
 import crypto from "crypto";
 import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
 import { PrismaClient } from "@prisma/client";
+
+console.log(
+  `[gapi:startup] node=${process.version} pid=${process.pid} time=${new Date().toISOString()}`
+);
+
 import {
   ListContext,
   ListFilter,

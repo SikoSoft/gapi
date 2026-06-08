@@ -9,6 +9,7 @@ export class Workspace {
     userId: string,
     name: string,
     color: string,
+    theme: string,
     showEverything: boolean,
     listConfigs: string[]
   ): Promise<Result<WorkspaceSpec.Workspace, Error>> {
@@ -19,6 +20,7 @@ export class Workspace {
           id,
           name,
           color,
+          theme,
           showEverything,
           userId,
           workspaceListConfigs: {
@@ -41,6 +43,7 @@ export class Workspace {
     id: string,
     name: string,
     color: string,
+    theme: string,
     showEverything: boolean,
     listConfigs: string[]
   ): Promise<Result<WorkspaceSpec.Workspace, Error>> {
@@ -52,6 +55,7 @@ export class Workspace {
         data: {
           name,
           color,
+          theme,
           showEverything,
           workspaceListConfigs: {
             create: listConfigs.map(listConfigId => ({ listConfigId })),
@@ -117,6 +121,7 @@ export class Workspace {
       id: data.id,
       name: data.name,
       color: data.color,
+      theme: data.theme as WorkspaceSpec.Theme,
       showEverything: data.showEverything,
       userId: data.userId,
       createdAt: data.createdAt,

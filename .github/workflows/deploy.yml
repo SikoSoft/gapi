@@ -60,7 +60,7 @@ jobs:
           }
 
           const needed = new Set(['.prisma']);
-          for (const pkg of ['argon2', '@prisma/client', '@azure/functions']) {
+          for (const pkg of ['argon2', '@prisma/client', '@azure/functions', '@azure/storage-blob', '@azure/storage-queue']) {
             getAllDeps(pkg, needed);
           }
 

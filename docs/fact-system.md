@@ -15,7 +15,21 @@ Each `FactContext` has an `operation` field that determines the computation path
 | `entityCount` | Number of entities matching a list filter | `filter: ListFilter` |
 | `uniqueTagCount` | Count of distinct tag labels across filtered entities | `filter: ListFilter` |
 | `medalCount` | Number of times a specific medal config (or series) has been earned | `medalConfigId`, `series`, optional `start`/`end` |
-| `analysisClassification` | Not computed by Fact — value must be pre-seeded via `writeCache` by an external pipeline | `filter`, `analysisType` |
+| `analysisClassification` | A numeric value produced by an external AI analysis service | `filter: ListFilter`, `analysisType: AnalysisClassificationType` |
+
+Available `analysisType` values: `"morningFasting"`, `"afternoonSnacking"`, `"caffeineIntake"`.
+
+### analysisClassification data flow — two separate stores
+
+`analysisClassification` is the only operation that does not compute its value on demand. Where the value comes from depends on the usage context:
+
+**Used in `factRequests` (via `Fact.resolve`):**
+`Fact.compute` returns `undefined` for this operation. The value must have been pre-seeded into the `FactCache` table by the Chart rendering pipeline (`Chart.ts` calls `Fact.writeCache` after getting results from the Assist service). If the cache entry is absent, the entire medal config is skipped for that disbursement pass.
+
+**Used in `streakRequests` (via `Streak.resolveStreaks`):**
+The streak engine bypasses `Fact.resolve` entirely and queries the `analysisClassificationResult` table directly, matching rows by `(userId, analysisType, segmentUnit, segmentKey)`. This table is populated by an external AI pipeline that POSTs to `/analysisClassificationResult` using `SYSTEM_API_KEY`. A missing row for any segment breaks the streak at that point.
+
+These are **two different tables** (`FactCache` vs `analysisClassificationResult`) written by **two different producers** (Chart engine vs external pipeline). A value in one does not satisfy a lookup in the other.
 
 ## Cache
 

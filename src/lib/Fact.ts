@@ -197,7 +197,11 @@ export class Fact {
    * - ENTITY_COUNT: filtered count via EntityListQueryBuilder
    * - UNIQUE_TAG_COUNT: distinct tag labels across filtered entities
    * - MEDAL_COUNT: awarded medal count with optional date range
-   * - ANALYSIS_CLASSIFICATION: not computed here; returns undefined (pre-seeded via writeCache)
+   * - ANALYSIS_CLASSIFICATION: always returns undefined — this operation's values come from an
+   *   external AI pipeline and must be pre-seeded into FactCache via `writeCache` (Chart engine
+   *   path) or queried from `analysisClassificationResult` directly (streak path). The `filter`
+   *   field on an ANALYSIS_CLASSIFICATION context is only meaningful when Chart.ts passes entities
+   *   to the Assist service; it is not applied in this compute path.
    */
   private static async compute(
     context: FactContext,

@@ -58,11 +58,14 @@ export class Streak {
    * Evaluates every StreakRequest and returns a map of alias → consecutive count.
    *
    * For each request the last `length` segments are walked from newest to oldest.
-   * Evaluation stops at the first segment where the inner condition is not met —
-   * that segment breaks the streak. The count is 0 if even the current segment fails.
+   * Evaluation stops at the first segment where the inner condition is not met, or where
+   * data is absent for that segment — both break the streak. Count is 0 if the current
+   * segment already fails.
    *
-   * ANALYSIS_CLASSIFICATION streaks are resolved by querying the
-   * `analysisClassificationResult` table directly (the Fact cache does not handle them).
+   * ANALYSIS_CLASSIFICATION streaks query the `analysisClassificationResult` table by
+   * (userId, analysisType, segmentUnit, segmentKey). The `filter` field on the innerContext
+   * is NOT applied here — it is required by the FactContext type but unused in this path.
+   *
    * All other operations use `Fact.resolve` with a date range injected by `injectDateRange`.
    */
   static async resolveStreaks(

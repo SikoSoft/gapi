@@ -59,39 +59,44 @@ A `StreakRequest` measures **consecutive time periods** where a condition held. 
 | `alias` | string | Key in the fact map (must be referenced in `criteria`) |
 | `segmentUnit` | `SegmentationTimeUnit` | Granularity: `HOUR`, `DAY`, `WEEK`, `MONTH`, `YEAR` |
 | `length` | number | How many past periods to examine (the streak can be at most this long) |
-| `innerContext` | `FactContext` | What to measure inside each period |
+| `innerContext` | `FactContext` | What to measure inside each period — see note on `analysisClassification` below |
 | `innerOperator` | `EvalOperator` | How to compare the inner fact value |
 | `innerValue` | `string \| number \| boolean` | The threshold the inner fact must satisfy |
-
-**Example — "no eating for 7 consecutive days":**
-
-```json
-{
-  "alias": "fastingStreak",
-  "segmentUnit": "DAY",
-  "length": 7,
-  "innerContext": {
-    "operation": "entityCount",
-    "filter": { "listId": 42 }
-  },
-  "innerOperator": "==",
-  "innerValue": 0
-}
-```
-
-This asks: "For each of the last 7 days, did the user log zero entries in list 42?" The streak engine walks from today backwards and stops at the first day the condition fails. The alias `"fastingStreak"` is added to the fact map with the resulting count (0–7).
 
 **How the Streak engine works:**
 
 1. Generate `length` lookback segments from now. Segment 0 is the current period; segment `length - 1` is the oldest.
-2. For each segment, inject its start/end timestamps into the `innerContext` so the fact query is scoped to that period only.
-3. Evaluate the inner fact value against `innerOperator`/`innerValue`.
-4. Increment the streak counter until the first segment that fails — then stop.
-5. The final count is stored in the fact map under the alias.
+2. For each segment, resolve the inner fact value.
+3. If the value is missing for a segment, **the streak is broken at that point** — a gap in data is treated as failure.
+4. Compare the value against `innerOperator`/`innerValue`. If the condition fails, stop.
+5. Otherwise increment the counter and continue to the next (older) segment.
+6. The final count is stored in the fact map under the alias.
 
 Segment boundaries are computed in the **user's local timezone** (read from the `TIMEZONE` setting, stored as UTC offset minutes). For example, a `DAY` segment at UTC+5:30 runs from 00:00 to 23:59 Indian Standard Time, not UTC midnight.
 
-`ANALYSIS_CLASSIFICATION` streaks bypass `Fact.resolve` entirely and query the `analysisClassificationResult` table directly, since the Fact cache cannot compute that operation on the fly.
+### Non-classification streaks (entityCount, uniqueTagCount, medalCount)
+
+For these operations the streak engine calls `Fact.resolve` with the date range for each segment injected into the `innerContext.filter`. The result is a regular cached fact lookup scoped to that time window.
+
+### analysisClassification streaks
+
+When `innerContext.operation` is `"analysisClassification"`, the streak engine **bypasses `Fact.resolve` entirely** and queries the `analysisClassificationResult` table directly:
+
+```
+WHERE userId = ?
+  AND analysisType = innerContext.analysisType
+  AND segmentUnit = req.segmentUnit
+  AND segmentKey IN (...)
+```
+
+**Important: the `filter` field of an `analysisClassification` innerContext is not used during streak evaluation.** It is required by the TypeScript type (because `AnalysisClassificationFactContext` always carries a `filter`) but the streak engine never reads it — it matches results only by `analysisType` and `segmentKey`. You must still provide a valid `filter` object to satisfy the type, but its contents are irrelevant to how the streak is scored.
+
+The `analysisClassificationResult` table is populated by an **external AI analysis pipeline** that posts results to the `/analysisClassificationResult` endpoint using `SYSTEM_API_KEY`. Each row stores the AI's output for one (user, analysisType, segmentUnit, segmentKey) combination. The value is a `number` (returned by the analysis service) — the exact scale and semantics are determined by the external service. Set `innerOperator` and `innerValue` to match what that service produces for a "positive" classification.
+
+Available `analysisType` values:
+- `"morningFasting"` — classifies whether the user exhibited morning fasting behaviour
+- `"afternoonSnacking"` — classifies whether the user exhibited afternoon snacking behaviour
+- `"caffeineIntake"` — classifies whether the user exhibited caffeine intake behaviour
 
 ---
 
@@ -155,16 +160,18 @@ The transaction isolation prevents race conditions where two concurrent requests
 
 ## Example: "Don't break a fast for 7 days"
 
-**Goal:** Award a medal the first time a user goes 7 consecutive days without logging any entry in the fasting list.
+**Goal:** Award a medal when the AI analysis confirms the user maintained morning fasting behaviour for 7 consecutive days.
 
-**MedalConfig:**
+This uses the `analysisClassification` operation with `analysisType: "morningFasting"`. The AI pipeline posts a result to `/analysisClassificationResult` for each day it has assessed; the streak engine reads those stored results to count consecutive days where the classification was positive (value `> 0`).
+
+### The MedalConfig
 
 ```json
 {
   "name": "7-Day Fast",
-  "description": "You didn't break your fast for 7 consecutive days.",
+  "description": "You maintained your morning fast for 7 days in a row.",
   "series": "fasting",
-  "recurrence": 0,
+  "recurrence": 1,
   "prestige": 10,
   "icon": "medal-fast-7",
   "factRequests": [],
@@ -174,10 +181,11 @@ The transaction isolation prevents race conditions where two concurrent requests
       "segmentUnit": "DAY",
       "length": 7,
       "innerContext": {
-        "operation": "entityCount",
-        "filter": { "listId": <YOUR_FASTING_LIST_ID> }
+        "operation": "analysisClassification",
+        "analysisType": "morningFasting",
+        "filter": {}
       },
-      "innerOperator": "==",
+      "innerOperator": ">",
       "innerValue": 0
     }
   ],
@@ -189,9 +197,42 @@ The transaction isolation prevents race conditions where two concurrent requests
 }
 ```
 
-- `recurrence: 0` means the user can earn this medal multiple times (every new 7-day run).
-- To make it a one-time award, set `recurrence: 1`.
-- The streak checks the last 7 days in the user's local timezone, so the day boundary is always midnight local time.
+### Field-by-field explanation
+
+| Field | Value | Why |
+|---|---|---|
+| `factRequests` | `[]` | No direct fact queries needed — the streak handles all data access |
+| `streakRequests[0].alias` | `"fastingStreak"` | Name used in `criteria.fact` to reference this streak's count |
+| `streakRequests[0].segmentUnit` | `"DAY"` | One classification result per day |
+| `streakRequests[0].length` | `7` | Check at most the last 7 days; the streak count is between 0 and 7 |
+| `streakRequests[0].innerContext.operation` | `"analysisClassification"` | Tells the streak engine to query `analysisClassificationResult`, not the Fact cache |
+| `streakRequests[0].innerContext.analysisType` | `"morningFasting"` | Which AI classification to look up |
+| `streakRequests[0].innerContext.filter` | `{}` | **Required by the type but unused during streak evaluation.** Provide an empty object. The streak engine matches by `analysisType` and `segmentKey` only; it never applies this filter. |
+| `streakRequests[0].innerOperator` | `">"` | The condition that must be true for a day to count toward the streak |
+| `streakRequests[0].innerValue` | `0` | Together with `>`: a day counts if the AI returned a value greater than 0 (positive fasting classification) |
+| `criteria.fact` | `"fastingStreak"` | References the alias resolved by the streak request |
+| `criteria.operator` | `">="` | |
+| `criteria.value` | `7` | The streak must be exactly 7 days long (all 7 checked days passed) |
+| `recurrence` | `1` | One-time award. Set to `0` for repeatable (re-awarded each time a new 7-day run completes) |
+
+### What must be in place before this works
+
+The streak engine can only count days for which the AI pipeline has already posted a result. A day with no row in `analysisClassificationResult` breaks the streak at that point. The pipeline posts via:
+
+```
+POST /analysisClassificationResult
+Authorization: <SYSTEM_API_KEY>
+
+{
+  "userId": "<uuid>",
+  "analysisType": "morningFasting",
+  "segmentUnit": "DAY",
+  "segmentKey": "2026-06-09",
+  "value": 1
+}
+```
+
+The `segmentKey` format must match what `Streak.segmentKey` produces for `DAY` segments: `"YYYY-MM-DD"` in the **user's local timezone**. If the pipeline generates keys in UTC and the user is in a different timezone, the keys will not align and the streak count will be 0.
 
 ---
 

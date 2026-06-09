@@ -8,6 +8,15 @@ import { Logger } from "./Logger";
 import { SegmentInfo } from "../models/Streak";
 
 export class Streak {
+  /**
+   * Returns a human-readable string identifier for the segment that contains `utcDate`
+   * after adjusting for the user's local timezone. Format by unit:
+   * - HOUR  → "YYYY-MM-DDTHH"
+   * - DAY   → "YYYY-MM-DD"
+   * - WEEK  → "YYYY-Www" (ISO 8601, Monday-anchored)
+   * - MONTH → "YYYY-MM"
+   * - YEAR  → "YYYY"
+   */
   static segmentKey(unit: SegmentationTimeUnit, utcDate: Date, utcOffsetMinutes: number): string {
     const localMs = utcDate.getTime() + utcOffsetMinutes * 60 * 1000;
     const d = new Date(localMs);
@@ -32,6 +41,10 @@ export class Streak {
     }
   }
 
+  /**
+   * Convenience wrapper that returns only the key strings from `generateLookbackSegments`.
+   * Index 0 is the current (most recent) period; index `length - 1` is the oldest.
+   */
   static generateLookbackKeys(
     unit: SegmentationTimeUnit,
     length: number,
@@ -41,6 +54,17 @@ export class Streak {
     return Streak.generateLookbackSegments(unit, length, now, utcOffsetMinutes).map(s => s.key);
   }
 
+  /**
+   * Evaluates every StreakRequest and returns a map of alias → consecutive count.
+   *
+   * For each request the last `length` segments are walked from newest to oldest.
+   * Evaluation stops at the first segment where the inner condition is not met —
+   * that segment breaks the streak. The count is 0 if even the current segment fails.
+   *
+   * ANALYSIS_CLASSIFICATION streaks are resolved by querying the
+   * `analysisClassificationResult` table directly (the Fact cache does not handle them).
+   * All other operations use `Fact.resolve` with a date range injected by `injectDateRange`.
+   */
   static async resolveStreaks(
     streakRequests: StreakRequest[],
     userId: string,
@@ -103,6 +127,11 @@ export class Streak {
     return results;
   }
 
+  /**
+   * Builds an ordered array of the `length` most recent segments ending at `now`,
+   * each carrying its key and exact UTC start/end boundaries.
+   * Segment 0 is the current period; segment `length - 1` is the oldest.
+   */
   private static generateLookbackSegments(
     unit: SegmentationTimeUnit,
     length: number,
@@ -119,6 +148,11 @@ export class Streak {
     return segments;
   }
 
+  /**
+   * Computes the inclusive UTC start and end of the segment that contains `pivotUtc`
+   * after localizing by `utcOffsetMinutes`. Weeks are Monday-anchored (ISO 8601).
+   * The returned dates are always in UTC regardless of the user's timezone.
+   */
   private static segmentDateRange(
     unit: SegmentationTimeUnit,
     pivotUtc: Date,
@@ -170,6 +204,11 @@ export class Streak {
     };
   }
 
+  /**
+   * Returns a copy of `ctx` with a time range filter injected so the fact is scoped
+   * to a single streak segment. Returns null for operations that cannot accept a date
+   * range (e.g. ANALYSIS_CLASSIFICATION, which is handled via a direct DB query instead).
+   */
   private static injectDateRange(
     ctx: FactContext,
     start: Date,
@@ -195,6 +234,11 @@ export class Streak {
     }
   }
 
+  /**
+   * Steps `n` periods into the past from `now`. HOUR/DAY/WEEK use fixed millisecond
+   * arithmetic. MONTH/YEAR subtract calendar units in the user's local time to avoid
+   * DST drift and variable-length month issues.
+   */
   private static subtractSegment(
     now: Date,
     unit: SegmentationTimeUnit,
@@ -223,6 +267,10 @@ export class Streak {
     }
   }
 
+  /**
+   * Computes the ISO 8601 week number and corresponding year for `localDate`.
+   * The ISO year may differ from the calendar year for dates in the first/last week.
+   */
   private static isoWeek(localDate: Date): { year: number; week: number } {
     const d = new Date(
       Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate())
@@ -234,6 +282,7 @@ export class Streak {
     return { year: d.getUTCFullYear(), week };
   }
 
+  /** Applies the streak's inner comparison operator to determine if a segment passes. */
   private static evalInner(
     value: FactValue,
     operator: string,

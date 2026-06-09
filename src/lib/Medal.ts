@@ -20,6 +20,7 @@ import { Setting } from "./Setting";
 import { Streak } from "./Streak";
 
 export class Medal {
+  /** Converts a Prisma MedalConfig row to the api-spec wire contract. */
   static mapConfigToSpec(config: PrismaMedalConfig): MedalSpec.MedalConfig {
     return {
       id: config.id,
@@ -37,6 +38,7 @@ export class Medal {
     };
   }
 
+  /** Converts a Prisma Medal row (an earned instance) to the api-spec wire contract. */
   static mapMedalToSpec(medal: PrismaMedal): MedalSpec.Medal {
     return {
       id: medal.id,
@@ -46,6 +48,11 @@ export class Medal {
     };
   }
 
+  /**
+   * Creates a new MedalConfig. Validates that every alias referenced in `criteria`
+   * is declared in either `factRequests` or `streakRequests`; rejects with an error
+   * listing the unknown aliases otherwise.
+   */
   static async createConfig(
     body: MedalConfigCreateBody
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
@@ -81,6 +88,7 @@ export class Medal {
     }
   }
 
+  /** Updates an existing MedalConfig. Applies the same alias-validation as `createConfig`. */
   static async updateConfig(
     id: number,
     body: MedalConfigUpdateBody
@@ -118,6 +126,7 @@ export class Medal {
     }
   }
 
+  /** Deletes a MedalConfig and cascades to all earned Medal instances. */
   static async deleteConfig(id: number): Promise<Result<void, Error>> {
     try {
       await prisma.medalConfig.delete({ where: { id } });
@@ -127,6 +136,7 @@ export class Medal {
     }
   }
 
+  /** Fetches a single MedalConfig by id. Returns an error if not found. */
   static async getConfig(
     id: number
   ): Promise<Result<MedalSpec.MedalConfig, Error>> {
@@ -141,6 +151,7 @@ export class Medal {
     }
   }
 
+  /** Returns all MedalConfigs ordered by `prestige` descending (highest first). */
   static async getConfigs(): Promise<Result<MedalSpec.MedalConfig[], Error>> {
     try {
       const configs = await prisma.medalConfig.findMany({
@@ -152,6 +163,11 @@ export class Medal {
     }
   }
 
+  /**
+   * Returns a MedalConfig augmented with `criteriaProgress` — the user's current
+   * resolved fact values for each factRequest. Used to render progress UI.
+   * Note: streakRequest values are not included in criteriaProgress (only factRequests).
+   */
   static async getConfigWithProgress(
     id: number,
     userId: string
@@ -172,6 +188,7 @@ export class Medal {
     }
   }
 
+  /** Returns all MedalConfigs with criteriaProgress, ordered by `prestige` descending. */
   static async getConfigsWithProgress(
     userId: string
   ): Promise<Result<MedalConfigWithProgress[], Error>> {
@@ -195,6 +212,7 @@ export class Medal {
     }
   }
 
+  /** Returns all medals the user has already earned, newest first. */
   static async getMedals(
     userId: string
   ): Promise<Result<MedalSpec.Medal[], Error>> {
@@ -209,6 +227,11 @@ export class Medal {
     }
   }
 
+  /**
+   * Directly awards a medal without evaluating criteria or checking recurrence.
+   * Intended for administrative/manual grants; normal disbursement goes through
+   * `checkForDisbursement` which enforces all rules.
+   */
   static async giveMedal(
     userId: string,
     medalConfigId: number
@@ -223,6 +246,20 @@ export class Medal {
     }
   }
 
+  /**
+   * Core hook entry point — called after user data changes to determine whether
+   * any medals should be awarded. For each MedalConfig:
+   *   1. Resolves all factRequests via Fact.resolve (cached).
+   *   2. If any fact is unresolvable the config is skipped entirely.
+   *   3. Resolves streakRequests via Streak.resolveStreaks (if present).
+   *   4. Evaluates the criteria tree; skips if false.
+   *   5. Creates a Medal record inside a Serializable transaction that also
+   *      re-checks the recurrence cap atomically to prevent double-awards.
+   *   6. Sends a push notification on success.
+   *
+   * The user's TIMEZONE setting (stored as UTC offset minutes) is used to localize
+   * streak segment boundaries.
+   */
   static async checkForDisbursement(context: HookContext): Promise<void> {
     const { userId } = context;
 
@@ -320,6 +357,11 @@ export class Medal {
     }
   }
 
+  /**
+   * Resolves the current value of each factRequest for display purposes.
+   * Entries whose fact resolves to undefined are omitted (e.g. ANALYSIS_CLASSIFICATION
+   * before the pipeline has seeded its result).
+   */
   private static async resolveCriteriaProgress(
     factRequests: MedalSpec.FactRequest[],
     userId: string
@@ -334,6 +376,7 @@ export class Medal {
     return progress;
   }
 
+  /** Recursively extracts every alias string referenced in a criteria tree (leaf `fact` fields). */
   private static collectCriteriaAliases(
     criteria: Criterion | Criteria
   ): string[] {
@@ -345,6 +388,10 @@ export class Medal {
     );
   }
 
+  /**
+   * Returns the list of aliases referenced in `criteria` that are not defined in
+   * either `factRequests` or `streakRequests`. An empty array means the config is valid.
+   */
   private static invalidCriteriaAliases(
     criteria: Criterion | Criteria,
     factRequests: FactRequest[],
@@ -359,6 +406,13 @@ export class Medal {
     );
   }
 
+  /**
+   * Recursively evaluates a criteria tree against resolved fact values.
+   * A Criterion (leaf) delegates to `evaluateCriterion`.
+   * A Criteria node with `all` requires every child to pass (logical AND).
+   * A Criteria node with `any` requires at least one child to pass (logical OR).
+   * An empty node (neither all nor any) returns false.
+   */
   private static evaluateCriteria(
     criteria: Criterion | Criteria,
     facts: Record<string, FactValue>
@@ -379,6 +433,11 @@ export class Medal {
     return false;
   }
 
+  /**
+   * Evaluates a single criterion leaf. Looks up the fact value by alias and applies
+   * the operator. `contains` is array-membership when `value` is an array, otherwise
+   * substring match. An unknown alias logs an error and returns false.
+   */
   private static evaluateCriterion(
     criterion: Criterion,
     facts: Record<string, FactValue>

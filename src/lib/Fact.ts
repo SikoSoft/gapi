@@ -10,6 +10,12 @@ import { Logger } from "./Logger";
 export type FactValue = string | number | boolean;
 
 export class Fact {
+  /**
+   * Primary entry point for obtaining a fact value. Returns a cached result when
+   * available and unexpired; otherwise computes from source data and writes to cache.
+   * Pass `bypassCache: true` in options to always recompute (used by streak evaluation
+   * which injects custom date ranges that must not be served from the generic cache).
+   */
   static async resolve(
     context: FactContext,
     userId: string,
@@ -38,6 +44,12 @@ export class Fact {
     return value;
   }
 
+  /**
+   * Produces a stable SHA256 cache key for a FactContext by serializing it to
+   * canonical JSON (keys sorted alphabetically, array order preserved), then hashing.
+   * Two contexts that are logically identical but differ only in key order produce
+   * the same key.
+   */
   static contextKey(context: FactContext): string {
     const canonical = JSON.stringify(context, (_key, value) => {
       if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -54,6 +66,7 @@ export class Fact {
     return hash;
   }
 
+  /** Removes a single cache entry by its pre-computed context key. */
   static async invalidate(
     contextKey: string,
     userId: string
@@ -66,6 +79,7 @@ export class Fact {
     }
   }
 
+  /** Clears every cache entry for a user — useful after bulk data changes. */
   static async invalidateUser(userId: string): Promise<Result<void, Error>> {
     try {
       await prisma.factCache.deleteMany({ where: { userId } });
@@ -75,6 +89,7 @@ export class Fact {
     }
   }
 
+  /** Deletes all expired cache rows. Intended for periodic housekeeping. */
   static async purgeExpired(): Promise<Result<void, Error>> {
     try {
       await prisma.factCache.deleteMany({
@@ -86,6 +101,11 @@ export class Fact {
     }
   }
 
+  /**
+   * Read-only cache probe — returns the cached value if present and unexpired,
+   * otherwise undefined. Never computes or writes. Used when callers only want
+   * to know if a value is already warmed without triggering a recompute.
+   */
   static async fromCache(
     context: FactContext,
     userId: string
@@ -97,6 +117,11 @@ export class Fact {
     return result;
   }
 
+  /**
+   * Directly writes a value into the cache without going through `resolve`.
+   * Used when a value has been computed externally (e.g. by an analysis pipeline)
+   * and needs to be seeded for subsequent fact lookups.
+   */
   static async writeCache(
     context: FactContext,
     userId: string,
@@ -107,6 +132,10 @@ export class Fact {
     return Fact.setCached(context, userId, value, contextKey);
   }
 
+  /**
+   * Looks up the FactCache table by (userId, contextKey) and validates the TTL.
+   * Returns undefined on miss, expiry, or any DB error (fail-open: callers recompute).
+   */
   private static async getCached(
     context: FactContext,
     userId: string,
@@ -137,6 +166,10 @@ export class Fact {
     }
   }
 
+  /**
+   * Upserts a cache entry with a TTL derived from `FACT_TTL_MS[operation]`.
+   * Errors are swallowed so a cache write failure never breaks the calling resolve.
+   */
   private static async setCached(
     context: FactContext,
     userId: string,
@@ -159,6 +192,13 @@ export class Fact {
     }
   }
 
+  /**
+   * Executes the operation described by `context` against live data:
+   * - ENTITY_COUNT: filtered count via EntityListQueryBuilder
+   * - UNIQUE_TAG_COUNT: distinct tag labels across filtered entities
+   * - MEDAL_COUNT: awarded medal count with optional date range
+   * - ANALYSIS_CLASSIFICATION: not computed here; returns undefined (pre-seeded via writeCache)
+   */
   private static async compute(
     context: FactContext,
     userId: string

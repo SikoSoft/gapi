@@ -93,6 +93,15 @@ tsup compiles all `src/**/*.ts` to ESM `.mjs` files in `dist/`. `api-spec` is bu
 
 **Critical module-level rule:** Never call code that can throw at the top level of any `src/lib/` or `src/functions/` file. Azure Functions ESM loads all function files at worker startup — a single module-level exception kills all functions. Use lazy initialization patterns instead.
 
+### Documentation
+
+The `docs/` folder contains system-level documentation. When changing code that is covered by a doc file, update the relevant doc to reflect the change:
+
+- [`docs/fact-system.md`](./docs/fact-system.md) — Fact computation, caching, operations, and TTLs
+- [`docs/medal-system.md`](./docs/medal-system.md) — MedalConfig fields, FactRequests, StreakRequests, criteria trees, disbursement flow, and worked examples
+
+Doc blocks above public and private method definitions in `src/lib/Fact.ts`, `src/lib/Medal.ts`, and `src/lib/Streak.ts` explain non-obvious contracts and invariants. Keep them current when modifying those methods — stale doc blocks are worse than none.
+
 ### Guidelines
 
 - mapDataToSpec functions should never be async

@@ -110,6 +110,7 @@ export class EntityConfig {
           description: entityConfig.description,
           userId,
           aiEnabled: entityConfig.aiEnabled ?? false,
+          aiClassifyEnabled: entityConfig.aiClassifyEnabled ?? false,
           aiIdentifyPrompt: entityConfig.aiIdentifyPrompt,
           public: entityConfig.public ?? false,
           ...(entityConfig.revisionOf
@@ -163,6 +164,7 @@ export class EntityConfig {
           description: entityConfig.description,
           allowPropertyOrdering: entityConfig.allowPropertyOrdering,
           aiEnabled: entityConfig.aiEnabled,
+          aiClassifyEnabled: entityConfig.aiClassifyEnabled,
           aiIdentifyPrompt: entityConfig.aiIdentifyPrompt,
           public: entityConfig.public,
           allowTags: entityConfig.allowTags,
@@ -337,6 +339,7 @@ export class EntityConfig {
       revisionOf: data.revisionOf,
       allowPropertyOrdering: data.allowPropertyOrdering,
       aiEnabled: data.aiEnabled,
+      aiClassifyEnabled: data.aiClassifyEnabled,
       aiIdentifyPrompt: data.aiIdentifyPrompt,
       public: data.public,
       viewAccessPolicy,

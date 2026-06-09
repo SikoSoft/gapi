@@ -133,9 +133,9 @@ export class Streak {
   /**
    * Builds an ordered array of the `length` most recent segments ending at `now`,
    * each carrying its key and exact UTC start/end boundaries.
-   * Segment 0 is the current period; segment `length - 1` is the oldest.
+   * Segment 0 is the current (possibly incomplete) period; segment `length - 1` is the oldest.
    */
-  private static generateLookbackSegments(
+  static generateLookbackSegments(
     unit: SegmentationTimeUnit,
     length: number,
     now: Date,

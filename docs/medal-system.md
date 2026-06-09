@@ -142,7 +142,7 @@ Nodes can be nested arbitrarily deep:
 
 ## Disbursement
 
-Medal disbursement runs through `Medal.checkForDisbursement(context)`, called from a hook after user data changes. The full sequence for each MedalConfig:
+Medal disbursement runs through `Medal.checkForDisbursement(context)`, called from hooks after relevant data changes. The full sequence for each MedalConfig:
 
 1. Resolve all `factRequests` via the Fact cache/compute pipeline.
 2. If any fact returns `undefined` (e.g. an `analysisClassification` result not yet seeded), **skip this config entirely** — it will be re-evaluated next time the hook fires.
@@ -155,6 +155,20 @@ Medal disbursement runs through `Medal.checkForDisbursement(context)`, called fr
 6. If the medal was created, send a push notification.
 
 The transaction isolation prevents race conditions where two concurrent requests could both pass the recurrence check and both insert a medal.
+
+### What triggers a disbursement check
+
+**Entity-based medals** (`entityCount`, `uniqueTagCount`, `medalCount` criteria): `Entity.ts` calls `Hook.trigger` on every entity create, update, and delete. `processHook` dequeues these asynchronously and runs `checkForDisbursement`.
+
+**Analysis-classification streak medals**: entity mutations are the wrong trigger because the AI data for the current segment won't exist yet at mutation time. Two triggers cover this instead:
+
+1. **`analysisClassificationScheduler` (daily timer, `src/functions/analysisClassificationScheduler.ts`)** — runs at 04:00 UTC. Scans all MedalConfigs for `analysisClassification` streak requests, finds users with recent entity activity on `aiClassifyEnabled` entity types, calls the Assist service to classify the most recently completed segment for each user, writes results to `analysisClassificationResult`, then triggers `Hook.trigger` directly so disbursement runs immediately.
+
+2. **`POST /analysisClassificationResult` (external pipeline)** — when an external AI system posts a result, a hook trigger on that endpoint fires disbursement for that user. *(Hook not yet wired; add `Hook.trigger` call in `src/functions/analysisClassificationResult.ts` after the successful upsert.)*
+
+### User eligibility for the daily timer
+
+The scheduler only processes users who have created at least one entity in the last 30 days using an entity config that has `aiClassifyEnabled = true`. If the medal config's `filter.includeTypes` is non-empty, only those specific entity config IDs (intersected with `aiClassifyEnabled = true`) are considered. This prevents unnecessary AI calls for inactive users or entity types not relevant to the analysis.
 
 ---
 
@@ -264,4 +278,7 @@ The `segmentKey` format must match what `Streak.segmentKey` produces for `DAY` s
 | `src/functions/medal.ts` | HTTP handler for `/medal` |
 | `src/functions/medalConfig.ts` | HTTP handler for `/medalConfig/{id?}` |
 | `src/functions/factCache.ts` | HTTP handler for `/factCache/{contextKey?}` |
-| `prisma/schema.prisma` | `MedalConfig`, `Medal`, `FactCache` table definitions |
+| `src/functions/analysisClassificationResult.ts` | HTTP handler for `/analysisClassificationResult` (external pipeline writes) |
+| `src/functions/analysisClassificationScheduler.ts` | Daily timer (04:00 UTC) that drives AI classification for active users |
+| `src/lib/AnalysisClassificationScheduler.ts` | Core scheduler logic: target discovery, user eligibility, Assist calls, result storage |
+| `prisma/schema.prisma` | `MedalConfig`, `Medal`, `FactCache`, `AnalysisClassificationResult` table definitions |

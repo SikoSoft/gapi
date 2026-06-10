@@ -11,6 +11,7 @@ import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 import { FactOperation } from "api-spec/models/Fact";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { AnalysisClassificationScheduler } from "../lib/AnalysisClassificationScheduler";
+import { Logger } from "../lib/Logger";
 import { Setting } from "../lib/Setting";
 import { Streak } from "../lib/Streak";
 
@@ -51,27 +52,36 @@ export async function streakRequestHandler(
   }
 
   const requests = parsed.data as StreakRequest[];
+  const userId = introspection.user.id;
 
-  const settingsRes = await Setting.getForUser(introspection.user.id);
+  Logger.log(`[streakRequest] POST userId=${userId} requests=${requests.length}`);
+  for (let i = 0; i < requests.length; i++) {
+    const req = requests[i];
+    const op = req.innerContext.operation;
+    const extra = op === FactOperation.ANALYSIS_CLASSIFICATION
+      ? ` analysisType=${req.innerContext.analysisType}`
+      : "";
+    Logger.log(`[streakRequest] request[${i}] alias=${req.alias} op=${op}${extra} segmentUnit=${req.segmentUnit} length=${req.length} operator=${req.innerOperator} innerValue=${JSON.stringify(req.innerValue)}`);
+  }
+
+  const settingsRes = await Setting.getForUser(userId);
   const utcOffsetMinutes = settingsRes.isOk()
     ? (settingsRes.value[SettingName.TIMEZONE] as number) ?? 0
     : 0;
+  Logger.log(`[streakRequest] utcOffsetMinutes=${utcOffsetMinutes}`);
 
-  for (const req of requests) {
+  for (let i = 0; i < requests.length; i++) {
+    const req = requests[i];
     if (req.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
-      await AnalysisClassificationScheduler.seedMissingSegments(
-        req,
-        introspection.user.id,
-        utcOffsetMinutes
-      );
+      Logger.log(`[streakRequest] request[${i}] alias=${req.alias} seeding missing analysisClassificationResult segments...`);
+      await AnalysisClassificationScheduler.seedMissingSegments(req, userId, utcOffsetMinutes);
+      Logger.log(`[streakRequest] request[${i}] alias=${req.alias} seeding complete`);
     }
   }
 
-  const results = await Streak.resolveStreaks(
-    requests,
-    introspection.user.id,
-    utcOffsetMinutes
-  );
+  Logger.log(`[streakRequest] resolving streaks for ${requests.length} request(s)...`);
+  const results = await Streak.resolveStreaks(requests, userId, utcOffsetMinutes);
+  Logger.log(`[streakRequest] done results=${JSON.stringify(results)}`);
 
   return jsonReply({ results });
 }

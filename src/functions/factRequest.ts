@@ -8,6 +8,7 @@ import { z } from "zod";
 import { FactRequest } from "api-spec/models/Medal";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { Fact } from "../lib/Fact";
+import { Logger } from "../lib/Logger";
 
 const BodySchema = z.array(
   z.object({
@@ -42,14 +43,29 @@ export async function factRequestHandler(
   }
 
   const requests = parsed.data as FactRequest[];
+  const userId = introspection.user.id;
+
+  Logger.log(`[factRequest] POST userId=${userId} requests=${requests.length}`);
+  for (let i = 0; i < requests.length; i++) {
+    Logger.log(`[factRequest] request[${i}] alias=${requests[i].alias} op=${requests[i].context.operation}`);
+  }
+
   const results: Record<string, string | number | boolean> = {};
 
-  for (const req of requests) {
-    const value = await Fact.resolve(req.context, introspection.user.id);
+  for (let i = 0; i < requests.length; i++) {
+    const req = requests[i];
+    Logger.log(`[factRequest] resolving request[${i}] alias=${req.alias} op=${req.context.operation}...`);
+    const value = await Fact.resolve(req.context, userId);
     if (value !== undefined) {
+      Logger.log(`[factRequest] request[${i}] alias=${req.alias} resolved value=${JSON.stringify(value)}`);
       results[req.alias] = value;
+    } else {
+      Logger.log(`[factRequest] request[${i}] alias=${req.alias} resolved undefined — omitted from results`);
     }
   }
+
+  const resolvedCount = Object.keys(results).length;
+  Logger.log(`[factRequest] done resolved=${resolvedCount}/${requests.length} results=${JSON.stringify(results)}`);
 
   return jsonReply({ results });
 }

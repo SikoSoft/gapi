@@ -9,14 +9,12 @@ import { FactRequest } from "api-spec/models/Medal";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { Fact } from "../lib/Fact";
 
-const BodySchema = z.object({
-  requests: z.array(
-    z.object({
-      alias: z.string(),
-      context: z.unknown(),
-    })
-  ),
-});
+const BodySchema = z.array(
+  z.object({
+    alias: z.string(),
+    context: z.unknown(),
+  })
+);
 
 export async function factRequestHandler(
   request: HttpRequest,
@@ -43,7 +41,7 @@ export async function factRequestHandler(
     return { status: 400, body: parsed.error.message };
   }
 
-  const requests = parsed.data.requests as FactRequest[];
+  const requests = parsed.data as FactRequest[];
   const results: Record<string, string | number | boolean> = {};
 
   for (const req of requests) {

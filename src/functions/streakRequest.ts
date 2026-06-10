@@ -12,18 +12,16 @@ import { forbiddenReply, introspect, jsonReply } from "..";
 import { Setting } from "../lib/Setting";
 import { Streak } from "../lib/Streak";
 
-const BodySchema = z.object({
-  requests: z.array(
-    z.object({
-      alias: z.string(),
-      segmentUnit: z.nativeEnum(SegmentationTimeUnit),
-      length: z.number().int().positive(),
-      innerContext: z.unknown(),
-      innerOperator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),
-      innerValue: z.union([z.string(), z.number(), z.boolean()]),
-    })
-  ),
-});
+const BodySchema = z.array(
+  z.object({
+    alias: z.string(),
+    segmentUnit: z.nativeEnum(SegmentationTimeUnit),
+    length: z.number().int().positive(),
+    innerContext: z.unknown(),
+    innerOperator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),
+    innerValue: z.union([z.string(), z.number(), z.boolean()]),
+  })
+);
 
 export async function streakRequestHandler(
   request: HttpRequest,
@@ -50,7 +48,7 @@ export async function streakRequestHandler(
     return { status: 400, body: parsed.error.message };
   }
 
-  const requests = parsed.data.requests as StreakRequest[];
+  const requests = parsed.data as StreakRequest[];
 
   const settingsRes = await Setting.getForUser(introspection.user.id);
   const utcOffsetMinutes = settingsRes.isOk()

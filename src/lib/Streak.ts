@@ -55,12 +55,13 @@ export class Streak {
   }
 
   /**
-   * Evaluates every StreakRequest and returns a map of alias → consecutive count.
+   * Evaluates every StreakRequest and returns a map of alias → longest consecutive count
+   * found anywhere within the lookback window.
    *
-   * For each request the last `length` segments are walked from newest to oldest.
-   * Evaluation stops at the first segment where the inner condition is not met, or where
-   * data is absent for that segment — both break the streak. Count is 0 if the current
-   * segment already fails.
+   * All `length` segments are examined regardless of where breaks occur, so a gap caused
+   * by missing data (e.g. scheduler downtime) does not hide an earlier run. A segment
+   * where the condition fails or data is absent resets the current run; the highest run
+   * seen across the full window is returned.
    *
    * ANALYSIS_CLASSIFICATION streaks query the `analysisClassificationResult` table by
    * (userId, analysisType, segmentUnit, segmentKey). The `filter` field on the innerContext
@@ -78,7 +79,8 @@ export class Streak {
 
     for (const req of streakRequests) {
       const segments = Streak.generateLookbackSegments(req.segmentUnit, req.length, now, utcOffsetMinutes);
-      let count = 0;
+      let maxCount = 0;
+      let currentCount = 0;
 
       if (req.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
         const keys = segments.map(s => s.key);
@@ -93,13 +95,12 @@ export class Streak {
         const byKey = new Map(rows.map(r => [r.segmentKey, JSON.parse(r.value) as FactValue]));
         for (const segment of segments) {
           const value = byKey.get(segment.key);
-          if (value === undefined) {
-            break;
+          if (value !== undefined && Streak.evalInner(value, req.innerOperator, req.innerValue)) {
+            currentCount++;
+          } else {
+            if (currentCount > maxCount) { maxCount = currentCount; }
+            currentCount = 0;
           }
-          if (!Streak.evalInner(value, req.innerOperator, req.innerValue)) {
-            break;
-          }
-          count++;
         }
       } else {
         for (const segment of segments) {
@@ -111,16 +112,16 @@ export class Streak {
             break;
           }
           const value = await Fact.resolve(ctx, userId);
-          if (value === undefined) {
-            break;
+          if (value !== undefined && Streak.evalInner(value, req.innerOperator, req.innerValue)) {
+            currentCount++;
+          } else {
+            if (currentCount > maxCount) { maxCount = currentCount; }
+            currentCount = 0;
           }
-          if (!Streak.evalInner(value, req.innerOperator, req.innerValue)) {
-            break;
-          }
-          count++;
         }
       }
 
+      const count = Math.max(maxCount, currentCount);
       Logger.log(
         `[Streak] alias=${req.alias} unit=${req.segmentUnit} length=${req.length} utcOffset=${utcOffsetMinutes} count=${count}`
       );

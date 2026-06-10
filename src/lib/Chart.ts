@@ -76,6 +76,7 @@ export class Chart {
           segments,
           resolvedWindow,
           userId,
+          request.config.segmentation.unit,
           working
         );
       }
@@ -109,6 +110,7 @@ export class Chart {
     segments: ChartSegment[],
     resolvedWindow: { start: Date; end: Date },
     userId: string,
+    segmentUnit: SegmentationTimeUnit,
     working: WorkingResult
   ): Promise<void> {
     const uncachedSegments: ChartSegment[] = [];
@@ -178,6 +180,28 @@ export class Chart {
         userId,
         value
       );
+      try {
+        await prisma.analysisClassificationResult.upsert({
+          where: {
+            userId_analysisType_segmentUnit_segmentKey: {
+              userId,
+              analysisType: dataPoint.analysisType,
+              segmentUnit,
+              segmentKey: key,
+            },
+          },
+          create: {
+            userId,
+            analysisType: dataPoint.analysisType,
+            segmentUnit,
+            segmentKey: key,
+            value: JSON.stringify(value),
+          },
+          update: { value: JSON.stringify(value) },
+        });
+      } catch (error) {
+        Logger.error("[Chart] Failed to persist analysisClassificationResult", { error });
+      }
       working.get(key)![dataPointIndex] = value;
     }
   }

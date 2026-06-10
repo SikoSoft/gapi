@@ -8,7 +8,9 @@ import { z } from "zod";
 import { StreakRequest } from "api-spec/models/Medal";
 import { SettingName } from "api-spec/models/Setting";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
+import { FactOperation } from "api-spec/models/Fact";
 import { forbiddenReply, introspect, jsonReply } from "..";
+import { AnalysisClassificationScheduler } from "../lib/AnalysisClassificationScheduler";
 import { Setting } from "../lib/Setting";
 import { Streak } from "../lib/Streak";
 
@@ -54,6 +56,16 @@ export async function streakRequestHandler(
   const utcOffsetMinutes = settingsRes.isOk()
     ? (settingsRes.value[SettingName.TIMEZONE] as number) ?? 0
     : 0;
+
+  for (const req of requests) {
+    if (req.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
+      await AnalysisClassificationScheduler.seedMissingSegments(
+        req,
+        introspection.user.id,
+        utcOffsetMinutes
+      );
+    }
+  }
 
   const results = await Streak.resolveStreaks(
     requests,

@@ -39,6 +39,144 @@ export class AnalysisClassificationScheduler {
   }
 
   /**
+   * Ensures all lookback segments for a single ANALYSIS_CLASSIFICATION streak request
+   * exist in analysisClassificationResult before the caller evaluates the streak.
+   * Segments already present are skipped. Missing segments are batched into a single
+   * Assist call and the results are written before returning.
+   *
+   * Called by the streakRequest endpoint so it is self-sufficient — no prior chart
+   * render or scheduler run is required to get accurate streak counts.
+   */
+  static async seedMissingSegments(
+    req: StreakRequest,
+    userId: string,
+    utcOffsetMinutes: number
+  ): Promise<void> {
+    if (req.innerContext.operation !== FactOperation.ANALYSIS_CLASSIFICATION) {
+      return;
+    }
+
+    const eligibleConfigIds = await AnalysisClassificationScheduler.eligibleEntityConfigIds(
+      req.innerContext.filter
+    );
+
+    if (eligibleConfigIds.length === 0) {
+      Logger.log(
+        `[AnalysisClassificationScheduler] seedMissingSegments: no eligible entityConfigs for analysisType=${req.innerContext.analysisType}`
+      );
+      return;
+    }
+
+    const now = new Date();
+    const allSegments = Streak.generateLookbackSegments(
+      req.segmentUnit,
+      req.length,
+      now,
+      utcOffsetMinutes
+    );
+
+    const existingRows = await prisma.analysisClassificationResult.findMany({
+      where: {
+        userId,
+        analysisType: req.innerContext.analysisType,
+        segmentUnit: req.segmentUnit,
+        segmentKey: { in: allSegments.map(s => s.key) },
+      },
+      select: { segmentKey: true },
+    });
+    const existingKeys = new Set(existingRows.map(r => r.segmentKey));
+    const missingSegments = allSegments.filter(s => !existingKeys.has(s.key));
+
+    if (missingSegments.length === 0) {
+      return;
+    }
+
+    Logger.log(
+      `[AnalysisClassificationScheduler] seedMissingSegments userId=${userId} analysisType=${req.innerContext.analysisType} missing=${missingSegments.length}/${allSegments.length}`
+    );
+
+    // Fetch entities across the full missing window in one query
+    const windowStart = missingSegments[missingSegments.length - 1].start;
+    const windowEnd = missingSegments[0].end;
+
+    const entities = await AnalysisClassificationScheduler.fetchEntitiesForSegment(
+      userId,
+      { ...req.innerContext.filter, includeTypes: eligibleConfigIds },
+      windowStart,
+      windowEnd
+    );
+
+    if (entities.length === 0) {
+      Logger.log(
+        `[AnalysisClassificationScheduler] seedMissingSegments userId=${userId} analysisType=${req.innerContext.analysisType} no entities in window — skipping`
+      );
+      return;
+    }
+
+    // Only ask Assist to classify segments that actually contain entities
+    const assistSegments: AssistSegment[] = missingSegments
+      .filter(s =>
+        entities.some(e => {
+          const t = new Date(e.createdAt).getTime();
+          return t >= s.start.getTime() && t <= s.end.getTime();
+        })
+      )
+      .map(s => ({ key: s.key, start: s.start.toISOString(), end: s.end.toISOString() }));
+
+    if (assistSegments.length === 0) {
+      return;
+    }
+
+    const assistResult = await Assist.analyzeChart({
+      analysisType: req.innerContext.analysisType,
+      entities,
+      segments: assistSegments,
+    });
+
+    if (assistResult.isErr()) {
+      Logger.error(
+        `[AnalysisClassificationScheduler] seedMissingSegments Assist.analyzeChart failed userId=${userId} analysisType=${req.innerContext.analysisType}`,
+        { error: assistResult.error }
+      );
+      return;
+    }
+
+    for (const { key, value } of assistResult.value.results) {
+      if (value === null) {
+        continue;
+      }
+      try {
+        await prisma.analysisClassificationResult.upsert({
+          where: {
+            userId_analysisType_segmentUnit_segmentKey: {
+              userId,
+              analysisType: req.innerContext.analysisType,
+              segmentUnit: req.segmentUnit,
+              segmentKey: key,
+            },
+          },
+          create: {
+            userId,
+            analysisType: req.innerContext.analysisType,
+            segmentUnit: req.segmentUnit,
+            segmentKey: key,
+            value: JSON.stringify(value),
+          },
+          update: { value: JSON.stringify(value) },
+        });
+        Logger.log(
+          `[AnalysisClassificationScheduler] seedMissingSegments upserted userId=${userId} analysisType=${req.innerContext.analysisType} segmentKey=${key} value=${value}`
+        );
+      } catch (error) {
+        Logger.error(
+          `[AnalysisClassificationScheduler] seedMissingSegments upsert failed userId=${userId} analysisType=${req.innerContext.analysisType} segmentKey=${key}`,
+          { error }
+        );
+      }
+    }
+  }
+
+  /**
    * Scans all MedalConfigs and returns the unique (analysisType, segmentUnit, filter)
    * combinations from any streakRequest that uses ANALYSIS_CLASSIFICATION.
    * Deduplicates on (analysisType, segmentUnit) — the first filter encountered wins,

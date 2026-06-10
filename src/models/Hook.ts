@@ -1,13 +1,10 @@
+import { HookType } from "api-spec/models/Hook";
+import { AnalysisClassificationType } from "api-spec/models/Fact";
+import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 import { EntityBodyPayload } from "./Entity";
+import { FactValue } from "../lib/Fact";
 
-export enum HookType {
-  PRE_CREATE = "preCreate",
-  POST_CREATE = "postCreate",
-  PRE_UPDATE = "preUpdate",
-  POST_UPDATE = "postUpdate",
-  PRE_DELETE = "preDelete",
-  POST_DELETE = "postDelete",
-}
+export { HookType };
 
 export type PreCreateContext = {
   type: HookType.PRE_CREATE;
@@ -48,13 +45,23 @@ export type PostDeleteContext = {
   entityId: number;
 };
 
+export type PostAnalysisClassificationContext = {
+  type: HookType.POST_ANALYSIS_CLASSIFICATION;
+  userId: string;
+  analysisType: AnalysisClassificationType;
+  segmentUnit: SegmentationTimeUnit;
+  segmentKey: string;
+  value: FactValue;
+};
+
 export type HookContext =
   | PreCreateContext
   | PostCreateContext
   | PreUpdateContext
   | PostUpdateContext
   | PreDeleteContext
-  | PostDeleteContext;
+  | PostDeleteContext
+  | PostAnalysisClassificationContext;
 
 export type HookHandler = (context: HookContext) => Promise<void>;
 

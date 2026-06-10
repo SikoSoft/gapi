@@ -9,8 +9,10 @@ import { AnalysisClassificationType } from "api-spec/models/Fact";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 import { jsonReply } from "..";
 import { prisma } from "..";
+import { Hook } from "../lib/Hook";
 import { Streak } from "../lib/Streak";
 import { Logger } from "../lib/Logger";
+import { HookType } from "../models/Hook";
 
 const WriteBodySchema = z.object({
   userId: z.string().uuid(),
@@ -62,6 +64,15 @@ export async function analysisClassificationResult(
         Logger.log(
           `[analysisClassificationResult] upserted id=${result.id} userId=${userId} type=${analysisType} unit=${segmentUnit} key=${segmentKey}`
         );
+
+        await Hook.trigger({
+          type: HookType.POST_ANALYSIS_CLASSIFICATION,
+          userId,
+          analysisType,
+          segmentUnit,
+          segmentKey,
+          value,
+        });
 
         return jsonReply({ id: result.id, segmentKey: result.segmentKey });
       } catch (error) {

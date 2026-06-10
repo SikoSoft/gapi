@@ -259,7 +259,14 @@ export class AnalysisClassificationScheduler {
     }
 
     if (wroteAny) {
-      await Hook.trigger({ type: HookType.POST_CREATE, userId, data: {}, entityId: 0 });
+      await Hook.trigger({
+        type: HookType.POST_ANALYSIS_CLASSIFICATION,
+        userId,
+        analysisType: target.analysisType,
+        segmentUnit: target.segmentUnit,
+        segmentKey: segment.key,
+        value: assistResult.value.results.find(r => r.key === segment.key)?.value ?? 0,
+      });
     }
   }
 

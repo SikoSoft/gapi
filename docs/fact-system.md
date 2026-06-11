@@ -15,6 +15,7 @@ Each `FactContext` has an `operation` field that determines the computation path
 | `entityCount` | Number of entities matching a list filter | `filter: ListFilter` |
 | `uniqueTagCount` | Count of distinct tag labels across filtered entities | `filter: ListFilter` |
 | `medalCount` | Number of times a specific medal config (or series) has been earned | `medalConfigId`, `series`, optional `start`/`end` |
+| `propertySum` | Sum of all integer property values for the given property across filtered entities | `propertyConfigId: number`, `filter: ListFilter` |
 | `analysisClassification` | A numeric value produced by an external AI analysis service | `filter: ListFilter`, `analysisType: AnalysisClassificationType` |
 
 Available `analysisType` values: `"morningFasting"`, `"afternoonSnacking"`, `"caffeineIntake"`.
@@ -42,6 +43,7 @@ TTLs by operation (defined in `src/models/FactCache.ts`):
 | `entityCount` | 1 hour |
 | `uniqueTagCount` | 1 hour |
 | `medalCount` | 1 hour |
+| `propertySum` | 1 hour |
 | `analysisClassification` | 24 hours |
 
 Cache errors (DB failures on read or write) are treated as misses — the system always falls back to a fresh computation rather than throwing.

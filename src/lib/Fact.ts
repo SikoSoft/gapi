@@ -197,6 +197,7 @@ export class Fact {
    * - ENTITY_COUNT: filtered count via EntityListQueryBuilder
    * - UNIQUE_TAG_COUNT: distinct tag labels across filtered entities
    * - MEDAL_COUNT: awarded medal count with optional date range
+   * - PROPERTY_SUM: sum of all IntPropertyValues for the given propertyConfigId across filtered entities
    * - ANALYSIS_CLASSIFICATION: always returns undefined — this operation's values come from an
    *   external AI pipeline and must be pre-seeded into FactCache via `writeCache` (Chart engine
    *   path) or queried from `analysisClassificationResult` directly (streak path). The `filter`
@@ -249,6 +250,29 @@ export class Fact {
         });
         Logger.log(`[Fact] compute MEDAL_COUNT userId=${userId} medalConfigId=${context.medalConfigId} series=${context.series} result=${count}`);
         return count;
+      }
+      case FactOperation.PROPERTY_SUM: {
+        const builder = new EntityListQueryBuilder();
+        builder.setUserId(userId);
+        builder.setFilter(context.filter);
+        const entityIds = await builder.runIdsQuery();
+        Logger.log(`[Fact] compute PROPERTY_SUM userId=${userId} propertyConfigId=${context.propertyConfigId} entityIds.length=${entityIds.length}`);
+        if (entityIds.length === 0) {
+          Logger.log(`[Fact] compute PROPERTY_SUM userId=${userId} propertyConfigId=${context.propertyConfigId} result=0 (no entities)`);
+          return 0;
+        }
+        const agg = await prisma.intPropertyValue.aggregate({
+          _sum: { value: true },
+          where: {
+            entityPropertyValue: {
+              entityId: { in: entityIds },
+              propertyConfigId: context.propertyConfigId,
+            },
+          },
+        });
+        const sum = agg._sum.value ?? 0;
+        Logger.log(`[Fact] compute PROPERTY_SUM userId=${userId} propertyConfigId=${context.propertyConfigId} result=${sum}`);
+        return sum;
       }
       case FactOperation.ANALYSIS_CLASSIFICATION:
         Logger.log(`[Fact] compute ANALYSIS_CLASSIFICATION userId=${userId} — skipped (handled externally)`);

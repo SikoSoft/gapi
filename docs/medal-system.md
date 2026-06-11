@@ -48,6 +48,21 @@ A `FactRequest` binds a `FactContext` to an **alias** string. The alias is used 
 
 The Fact system resolves this via `Fact.resolve(context, userId)` and stores the result as `facts["fastingDays"] = <computed value>`. See [fact-system.md](./fact-system.md) for the full list of operations and caching behaviour.
 
+A `propertySum` fact request looks like:
+
+```json
+{
+  "alias": "totalCalories",
+  "context": {
+    "operation": "propertySum",
+    "propertyConfigId": 7,
+    "filter": { "includeTypes": [3] }
+  }
+}
+```
+
+This sums all integer values of the property with `propertyConfigId: 7` across entities matching the filter. If an entity has the property set multiple times (repeatable property), each value is included in the sum.
+
 ---
 
 ## StreakRequests
@@ -74,9 +89,11 @@ A `StreakRequest` measures **consecutive time periods** where a condition held. 
 
 Segment boundaries are computed in the **user's local timezone** (read from the `TIMEZONE` setting, stored as UTC offset minutes). For example, a `DAY` segment at UTC+5:30 runs from 00:00 to 23:59 Indian Standard Time, not UTC midnight.
 
-### Non-classification streaks (entityCount, uniqueTagCount, medalCount)
+### Non-classification streaks (entityCount, uniqueTagCount, medalCount, propertySum)
 
 For these operations the streak engine calls `Fact.resolve` with the date range for each segment injected into the `innerContext.filter`. The result is a regular cached fact lookup scoped to that time window.
+
+`propertySum` computes the sum of all integer property values (identified by `propertyConfigId`) across entities that match the filter within the segment's time window. If no matching entities have the property, the segment value is 0.
 
 ### analysisClassification streaks
 
@@ -158,7 +175,7 @@ The transaction isolation prevents race conditions where two concurrent requests
 
 ### What triggers a disbursement check
 
-**Entity-based medals** (`entityCount`, `uniqueTagCount`, `medalCount` criteria): `Entity.ts` calls `Hook.trigger` on every entity create, update, and delete. `processHook` dequeues these asynchronously and runs `checkForDisbursement`.
+**Entity-based medals** (`entityCount`, `uniqueTagCount`, `medalCount`, `propertySum` criteria): `Entity.ts` calls `Hook.trigger` on every entity create, update, and delete. `processHook` dequeues these asynchronously and runs `checkForDisbursement`.
 
 **Analysis-classification streak medals**: entity mutations are the wrong trigger because the AI data for the current segment won't exist yet at mutation time. Two triggers cover this instead:
 

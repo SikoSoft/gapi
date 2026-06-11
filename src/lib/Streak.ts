@@ -269,6 +269,8 @@ export class Streak {
    * Returns a copy of `ctx` with a time range filter injected so the fact is scoped
    * to a single streak segment. Returns null for operations that cannot accept a date
    * range (e.g. ANALYSIS_CLASSIFICATION, which is handled via a direct DB query instead).
+   * ENTITY_COUNT, UNIQUE_TAG_COUNT, and PROPERTY_SUM inject the range into filter.time.
+   * MEDAL_COUNT injects into top-level start/end fields.
    */
   private static injectDateRange(
     ctx: FactContext,
@@ -281,6 +283,7 @@ export class Streak {
     switch (ctx.operation) {
       case FactOperation.ENTITY_COUNT:
       case FactOperation.UNIQUE_TAG_COUNT:
+      case FactOperation.PROPERTY_SUM:
         return {
           ...ctx,
           filter: {

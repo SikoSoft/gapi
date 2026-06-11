@@ -10,6 +10,7 @@ export const FACT_TTL_MS: Record<FactOperation, number> = {
   [FactOperation.UNIQUE_TAG_COUNT]: 60 * 60 * 1000,
   [FactOperation.MEDAL_COUNT]: 60 * 60 * 1000,
   [FactOperation.ANALYSIS_CLASSIFICATION]: 24 * 60 * 60 * 1000,
+  [FactOperation.PROPERTY_SUM]: 60 * 60 * 1000,
 };
 
 const prismaFactCacheValidator =

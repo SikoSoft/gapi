@@ -71,3 +71,12 @@ The `factCache` function (`src/functions/factCache.ts`) exposes cache management
 
 - `bypassCache: true` in `FactResolveOptions` forces recomputation and skips both the cache read and the cache write. The Streak engine passes this flag when it injects custom date ranges so that segment-scoped queries never pollute or hit the shared cache.
 - `analysisClassification` contexts return `undefined` from `Fact.compute` intentionally. The value must already be in the cache before a medal evaluation referencing it can succeed. If it is absent, the medal config is skipped for that disbursement pass.
+
+## Adding a new FactOperation
+
+When adding a new `FactOperation`, update **all** of these locations or the system will silently break:
+
+1. **`api-spec`** — add the operation to the `FactOperation` enum and define its `FactContext` shape.
+2. **`src/models/FactCache.ts`** — add a TTL entry for the new operation in `FACT_TTL_MS`.
+3. **`src/lib/Fact.ts` → `compute()`** — add a `case` to handle the computation.
+4. **`src/lib/Chart.ts` → `applySegmentToContext()`** — add a `case` that returns the context with the segment's time range applied. **Omitting this causes `applySegmentToContext` to return `undefined`, which propagates to `Fact.resolve` and crashes with a crypto hash error (`ERR_INVALID_ARG_TYPE`) at runtime.** Filter-scoped operations (those with a `filter` field) should follow the `ENTITY_COUNT` / `PROPERTY_SUM` pattern; date-range-scoped operations (like `MEDAL_COUNT`) should apply `start`/`end` directly.

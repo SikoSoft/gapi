@@ -496,6 +496,8 @@ export class Chart {
     };
   }
 
+  // Every FactOperation must have a case here. A missing case returns undefined,
+  // which crashes Fact.contextKey with ERR_INVALID_ARG_TYPE. See docs/fact-system.md.
   private static applySegmentToContext(
     context: FactContext,
     segment: ChartSegment
@@ -509,6 +511,7 @@ export class Chart {
     switch (context.operation) {
       case FactOperation.ENTITY_COUNT:
       case FactOperation.UNIQUE_TAG_COUNT:
+      case FactOperation.PROPERTY_SUM:
       case FactOperation.ANALYSIS_CLASSIFICATION:
         return {
           ...context,

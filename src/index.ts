@@ -77,6 +77,20 @@ export const introspect = async (
     const session = sessionRes.value;
 
     if (session) {
+      const now = new Date();
+      const timeRemaining = session.expiresAt.getTime() - now.getTime();
+      let effectiveExpiresAt = session.expiresAt;
+
+      if (timeRemaining < IdentityManager.SESSION_EXTENSION_THRESHOLD_MS) {
+        const extendRes = await IdentityManager.extendSession(
+          authToken,
+          session.createdAt
+        );
+        if (!extendRes.isErr()) {
+          effectiveExpiresAt = extendRes.value;
+        }
+      }
+
       return {
         isLoggedIn: true,
         isSystem: false,
@@ -92,7 +106,7 @@ export const introspect = async (
           ? { googleLink: true, googleAccount: session.user.googleAccount[0] }
           : { googleLink: false }),
         sessionId: authToken,
-        expiresAt: session.expiresAt,
+        expiresAt: effectiveExpiresAt,
       };
     }
   }

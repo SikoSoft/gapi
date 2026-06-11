@@ -25,6 +25,9 @@ export class IdentityManager {
   static readonly ALGORITHM = "aes-256-gcm";
   static IV_LENGTH = 12;
   static KEY = IdentityManager.getValidatedEncryptionKey();
+  static readonly SESSION_EXTENSION_THRESHOLD_MS = 60 * 60 * 1000;
+  static readonly SESSION_EXTENSION_DAYS = 1;
+  static readonly SESSION_MAX_LIFESPAN_DAYS = 7;
 
   private static getValidatedEncryptionKey(): Buffer {
     const encryptionKey = process.env.ENCRYPTION_KEY;
@@ -190,6 +193,36 @@ export class IdentityManager {
       return ok(result);
     } catch (error) {
       return err(error);
+    }
+  }
+
+  static async extendSession(
+    authToken: string,
+    createdAt: Date
+  ): Promise<Result<Date, Error>> {
+    try {
+      const now = new Date();
+      const maxExpiresAt = new Date(createdAt);
+      maxExpiresAt.setDate(
+        maxExpiresAt.getDate() + IdentityManager.SESSION_MAX_LIFESPAN_DAYS
+      );
+
+      const extendedExpiresAt = new Date(now);
+      extendedExpiresAt.setDate(
+        extendedExpiresAt.getDate() + IdentityManager.SESSION_EXTENSION_DAYS
+      );
+
+      const newExpiresAt =
+        extendedExpiresAt < maxExpiresAt ? extendedExpiresAt : maxExpiresAt;
+
+      await prisma.session.update({
+        where: { authToken },
+        data: { expiresAt: newExpiresAt },
+      });
+
+      return ok(newExpiresAt);
+    } catch (error) {
+      return err(new Error("Failed to extend session", { cause: error }));
     }
   }
 

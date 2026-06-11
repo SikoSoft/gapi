@@ -61,7 +61,7 @@ export class Chart {
         for (const segment of segments) {
           const scopedContext = Chart.applySegmentToContext(dataPoint, segment);
           Logger.log(`[Chart] resolving segment=${segment.key} dataPointIndex=${i} op=${dataPoint.operation}`);
-          const raw = await Fact.resolve(scopedContext, userId);
+          const raw = await Fact.resolve(scopedContext, userId, { bypassCache: !!request.resync });
           Logger.log(`[Chart] resolved segment=${segment.key} dataPointIndex=${i} op=${dataPoint.operation} raw=${JSON.stringify(raw)}`);
           working.get(segment.key)![i] = Chart.toWorkingValue(raw);
         }
@@ -77,7 +77,8 @@ export class Chart {
           resolvedWindow,
           userId,
           request.config.segmentation.unit,
-          working
+          working,
+          !!request.resync
         );
       }
 
@@ -111,21 +112,26 @@ export class Chart {
     resolvedWindow: { start: Date; end: Date },
     userId: string,
     segmentUnit: SegmentationTimeUnit,
-    working: WorkingResult
+    working: WorkingResult,
+    resync = false
   ): Promise<void> {
     const uncachedSegments: ChartSegment[] = [];
 
-    Logger.log(`[Chart] ANALYSIS_CLASSIFICATION checking cache for ${segments.length} segments`);
+    Logger.log(`[Chart] ANALYSIS_CLASSIFICATION checking cache for ${segments.length} segments resync=${resync}`);
     for (const segment of segments) {
       const scopedContext = Chart.applySegmentToContext(dataPoint, segment);
-      const cached = await Fact.fromCache(scopedContext, userId);
-      if (cached !== undefined) {
-        Logger.log(`[Chart] AI segment cache HIT segment=${segment.key} value=${JSON.stringify(cached)}`);
-        working.get(segment.key)![dataPointIndex] = cached as number;
-      } else {
+      if (!resync) {
+        const cached = await Fact.fromCache(scopedContext, userId);
+        if (cached !== undefined) {
+          Logger.log(`[Chart] AI segment cache HIT segment=${segment.key} value=${JSON.stringify(cached)}`);
+          working.get(segment.key)![dataPointIndex] = cached as number;
+          continue;
+        }
         Logger.log(`[Chart] AI segment cache MISS segment=${segment.key} — queuing for Assist`);
-        uncachedSegments.push(segment);
+      } else {
+        Logger.log(`[Chart] AI segment resync segment=${segment.key} — bypassing cache`);
       }
+      uncachedSegments.push(segment);
     }
 
     Logger.log(`[Chart] AI cache check done: ${segments.length - uncachedSegments.length} hits, ${uncachedSegments.length} misses`);

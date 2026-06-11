@@ -74,6 +74,7 @@ export async function chart(
         config: buildConfig(body),
         name: body.name,
         save: body.save,
+        resync: body.resync,
       };
 
       const res = await Chart.getChartData(chartRequest, userId);

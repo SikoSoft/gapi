@@ -35,6 +35,7 @@ export type ChartRequestBody = {
   config: ChartRequestBodyConfig;
   name?: string;
   save?: boolean;
+  resync?: boolean;
 };
 
 const dataWindowSchema = z.union([
@@ -80,6 +81,7 @@ export const ChartRequestBodySchema = z.object({
   ]),
   name: z.string().optional(),
   save: z.boolean().optional(),
+  resync: z.boolean().optional(),
 });
 
 export interface SavedChart {

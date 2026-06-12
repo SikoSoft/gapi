@@ -1,13 +1,66 @@
-import { FactContext, FactOperation } from "api-spec/models/Fact";
-import { StreakRequest } from "api-spec/models/Fact";
+import { FactContext, FactOperation, Streak as StreakSpec, StreakContext, StreakResult } from "api-spec/models/Fact";
 import { ListFilterTimeType } from "api-spec/models/List";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
+import { ok, err, Result } from "neverthrow";
 import { prisma } from "..";
 import { Fact, FactValue } from "./Fact";
 import { Logger } from "./Logger";
-import { SegmentInfo } from "../models/Streak";
+import { PrismaStreakConfig, SegmentInfo } from "../models/Streak";
 
 export class Streak {
+  static mapToSpec(row: PrismaStreakConfig): StreakSpec {
+    return {
+      id: row.id,
+      name: row.name,
+      userId: row.userId,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      context: row.context as unknown as StreakContext,
+    };
+  }
+
+  static async list(userId: string): Promise<Result<StreakSpec[], Error>> {
+    try {
+      const rows = await prisma.streakConfig.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+      });
+      return ok(rows.map(Streak.mapToSpec));
+    } catch (e) {
+      return err(new Error("Failed to list streaks", { cause: e }));
+    }
+  }
+
+  static async create(userId: string, name: string, context: StreakContext): Promise<Result<StreakSpec, Error>> {
+    try {
+      const row = await prisma.streakConfig.create({
+        data: { userId, name, context: context as object },
+      });
+      return ok(Streak.mapToSpec(row));
+    } catch (e) {
+      return err(new Error("Failed to create streak", { cause: e }));
+    }
+  }
+
+  static async update(id: number, userId: string, name?: string, context?: StreakContext): Promise<Result<StreakSpec, Error>> {
+    try {
+      const row = await prisma.streakConfig.findFirst({ where: { id, userId } });
+      if (!row) {
+        return err(new Error("Streak not found"));
+      }
+      const updated = await prisma.streakConfig.update({
+        where: { id },
+        data: {
+          ...(name !== undefined && { name }),
+          ...(context !== undefined && { context: context as object }),
+        },
+      });
+      return ok(Streak.mapToSpec(updated));
+    } catch (e) {
+      return err(new Error("Failed to update streak", { cause: e }));
+    }
+  }
+
   /**
    * Returns a human-readable string identifier for the segment that contains `utcDate`
    * after adjusting for the user's local timezone. Format by unit:
@@ -55,13 +108,9 @@ export class Streak {
   }
 
   /**
-   * Evaluates every StreakRequest and returns a map of alias → longest consecutive count
-   * found anywhere within the lookback window.
-   *
-   * All `length` segments are examined regardless of where breaks occur, so a gap caused
-   * by missing data (e.g. scheduler downtime) does not hide an earlier run. A segment
-   * where the condition fails or data is absent resets the current run; the highest run
-   * seen across the full window is returned.
+   * Evaluates every saved Streak and returns a StreakResult[] with separate `current`
+   * (consecutive count from the most recent period backwards until first break) and
+   * `longest` (longest consecutive run anywhere in the lookback window).
    *
    * ANALYSIS_CLASSIFICATION streaks query the `analysisClassificationResult` table by
    * (userId, analysisType, segmentUnit, segmentKey). The `filter` field on the innerContext
@@ -70,36 +119,39 @@ export class Streak {
    * All other operations use `Fact.resolve` with a date range injected by `injectDateRange`.
    */
   static async resolveStreaks(
-    streakRequests: StreakRequest[],
+    streaks: StreakSpec[],
     userId: string,
     utcOffsetMinutes: number
-  ): Promise<Record<string, FactValue>> {
-    const results: Record<string, FactValue> = {};
+  ): Promise<StreakResult[]> {
+    const results: StreakResult[] = [];
     const now = new Date();
 
-    for (const req of streakRequests) {
-      const op = req.context.innerContext.operation;
+    for (const streak of streaks) {
+      const ctx = streak.context;
+      const op = ctx.innerContext.operation;
       Logger.log(
-        `[Streak] resolveStreaks start alias=${req.alias} op=${op} segmentUnit=${req.context.segmentUnit}` +
-        ` length=${req.context.length} utcOffset=${utcOffsetMinutes} operator=${req.context.innerOperator} innerValue=${JSON.stringify(req.context.innerValue)}`
+        `[Streak] resolveStreaks start id=${streak.id} op=${op} segmentUnit=${ctx.segmentUnit}` +
+        ` length=${ctx.length} utcOffset=${utcOffsetMinutes} operator=${ctx.innerOperator} innerValue=${JSON.stringify(ctx.innerValue)}`
       );
 
-      const segments = Streak.generateLookbackSegments(req.context.segmentUnit, req.context.length, now, utcOffsetMinutes);
-      let maxCount = 0;
-      let currentCount = 0;
+      const segments = Streak.generateLookbackSegments(ctx.segmentUnit, ctx.length, now, utcOffsetMinutes);
+      let longest = 0;
+      let current = 0;
+      let runLength = 0;
+      let currentStillActive = true;
 
       if (op === FactOperation.ANALYSIS_CLASSIFICATION) {
         const keys = segments.map(s => s.key);
         Logger.log(
-          `[Streak] resolveStreaks alias=${req.alias} ANALYSIS_CLASSIFICATION querying analysisClassificationResult` +
-          ` analysisType=${req.context.innerContext.analysisType} segmentUnit=${req.context.segmentUnit} keys=[${keys.join(",")}]`
+          `[Streak] resolveStreaks id=${streak.id} ANALYSIS_CLASSIFICATION querying analysisClassificationResult` +
+          ` analysisType=${ctx.innerContext.analysisType} segmentUnit=${ctx.segmentUnit} keys=[${keys.join(",")}]`
         );
 
         const rows = await prisma.analysisClassificationResult.findMany({
           where: {
             userId,
-            analysisType: req.context.innerContext.analysisType,
-            segmentUnit: req.context.segmentUnit,
+            analysisType: ctx.innerContext.analysisType,
+            segmentUnit: ctx.segmentUnit,
             segmentKey: { in: keys },
           },
         });
@@ -108,72 +160,75 @@ export class Streak {
         const foundKeys = [...byKey.keys()];
         const missingKeys = keys.filter(k => !byKey.has(k));
         Logger.log(
-          `[Streak] resolveStreaks alias=${req.alias} DB returned rows=${rows.length}` +
+          `[Streak] resolveStreaks id=${streak.id} DB returned rows=${rows.length}` +
           ` found=[${foundKeys.join(",")}]` +
           ` missing=[${missingKeys.join(",")}]`
         );
 
         for (const segment of segments) {
           const value = byKey.get(segment.key);
-          if (value !== undefined && Streak.evalInner(value, req.context.innerOperator, req.context.innerValue)) {
-            currentCount++;
-            if (currentCount > maxCount) { maxCount = currentCount; }
+          if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
+            runLength++;
+            if (currentStillActive) { current = runLength; }
+            if (runLength > longest) { longest = runLength; }
             Logger.log(
-              `[Streak] resolveStreaks alias=${req.alias} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` condition: ${JSON.stringify(value)} ${req.context.innerOperator} ${JSON.stringify(req.context.innerValue)} → PASS` +
-              ` currentCount=${currentCount} maxCount=${maxCount}`
+              `[Streak] resolveStreaks id=${streak.id} segment=${segment.key} value=${JSON.stringify(value)}` +
+              ` condition: ${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} → PASS` +
+              ` runLength=${runLength} current=${current} longest=${longest}`
             );
           } else {
-            const reason = value === undefined ? "no data" : `${JSON.stringify(value)} ${req.context.innerOperator} ${JSON.stringify(req.context.innerValue)} is false`;
+            const reason = value === undefined ? "no data" : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} is false`;
             Logger.log(
-              `[Streak] resolveStreaks alias=${req.alias} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` → RESET (${reason}) currentCount=0 maxCount=${maxCount}`
+              `[Streak] resolveStreaks id=${streak.id} segment=${segment.key} value=${JSON.stringify(value)}` +
+              ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
             );
-            currentCount = 0;
+            currentStillActive = false;
+            runLength = 0;
           }
         }
       } else {
         for (const segment of segments) {
-          const ctx = Streak.injectDateRange(req.context.innerContext, segment.start, segment.end);
-          if (!ctx) {
+          const injected = Streak.injectDateRange(ctx.innerContext, segment.start, segment.end);
+          if (!injected) {
             Logger.error(
-              `[Streak] resolveStreaks alias=${req.alias} Cannot inject date range into op=${op} — skipping remaining segments`
+              `[Streak] resolveStreaks id=${streak.id} Cannot inject date range into op=${op} — skipping remaining segments`
             );
             break;
           }
 
-          const contextKey = Fact.contextKey(ctx);
+          const contextKey = Fact.contextKey(injected);
           Logger.log(
-            `[Streak] resolveStreaks alias=${req.alias} segment=${segment.key}` +
+            `[Streak] resolveStreaks id=${streak.id} segment=${segment.key}` +
             ` [${segment.start.toISOString()} → ${segment.end.toISOString()}]` +
             ` injected op=${op} contextKey=${contextKey} — calling Fact.resolve...`
           );
 
-          const value = await Fact.resolve(ctx, userId);
-          if (value !== undefined && Streak.evalInner(value, req.context.innerOperator, req.context.innerValue)) {
-            currentCount++;
-            if (currentCount > maxCount) { maxCount = currentCount; }
+          const value = await Fact.resolve(injected, userId);
+          if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
+            runLength++;
+            if (currentStillActive) { current = runLength; }
+            if (runLength > longest) { longest = runLength; }
             Logger.log(
-              `[Streak] resolveStreaks alias=${req.alias} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` condition: ${JSON.stringify(value)} ${req.context.innerOperator} ${JSON.stringify(req.context.innerValue)} → PASS` +
-              ` currentCount=${currentCount} maxCount=${maxCount}`
+              `[Streak] resolveStreaks id=${streak.id} segment=${segment.key} value=${JSON.stringify(value)}` +
+              ` condition: ${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} → PASS` +
+              ` runLength=${runLength} current=${current} longest=${longest}`
             );
           } else {
-            const reason = value === undefined ? "undefined from Fact.resolve" : `${JSON.stringify(value)} ${req.context.innerOperator} ${JSON.stringify(req.context.innerValue)} is false`;
+            const reason = value === undefined ? "undefined from Fact.resolve" : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} is false`;
             Logger.log(
-              `[Streak] resolveStreaks alias=${req.alias} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` → RESET (${reason}) currentCount=0 maxCount=${maxCount}`
+              `[Streak] resolveStreaks id=${streak.id} segment=${segment.key} value=${JSON.stringify(value)}` +
+              ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
             );
-            currentCount = 0;
+            currentStillActive = false;
+            runLength = 0;
           }
         }
       }
 
-      const count = Math.max(maxCount, currentCount);
       Logger.log(
-        `[Streak] resolveStreaks alias=${req.alias} COMPLETE maxRun=${maxCount} finalCurrent=${currentCount} count=${count}`
+        `[Streak] resolveStreaks id=${streak.id} COMPLETE current=${current} longest=${longest}`
       );
-      results[req.alias] = count;
+      results.push({ streakId: streak.id, current, longest });
     }
 
     return results;

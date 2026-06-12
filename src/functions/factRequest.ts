@@ -5,7 +5,7 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import { z } from "zod";
-import { FactRequest } from "api-spec/models/Medal";
+import { FactRequest } from "api-spec/models/Fact";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { Fact } from "../lib/Fact";
 import { Logger } from "../lib/Logger";
@@ -47,25 +47,39 @@ export async function factRequestHandler(
 
   Logger.log(`[factRequest] POST userId=${userId} requests=${requests.length}`);
   for (let i = 0; i < requests.length; i++) {
-    Logger.log(`[factRequest] request[${i}] alias=${requests[i].alias} op=${requests[i].context.operation}`);
+    Logger.log(
+      `[factRequest] request[${i}] alias=${requests[i].alias} op=${requests[i].context.operation}`
+    );
   }
 
   const results: Record<string, string | number | boolean> = {};
 
   for (let i = 0; i < requests.length; i++) {
     const req = requests[i];
-    Logger.log(`[factRequest] resolving request[${i}] alias=${req.alias} op=${req.context.operation}...`);
+    Logger.log(
+      `[factRequest] resolving request[${i}] alias=${req.alias} op=${req.context.operation}...`
+    );
     const value = await Fact.resolve(req.context, userId);
     if (value !== undefined) {
-      Logger.log(`[factRequest] request[${i}] alias=${req.alias} resolved value=${JSON.stringify(value)}`);
+      Logger.log(
+        `[factRequest] request[${i}] alias=${
+          req.alias
+        } resolved value=${JSON.stringify(value)}`
+      );
       results[req.alias] = value;
     } else {
-      Logger.log(`[factRequest] request[${i}] alias=${req.alias} resolved undefined — omitted from results`);
+      Logger.log(
+        `[factRequest] request[${i}] alias=${req.alias} resolved undefined — omitted from results`
+      );
     }
   }
 
   const resolvedCount = Object.keys(results).length;
-  Logger.log(`[factRequest] done resolved=${resolvedCount}/${requests.length} results=${JSON.stringify(results)}`);
+  Logger.log(
+    `[factRequest] done resolved=${resolvedCount}/${
+      requests.length
+    } results=${JSON.stringify(results)}`
+  );
 
   return jsonReply({ results });
 }

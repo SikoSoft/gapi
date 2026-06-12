@@ -1,5 +1,5 @@
 import { FactContext, FactOperation } from "api-spec/models/Fact";
-import { StreakRequest } from "api-spec/models/Medal";
+import { StreakRequest } from "api-spec/models/Fact";
 import { ListFilterTimeType } from "api-spec/models/List";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 import { prisma } from "..";
@@ -78,13 +78,13 @@ export class Streak {
     const now = new Date();
 
     for (const req of streakRequests) {
-      const op = req.innerContext.operation;
+      const op = req.context.innerContext.operation;
       Logger.log(
-        `[Streak] resolveStreaks start alias=${req.alias} op=${op} segmentUnit=${req.segmentUnit}` +
-        ` length=${req.length} utcOffset=${utcOffsetMinutes} operator=${req.innerOperator} innerValue=${JSON.stringify(req.innerValue)}`
+        `[Streak] resolveStreaks start alias=${req.alias} op=${op} segmentUnit=${req.context.segmentUnit}` +
+        ` length=${req.context.length} utcOffset=${utcOffsetMinutes} operator=${req.context.innerOperator} innerValue=${JSON.stringify(req.context.innerValue)}`
       );
 
-      const segments = Streak.generateLookbackSegments(req.segmentUnit, req.length, now, utcOffsetMinutes);
+      const segments = Streak.generateLookbackSegments(req.context.segmentUnit, req.context.length, now, utcOffsetMinutes);
       let maxCount = 0;
       let currentCount = 0;
 
@@ -92,14 +92,14 @@ export class Streak {
         const keys = segments.map(s => s.key);
         Logger.log(
           `[Streak] resolveStreaks alias=${req.alias} ANALYSIS_CLASSIFICATION querying analysisClassificationResult` +
-          ` analysisType=${req.innerContext.analysisType} segmentUnit=${req.segmentUnit} keys=[${keys.join(",")}]`
+          ` analysisType=${req.context.innerContext.analysisType} segmentUnit=${req.context.segmentUnit} keys=[${keys.join(",")}]`
         );
 
         const rows = await prisma.analysisClassificationResult.findMany({
           where: {
             userId,
-            analysisType: req.innerContext.analysisType,
-            segmentUnit: req.segmentUnit,
+            analysisType: req.context.innerContext.analysisType,
+            segmentUnit: req.context.segmentUnit,
             segmentKey: { in: keys },
           },
         });
@@ -115,16 +115,16 @@ export class Streak {
 
         for (const segment of segments) {
           const value = byKey.get(segment.key);
-          if (value !== undefined && Streak.evalInner(value, req.innerOperator, req.innerValue)) {
+          if (value !== undefined && Streak.evalInner(value, req.context.innerOperator, req.context.innerValue)) {
             currentCount++;
             if (currentCount > maxCount) { maxCount = currentCount; }
             Logger.log(
               `[Streak] resolveStreaks alias=${req.alias} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` condition: ${JSON.stringify(value)} ${req.innerOperator} ${JSON.stringify(req.innerValue)} → PASS` +
+              ` condition: ${JSON.stringify(value)} ${req.context.innerOperator} ${JSON.stringify(req.context.innerValue)} → PASS` +
               ` currentCount=${currentCount} maxCount=${maxCount}`
             );
           } else {
-            const reason = value === undefined ? "no data" : `${JSON.stringify(value)} ${req.innerOperator} ${JSON.stringify(req.innerValue)} is false`;
+            const reason = value === undefined ? "no data" : `${JSON.stringify(value)} ${req.context.innerOperator} ${JSON.stringify(req.context.innerValue)} is false`;
             Logger.log(
               `[Streak] resolveStreaks alias=${req.alias} segment=${segment.key} value=${JSON.stringify(value)}` +
               ` → RESET (${reason}) currentCount=0 maxCount=${maxCount}`
@@ -134,7 +134,7 @@ export class Streak {
         }
       } else {
         for (const segment of segments) {
-          const ctx = Streak.injectDateRange(req.innerContext, segment.start, segment.end);
+          const ctx = Streak.injectDateRange(req.context.innerContext, segment.start, segment.end);
           if (!ctx) {
             Logger.error(
               `[Streak] resolveStreaks alias=${req.alias} Cannot inject date range into op=${op} — skipping remaining segments`
@@ -150,16 +150,16 @@ export class Streak {
           );
 
           const value = await Fact.resolve(ctx, userId);
-          if (value !== undefined && Streak.evalInner(value, req.innerOperator, req.innerValue)) {
+          if (value !== undefined && Streak.evalInner(value, req.context.innerOperator, req.context.innerValue)) {
             currentCount++;
             if (currentCount > maxCount) { maxCount = currentCount; }
             Logger.log(
               `[Streak] resolveStreaks alias=${req.alias} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` condition: ${JSON.stringify(value)} ${req.innerOperator} ${JSON.stringify(req.innerValue)} → PASS` +
+              ` condition: ${JSON.stringify(value)} ${req.context.innerOperator} ${JSON.stringify(req.context.innerValue)} → PASS` +
               ` currentCount=${currentCount} maxCount=${maxCount}`
             );
           } else {
-            const reason = value === undefined ? "undefined from Fact.resolve" : `${JSON.stringify(value)} ${req.innerOperator} ${JSON.stringify(req.innerValue)} is false`;
+            const reason = value === undefined ? "undefined from Fact.resolve" : `${JSON.stringify(value)} ${req.context.innerOperator} ${JSON.stringify(req.context.innerValue)} is false`;
             Logger.log(
               `[Streak] resolveStreaks alias=${req.alias} segment=${segment.key} value=${JSON.stringify(value)}` +
               ` → RESET (${reason}) currentCount=0 maxCount=${maxCount}`

@@ -1,5 +1,5 @@
 import { AnalysisClassificationType, FactOperation } from "api-spec/models/Fact";
-import { StreakRequest } from "api-spec/models/Medal";
+import { StreakRequest } from "api-spec/models/Fact";
 import { SettingName } from "api-spec/models/Setting";
 import { ListFilter, ListFilterTimeType } from "api-spec/models/List";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
@@ -52,25 +52,25 @@ export class AnalysisClassificationScheduler {
     userId: string,
     utcOffsetMinutes: number
   ): Promise<void> {
-    if (req.innerContext.operation !== FactOperation.ANALYSIS_CLASSIFICATION) {
+    if (req.context.innerContext.operation !== FactOperation.ANALYSIS_CLASSIFICATION) {
       return;
     }
 
     const eligibleConfigIds = await AnalysisClassificationScheduler.eligibleEntityConfigIds(
-      req.innerContext.filter
+      req.context.innerContext.filter
     );
 
     if (eligibleConfigIds.length === 0) {
       Logger.log(
-        `[AnalysisClassificationScheduler] seedMissingSegments: no eligible entityConfigs for analysisType=${req.innerContext.analysisType}`
+        `[AnalysisClassificationScheduler] seedMissingSegments: no eligible entityConfigs for analysisType=${req.context.innerContext.analysisType}`
       );
       return;
     }
 
     const now = new Date();
     const allSegments = Streak.generateLookbackSegments(
-      req.segmentUnit,
-      req.length,
+      req.context.segmentUnit,
+      req.context.length,
       now,
       utcOffsetMinutes
     );
@@ -78,8 +78,8 @@ export class AnalysisClassificationScheduler {
     const existingRows = await prisma.analysisClassificationResult.findMany({
       where: {
         userId,
-        analysisType: req.innerContext.analysisType,
-        segmentUnit: req.segmentUnit,
+        analysisType: req.context.innerContext.analysisType,
+        segmentUnit: req.context.segmentUnit,
         segmentKey: { in: allSegments.map(s => s.key) },
       },
       select: { segmentKey: true },
@@ -92,7 +92,7 @@ export class AnalysisClassificationScheduler {
     }
 
     Logger.log(
-      `[AnalysisClassificationScheduler] seedMissingSegments userId=${userId} analysisType=${req.innerContext.analysisType} missing=${missingSegments.length}/${allSegments.length}`
+      `[AnalysisClassificationScheduler] seedMissingSegments userId=${userId} analysisType=${req.context.innerContext.analysisType} missing=${missingSegments.length}/${allSegments.length}`
     );
 
     // Fetch entities across the full missing window in one query
@@ -101,14 +101,14 @@ export class AnalysisClassificationScheduler {
 
     const entities = await AnalysisClassificationScheduler.fetchEntitiesForSegment(
       userId,
-      { ...req.innerContext.filter, includeTypes: eligibleConfigIds },
+      { ...req.context.innerContext.filter, includeTypes: eligibleConfigIds },
       windowStart,
       windowEnd
     );
 
     if (entities.length === 0) {
       Logger.log(
-        `[AnalysisClassificationScheduler] seedMissingSegments userId=${userId} analysisType=${req.innerContext.analysisType} no entities in window — skipping`
+        `[AnalysisClassificationScheduler] seedMissingSegments userId=${userId} analysisType=${req.context.innerContext.analysisType} no entities in window — skipping`
       );
       return;
     }
@@ -128,14 +128,14 @@ export class AnalysisClassificationScheduler {
     }
 
     const assistResult = await Assist.analyzeChart({
-      analysisType: req.innerContext.analysisType,
+      analysisType: req.context.innerContext.analysisType,
       entities,
       segments: assistSegments,
     });
 
     if (assistResult.isErr()) {
       Logger.error(
-        `[AnalysisClassificationScheduler] seedMissingSegments Assist.analyzeChart failed userId=${userId} analysisType=${req.innerContext.analysisType}`,
+        `[AnalysisClassificationScheduler] seedMissingSegments Assist.analyzeChart failed userId=${userId} analysisType=${req.context.innerContext.analysisType}`,
         { error: assistResult.error }
       );
       return;
@@ -150,26 +150,26 @@ export class AnalysisClassificationScheduler {
           where: {
             userId_analysisType_segmentUnit_segmentKey: {
               userId,
-              analysisType: req.innerContext.analysisType,
-              segmentUnit: req.segmentUnit,
+              analysisType: req.context.innerContext.analysisType,
+              segmentUnit: req.context.segmentUnit,
               segmentKey: key,
             },
           },
           create: {
             userId,
-            analysisType: req.innerContext.analysisType,
-            segmentUnit: req.segmentUnit,
+            analysisType: req.context.innerContext.analysisType,
+            segmentUnit: req.context.segmentUnit,
             segmentKey: key,
             value: JSON.stringify(value),
           },
           update: { value: JSON.stringify(value) },
         });
         Logger.log(
-          `[AnalysisClassificationScheduler] seedMissingSegments upserted userId=${userId} analysisType=${req.innerContext.analysisType} segmentKey=${key} value=${value}`
+          `[AnalysisClassificationScheduler] seedMissingSegments upserted userId=${userId} analysisType=${req.context.innerContext.analysisType} segmentKey=${key} value=${value}`
         );
       } catch (error) {
         Logger.error(
-          `[AnalysisClassificationScheduler] seedMissingSegments upsert failed userId=${userId} analysisType=${req.innerContext.analysisType} segmentKey=${key}`,
+          `[AnalysisClassificationScheduler] seedMissingSegments upsert failed userId=${userId} analysisType=${req.context.innerContext.analysisType} segmentKey=${key}`,
           { error }
         );
       }
@@ -191,18 +191,18 @@ export class AnalysisClassificationScheduler {
     for (const config of configs) {
       const streakRequests = config.streakRequests as unknown as StreakRequest[];
       for (const req of streakRequests) {
-        if (req.innerContext.operation !== FactOperation.ANALYSIS_CLASSIFICATION) {
+        if (req.context.innerContext.operation !== FactOperation.ANALYSIS_CLASSIFICATION) {
           continue;
         }
-        const key = `${req.innerContext.analysisType}:${req.segmentUnit}`;
+        const key = `${req.context.innerContext.analysisType}:${req.context.segmentUnit}`;
         if (seen.has(key)) {
           continue;
         }
         seen.add(key);
         targets.push({
-          analysisType: req.innerContext.analysisType,
-          segmentUnit: req.segmentUnit,
-          filter: req.innerContext.filter,
+          analysisType: req.context.innerContext.analysisType,
+          segmentUnit: req.context.segmentUnit,
+          filter: req.context.innerContext.filter,
         });
       }
     }

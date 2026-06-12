@@ -2,7 +2,8 @@ import { Result, err, ok } from "neverthrow";
 import { Prisma } from "@prisma/client";
 import { prisma } from "..";
 import { Medal as MedalSpec } from "api-spec/models";
-import { Criteria, Criterion, FactRequest, StreakRequest } from "api-spec/models/Medal";
+import { Criteria, Criterion, FactRequest } from "api-spec/models/Medal";
+import { StreakRequest } from "api-spec/models/Fact";
 import { SettingName } from "api-spec/models/Setting";
 import { HookContext } from "../models/Hook";
 import {
@@ -31,7 +32,7 @@ export class Medal {
       prestige: config.prestige,
       icon: config.icon,
       factRequests: config.factRequests as unknown as MedalSpec.FactRequest[],
-      streakRequests: config.streakRequests as unknown as MedalSpec.StreakRequest[],
+      streakRequests: config.streakRequests as unknown as StreakRequest[],
       criteria: config.criteria as MedalSpec.Criterion | MedalSpec.Criteria,
       createdAt: config.createdAt.toISOString(),
       updatedAt: config.updatedAt.toISOString(),

@@ -25,11 +25,13 @@ const FactRequestSchema = z.object({
 
 const StreakRequestSchema = z.object({
   alias: z.string(),
-  segmentUnit: z.nativeEnum(SegmentationTimeUnit),
-  length: z.number().int().positive(),
-  innerContext: z.unknown(),
-  innerOperator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),
-  innerValue: z.union([z.string(), z.number(), z.boolean()]),
+  context: z.object({
+    segmentUnit: z.nativeEnum(SegmentationTimeUnit),
+    length: z.number().int().positive(),
+    innerContext: z.unknown(),
+    innerOperator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),
+    innerValue: z.union([z.string(), z.number(), z.boolean()]),
+  }),
 });
 
 export const MedalConfigCreateBodySchema = z.object({

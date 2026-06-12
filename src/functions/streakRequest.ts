@@ -5,7 +5,7 @@ import {
   InvocationContext,
 } from "@azure/functions";
 import { z } from "zod";
-import { StreakRequest } from "api-spec/models/Medal";
+import { StreakRequest } from "api-spec/models/Fact";
 import { SettingName } from "api-spec/models/Setting";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 import { FactOperation } from "api-spec/models/Fact";
@@ -18,11 +18,13 @@ import { Streak } from "../lib/Streak";
 const BodySchema = z.array(
   z.object({
     alias: z.string(),
-    segmentUnit: z.nativeEnum(SegmentationTimeUnit),
-    length: z.number().int().positive(),
-    innerContext: z.unknown(),
-    innerOperator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),
-    innerValue: z.union([z.string(), z.number(), z.boolean()]),
+    context: z.object({
+      segmentUnit: z.nativeEnum(SegmentationTimeUnit),
+      length: z.number().int().positive(),
+      innerContext: z.unknown(),
+      innerOperator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),
+      innerValue: z.union([z.string(), z.number(), z.boolean()]),
+    }),
   })
 );
 
@@ -57,11 +59,11 @@ export async function streakRequestHandler(
   Logger.log(`[streakRequest] POST userId=${userId} requests=${requests.length}`);
   for (let i = 0; i < requests.length; i++) {
     const req = requests[i];
-    const op = req.innerContext.operation;
+    const op = req.context.innerContext.operation;
     const extra = op === FactOperation.ANALYSIS_CLASSIFICATION
-      ? ` analysisType=${req.innerContext.analysisType}`
+      ? ` analysisType=${req.context.innerContext.analysisType}`
       : "";
-    Logger.log(`[streakRequest] request[${i}] alias=${req.alias} op=${op}${extra} segmentUnit=${req.segmentUnit} length=${req.length} operator=${req.innerOperator} innerValue=${JSON.stringify(req.innerValue)}`);
+    Logger.log(`[streakRequest] request[${i}] alias=${req.alias} op=${op}${extra} segmentUnit=${req.context.segmentUnit} length=${req.context.length} operator=${req.context.innerOperator} innerValue=${JSON.stringify(req.context.innerValue)}`);
   }
 
   const settingsRes = await Setting.getForUser(userId);
@@ -72,7 +74,7 @@ export async function streakRequestHandler(
 
   for (let i = 0; i < requests.length; i++) {
     const req = requests[i];
-    if (req.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
+    if (req.context.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
       Logger.log(`[streakRequest] request[${i}] alias=${req.alias} seeding missing analysisClassificationResult segments...`);
       await AnalysisClassificationScheduler.seedMissingSegments(req, userId, utcOffsetMinutes);
       Logger.log(`[streakRequest] request[${i}] alias=${req.alias} seeding complete`);

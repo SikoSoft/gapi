@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
-import { FactOperation } from "api-spec/models/Fact";
+import { AnalysisClassificationType, FactOperation, StreakContext } from "api-spec/models/Fact";
+import { ListFilter } from "api-spec/models/List";
 
 export interface SegmentInfo {
   key: string;
@@ -9,12 +10,14 @@ export interface SegmentInfo {
   end: Date;
 }
 
-const innerContextSchema = z.union([
-  z.object({ operation: z.literal(FactOperation.ENTITY_COUNT), filter: z.unknown() }),
-  z.object({ operation: z.literal(FactOperation.UNIQUE_TAG_COUNT), filter: z.unknown() }),
+const filterSchema = z.custom<ListFilter>();
+
+const innerContextSchema = z.discriminatedUnion("operation", [
+  z.object({ operation: z.literal(FactOperation.ENTITY_COUNT), filter: filterSchema }),
+  z.object({ operation: z.literal(FactOperation.UNIQUE_TAG_COUNT), filter: filterSchema }),
   z.object({ operation: z.literal(FactOperation.MEDAL_COUNT), medalConfigId: z.number(), series: z.string(), start: z.string().optional(), end: z.string().optional() }),
-  z.object({ operation: z.literal(FactOperation.ANALYSIS_CLASSIFICATION), filter: z.unknown(), analysisType: z.string() }),
-  z.object({ operation: z.literal(FactOperation.PROPERTY_SUM), filter: z.unknown(), propertyConfigId: z.number() }),
+  z.object({ operation: z.literal(FactOperation.ANALYSIS_CLASSIFICATION), filter: filterSchema, analysisType: z.nativeEnum(AnalysisClassificationType) }),
+  z.object({ operation: z.literal(FactOperation.PROPERTY_SUM), filter: filterSchema, propertyConfigId: z.number() }),
 ]);
 
 export const StreakContextSchema = z.object({
@@ -23,7 +26,7 @@ export const StreakContextSchema = z.object({
   innerContext: innerContextSchema,
   innerOperator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),
   innerValue: z.union([z.string(), z.number(), z.boolean()]),
-});
+}).transform(v => v as unknown as StreakContext);
 
 export const StreakConfigBodySchema = z.object({
   name: z.string().min(1),

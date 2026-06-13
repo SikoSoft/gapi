@@ -121,7 +121,8 @@ export class Streak {
   static async resolveStreaks(
     streaks: StreakSpec[],
     userId: string,
-    utcOffsetMinutes: number
+    utcOffsetMinutes: number,
+    bypassCache = false
   ): Promise<StreakResult[]> {
     const results: StreakResult[] = [];
     const now = new Date();
@@ -203,7 +204,7 @@ export class Streak {
             ` injected op=${op} contextKey=${contextKey} — calling Fact.resolve...`
           );
 
-          const value = await Fact.resolve(injected, userId);
+          const value = await Fact.resolve(injected, userId, { bypassCache });
           if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
             runLength++;
             if (currentStillActive) { current = runLength; }

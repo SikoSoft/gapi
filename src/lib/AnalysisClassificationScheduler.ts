@@ -50,7 +50,8 @@ export class AnalysisClassificationScheduler {
   static async seedMissingSegments(
     req: StreakRequest,
     userId: string,
-    utcOffsetMinutes: number
+    utcOffsetMinutes: number,
+    bypassCache = false
   ): Promise<void> {
     if (req.context.innerContext.operation !== FactOperation.ANALYSIS_CLASSIFICATION) {
       return;
@@ -74,6 +75,20 @@ export class AnalysisClassificationScheduler {
       now,
       utcOffsetMinutes
     );
+
+    if (bypassCache) {
+      await prisma.analysisClassificationResult.deleteMany({
+        where: {
+          userId,
+          analysisType: req.context.innerContext.analysisType,
+          segmentUnit: req.context.segmentUnit,
+          segmentKey: { in: allSegments.map(s => s.key) },
+        },
+      });
+      Logger.log(
+        `[AnalysisClassificationScheduler] seedMissingSegments bypassCache=true — deleted existing rows for userId=${userId} analysisType=${req.context.innerContext.analysisType}`
+      );
+    }
 
     const existingRows = await prisma.analysisClassificationResult.findMany({
       where: {

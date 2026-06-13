@@ -27,6 +27,8 @@ export async function streakRequestHandler(
 
   switch (request.method) {
     case HttpMethod.GET: {
+      const bypassCache = request.query.get("bypassCache") === "true";
+
       const listRes = await Streak.list(userId);
       if (listRes.isErr()) {
         context.error(listRes.error);
@@ -42,11 +44,11 @@ export async function streakRequestHandler(
       for (const streak of streaks) {
         if (streak.context.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
           const req = { alias: String(streak.id), context: streak.context };
-          await AnalysisClassificationScheduler.seedMissingSegments(req, userId, utcOffsetMinutes);
+          await AnalysisClassificationScheduler.seedMissingSegments(req, userId, utcOffsetMinutes, bypassCache);
         }
       }
 
-      const results = await Streak.resolveStreaks(streaks, userId, utcOffsetMinutes);
+      const results = await Streak.resolveStreaks(streaks, userId, utcOffsetMinutes, bypassCache);
 
       return jsonReply({ streaks, results });
     }

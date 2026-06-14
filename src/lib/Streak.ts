@@ -108,6 +108,117 @@ export class Streak {
   }
 
   /**
+   * Evaluates a single StreakContext for a user and returns the current and longest
+   * consecutive run lengths. Used by both resolveStreaks (for DB-backed streaks) and
+   * Medal.checkForDisbursement (for config-level StreakRequests without DB IDs).
+   *
+   * ANALYSIS_CLASSIFICATION queries the `analysisClassificationResult` table directly.
+   * All other operations use Fact.resolve with a date range injected per segment.
+   */
+  static async resolveContext(
+    ctx: StreakContext,
+    userId: string,
+    utcOffsetMinutes: number,
+    bypassCache = false
+  ): Promise<{ current: number; longest: number }> {
+    const now = new Date();
+    const op = ctx.innerContext.operation;
+    const segments = Streak.generateLookbackSegments(ctx.segmentUnit, ctx.length, now, utcOffsetMinutes);
+    let longest = 0;
+    let current = 0;
+    let runLength = 0;
+    let currentStillActive = true;
+
+    if (op === FactOperation.ANALYSIS_CLASSIFICATION) {
+      const keys = segments.map(s => s.key);
+      Logger.log(
+        `[Streak] resolveContext ANALYSIS_CLASSIFICATION querying analysisClassificationResult` +
+        ` analysisType=${ctx.innerContext.analysisType} segmentUnit=${ctx.segmentUnit} keys=[${keys.join(",")}]`
+      );
+
+      const rows = await prisma.analysisClassificationResult.findMany({
+        where: {
+          userId,
+          analysisType: ctx.innerContext.analysisType,
+          segmentUnit: ctx.segmentUnit,
+          segmentKey: { in: keys },
+        },
+      });
+
+      const byKey = new Map(rows.map(r => [r.segmentKey, JSON.parse(r.value) as FactValue]));
+      const foundKeys = [...byKey.keys()];
+      const missingKeys = keys.filter(k => !byKey.has(k));
+      Logger.log(
+        `[Streak] resolveContext DB returned rows=${rows.length}` +
+        ` found=[${foundKeys.join(",")}]` +
+        ` missing=[${missingKeys.join(",")}]`
+      );
+
+      for (const segment of segments) {
+        const value = byKey.get(segment.key);
+        if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
+          runLength++;
+          if (currentStillActive) { current = runLength; }
+          if (runLength > longest) { longest = runLength; }
+          Logger.log(
+            `[Streak] resolveContext segment=${segment.key} value=${JSON.stringify(value)}` +
+            ` condition: ${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} → PASS` +
+            ` runLength=${runLength} current=${current} longest=${longest}`
+          );
+        } else {
+          const reason = value === undefined ? "no data" : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} is false`;
+          Logger.log(
+            `[Streak] resolveContext segment=${segment.key} value=${JSON.stringify(value)}` +
+            ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
+          );
+          currentStillActive = false;
+          runLength = 0;
+        }
+      }
+    } else {
+      for (const segment of segments) {
+        const injected = Streak.injectDateRange(ctx.innerContext, segment.start, segment.end);
+        if (!injected) {
+          Logger.error(
+            `[Streak] resolveContext Cannot inject date range into op=${op} — skipping remaining segments`
+          );
+          break;
+        }
+
+        const contextKey = Fact.contextKey(injected);
+        Logger.log(
+          `[Streak] resolveContext segment=${segment.key}` +
+          ` [${segment.start.toISOString()} → ${segment.end.toISOString()}]` +
+          ` injected op=${op} contextKey=${contextKey} — calling Fact.resolve...`
+        );
+
+        const value = await Fact.resolve(injected, userId, { bypassCache });
+        if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
+          runLength++;
+          if (currentStillActive) { current = runLength; }
+          if (runLength > longest) { longest = runLength; }
+          Logger.log(
+            `[Streak] resolveContext segment=${segment.key} value=${JSON.stringify(value)}` +
+            ` condition: ${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} → PASS` +
+            ` runLength=${runLength} current=${current} longest=${longest}`
+          );
+        } else {
+          const reason = value === undefined ? "undefined from Fact.resolve" : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} is false`;
+          Logger.log(
+            `[Streak] resolveContext segment=${segment.key} value=${JSON.stringify(value)}` +
+            ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
+          );
+          currentStillActive = false;
+          runLength = 0;
+        }
+      }
+    }
+
+    Logger.log(`[Streak] resolveContext COMPLETE op=${op} current=${current} longest=${longest}`);
+    return { current, longest };
+  }
+
+  /**
    * Evaluates every saved Streak and returns a StreakResult[] with separate `current`
    * (consecutive count from the most recent period backwards until first break) and
    * `longest` (longest consecutive run anywhere in the lookback window).
@@ -125,106 +236,15 @@ export class Streak {
     bypassCache = false
   ): Promise<StreakResult[]> {
     const results: StreakResult[] = [];
-    const now = new Date();
 
     for (const streak of streaks) {
       const ctx = streak.context;
-      const op = ctx.innerContext.operation;
       Logger.log(
-        `[Streak] resolveStreaks start id=${streak.id} op=${op} segmentUnit=${ctx.segmentUnit}` +
+        `[Streak] resolveStreaks start id=${streak.id} op=${ctx.innerContext.operation} segmentUnit=${ctx.segmentUnit}` +
         ` length=${ctx.length} utcOffset=${utcOffsetMinutes} operator=${ctx.innerOperator} innerValue=${JSON.stringify(ctx.innerValue)}`
       );
 
-      const segments = Streak.generateLookbackSegments(ctx.segmentUnit, ctx.length, now, utcOffsetMinutes);
-      let longest = 0;
-      let current = 0;
-      let runLength = 0;
-      let currentStillActive = true;
-
-      if (op === FactOperation.ANALYSIS_CLASSIFICATION) {
-        const keys = segments.map(s => s.key);
-        Logger.log(
-          `[Streak] resolveStreaks id=${streak.id} ANALYSIS_CLASSIFICATION querying analysisClassificationResult` +
-          ` analysisType=${ctx.innerContext.analysisType} segmentUnit=${ctx.segmentUnit} keys=[${keys.join(",")}]`
-        );
-
-        const rows = await prisma.analysisClassificationResult.findMany({
-          where: {
-            userId,
-            analysisType: ctx.innerContext.analysisType,
-            segmentUnit: ctx.segmentUnit,
-            segmentKey: { in: keys },
-          },
-        });
-
-        const byKey = new Map(rows.map(r => [r.segmentKey, JSON.parse(r.value) as FactValue]));
-        const foundKeys = [...byKey.keys()];
-        const missingKeys = keys.filter(k => !byKey.has(k));
-        Logger.log(
-          `[Streak] resolveStreaks id=${streak.id} DB returned rows=${rows.length}` +
-          ` found=[${foundKeys.join(",")}]` +
-          ` missing=[${missingKeys.join(",")}]`
-        );
-
-        for (const segment of segments) {
-          const value = byKey.get(segment.key);
-          if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
-            runLength++;
-            if (currentStillActive) { current = runLength; }
-            if (runLength > longest) { longest = runLength; }
-            Logger.log(
-              `[Streak] resolveStreaks id=${streak.id} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` condition: ${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} → PASS` +
-              ` runLength=${runLength} current=${current} longest=${longest}`
-            );
-          } else {
-            const reason = value === undefined ? "no data" : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} is false`;
-            Logger.log(
-              `[Streak] resolveStreaks id=${streak.id} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
-            );
-            currentStillActive = false;
-            runLength = 0;
-          }
-        }
-      } else {
-        for (const segment of segments) {
-          const injected = Streak.injectDateRange(ctx.innerContext, segment.start, segment.end);
-          if (!injected) {
-            Logger.error(
-              `[Streak] resolveStreaks id=${streak.id} Cannot inject date range into op=${op} — skipping remaining segments`
-            );
-            break;
-          }
-
-          const contextKey = Fact.contextKey(injected);
-          Logger.log(
-            `[Streak] resolveStreaks id=${streak.id} segment=${segment.key}` +
-            ` [${segment.start.toISOString()} → ${segment.end.toISOString()}]` +
-            ` injected op=${op} contextKey=${contextKey} — calling Fact.resolve...`
-          );
-
-          const value = await Fact.resolve(injected, userId, { bypassCache });
-          if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
-            runLength++;
-            if (currentStillActive) { current = runLength; }
-            if (runLength > longest) { longest = runLength; }
-            Logger.log(
-              `[Streak] resolveStreaks id=${streak.id} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` condition: ${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} → PASS` +
-              ` runLength=${runLength} current=${current} longest=${longest}`
-            );
-          } else {
-            const reason = value === undefined ? "undefined from Fact.resolve" : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} is false`;
-            Logger.log(
-              `[Streak] resolveStreaks id=${streak.id} segment=${segment.key} value=${JSON.stringify(value)}` +
-              ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
-            );
-            currentStillActive = false;
-            runLength = 0;
-          }
-        }
-      }
+      const { current, longest } = await Streak.resolveContext(ctx, userId, utcOffsetMinutes, bypassCache);
 
       Logger.log(
         `[Streak] resolveStreaks id=${streak.id} COMPLETE current=${current} longest=${longest}`

@@ -271,6 +271,7 @@ export class Data {
             prestige: config.prestige,
             icon: config.icon,
             factRequests: config.factRequests,
+            streakRequests: [],
             criteria: config.criteria,
           });
 

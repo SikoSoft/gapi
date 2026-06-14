@@ -2,8 +2,8 @@ import { Result, err, ok } from "neverthrow";
 import { Prisma } from "@prisma/client";
 import { prisma } from "..";
 import { Medal as MedalSpec } from "api-spec/models";
-import { Criteria, Criterion, FactRequest } from "api-spec/models/Medal";
-import { StreakRequest } from "api-spec/models/Fact";
+import { Criteria, Criterion } from "api-spec/models/Medal";
+import { FactRequest, StreakRequest } from "api-spec/models/Fact";
 import { SettingName } from "api-spec/models/Setting";
 import { HookContext } from "../models/Hook";
 import {
@@ -31,8 +31,8 @@ export class Medal {
       recurrence: config.recurrence,
       prestige: config.prestige,
       icon: config.icon,
-      factRequests: config.factRequests as unknown as MedalSpec.FactRequest[],
-      streakRequests: config.streakRequests as unknown as StreakRequest[],
+      factRequests: config.factRequests as unknown as FactRequest[],
+      streakRequests: (config.streakRequests as unknown as StreakRequest[] | null) ?? [],
       criteria: config.criteria as MedalSpec.Criterion | MedalSpec.Criteria,
       createdAt: config.createdAt.toISOString(),
       updatedAt: config.updatedAt.toISOString(),
@@ -301,13 +301,9 @@ export class Medal {
         continue;
       }
 
-      if (config.streakRequests.length > 0) {
-        const streakFacts = await Streak.resolveStreaks(
-          config.streakRequests,
-          userId,
-          utcOffsetMinutes
-        );
-        Object.assign(facts, streakFacts);
+      for (const streakReq of config.streakRequests) {
+        const { current } = await Streak.resolveContext(streakReq.context, userId, utcOffsetMinutes);
+        facts[streakReq.alias] = current;
       }
 
       const criteria = config.criteria as Criterion | Criteria;
@@ -364,7 +360,7 @@ export class Medal {
    * before the pipeline has seeded its result).
    */
   private static async resolveCriteriaProgress(
-    factRequests: MedalSpec.FactRequest[],
+    factRequests: FactRequest[],
     userId: string
   ): Promise<CriteriaProgress[]> {
     const progress: CriteriaProgress[] = [];
@@ -396,7 +392,7 @@ export class Medal {
   private static invalidCriteriaAliases(
     criteria: Criterion | Criteria,
     factRequests: FactRequest[],
-    streakRequests: StreakRequest[]
+    streakRequests: StreakRequest[] = []
   ): string[] {
     const defined = new Set([
       ...factRequests.map(fr => fr.alias),

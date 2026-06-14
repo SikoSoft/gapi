@@ -1,7 +1,6 @@
 import { createHash } from "crypto";
 import { Result, err, ok } from "neverthrow";
 import { FactContext, FactOperation } from "api-spec/models/Fact";
-import { FactRequest } from "api-spec/models/Medal";
 import { prisma } from "..";
 import { FACT_TTL_MS, FactResolveOptions } from "../models/FactCache";
 import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
@@ -282,7 +281,7 @@ export class Fact {
         const exhaustive: never = context;
         Logger.error(
           `[Fact] Unknown operation: ${
-            (exhaustive as FactRequest["context"]).operation
+            (exhaustive as FactContext).operation
           }`
         );
         return undefined;

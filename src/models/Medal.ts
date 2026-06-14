@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { Medal as MedalSpec } from "api-spec/models";
+import { FactRequest, StreakRequest } from "api-spec/models/Fact";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 
 export interface CriteriaProgress {
@@ -54,8 +55,8 @@ export interface MedalConfigCreateBody {
   recurrence: number;
   prestige: number;
   icon: string;
-  factRequests: MedalSpec.FactRequest[];
-  streakRequests: MedalSpec.StreakRequest[];
+  factRequests: FactRequest[];
+  streakRequests: StreakRequest[];
   criteria: MedalSpec.Criterion | MedalSpec.Criteria;
 }
 export type MedalConfigUpdateBody = MedalConfigCreateBody;

@@ -154,8 +154,21 @@ export class Streak {
         ` missing=[${missingKeys.join(",")}]`
       );
 
-      for (const segment of segments) {
+      // Segment 0 is the current (possibly in-progress) period. Classification results for
+      // the current period may not have been written yet even when the user has met the
+      // condition today, because results are computed and stored on a schedule. Treating a
+      // missing segment-0 row as a streak break would always reset `current` to 0 mid-day.
+      // We skip it instead so the current streak reflects the unbroken run up through the
+      // most recently completed period.
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
         const value = byKey.get(segment.key);
+        if (i === 0 && value === undefined) {
+          Logger.log(
+            `[Streak] resolveContext segment=${segment.key} (current period) has no data yet — skipping without breaking streak`
+          );
+          continue;
+        }
         if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
           runLength++;
           if (currentStillActive) { current = runLength; }
@@ -176,7 +189,13 @@ export class Streak {
         }
       }
     } else {
-      for (const segment of segments) {
+      // Segment 0 is the current (possibly in-progress) period. Fact data for the current
+      // period may return undefined or zero simply because the period hasn't ended yet, not
+      // because the user failed the condition. Skipping a missing segment-0 value preserves
+      // the current streak through the most recently completed period rather than always
+      // resetting it to 0 mid-period.
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
         const injected = Streak.injectDateRange(ctx.innerContext, segment.start, segment.end);
         if (!injected) {
           Logger.error(
@@ -193,6 +212,12 @@ export class Streak {
         );
 
         const value = await Fact.resolve(injected, userId, { bypassCache });
+        if (i === 0 && value === undefined) {
+          Logger.log(
+            `[Streak] resolveContext segment=${segment.key} (current period) returned undefined — skipping without breaking streak`
+          );
+          continue;
+        }
         if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
           runLength++;
           if (currentStillActive) { current = runLength; }

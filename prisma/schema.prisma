@@ -511,10 +511,11 @@ model ListFilterUserId {
 }
 
 model ListFilterBooleanProperty {
-  id               Int    @id @default(autoincrement())
-  listConfigId     String @db.Uuid
+  id               Int     @id @default(autoincrement())
+  listConfigId     String  @db.Uuid
   propertyConfigId Int
-  propertyValueId  Int    @unique
+  propertyValueId  Int     @unique
+  matchUnset       Boolean @default(false)
 
   listFilter     ListFilter           @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
   propertyConfig PropertyConfig       @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
@@ -522,10 +523,11 @@ model ListFilterBooleanProperty {
 }
 
 model ListFilterDateProperty {
-  id               Int    @id @default(autoincrement())
-  listConfigId     String @db.Uuid
+  id               Int     @id @default(autoincrement())
+  listConfigId     String  @db.Uuid
   propertyConfigId Int
-  propertyValueId  Int    @unique
+  propertyValueId  Int     @unique
+  matchUnset       Boolean @default(false)
 
   listFilter     ListFilter        @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
   propertyConfig PropertyConfig    @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
@@ -533,10 +535,11 @@ model ListFilterDateProperty {
 }
 
 model ListFilterImageProperty {
-  id               Int    @id @default(autoincrement())
-  listConfigId     String @db.Uuid
+  id               Int     @id @default(autoincrement())
+  listConfigId     String  @db.Uuid
   propertyConfigId Int
-  propertyValueId  Int    @unique
+  propertyValueId  Int     @unique
+  matchUnset       Boolean @default(false)
 
   listFilter     ListFilter         @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
   propertyConfig PropertyConfig     @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
@@ -544,10 +547,11 @@ model ListFilterImageProperty {
 }
 
 model ListFilterIntProperty {
-  id               Int    @id @default(autoincrement())
-  listConfigId     String @db.Uuid
+  id               Int     @id @default(autoincrement())
+  listConfigId     String  @db.Uuid
   propertyConfigId Int
-  propertyValueId  Int    @unique
+  propertyValueId  Int     @unique
+  matchUnset       Boolean @default(false)
 
   listFilter     ListFilter       @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
   propertyConfig PropertyConfig   @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
@@ -555,11 +559,12 @@ model ListFilterIntProperty {
 }
 
 model ListFilterLongTextProperty {
-  id               Int    @id @default(autoincrement())
-  listConfigId     String @db.Uuid
+  id               Int     @id @default(autoincrement())
+  listConfigId     String  @db.Uuid
   propertyConfigId Int
-  propertyValueId  Int    @unique
-  operation        String @default("contains")
+  propertyValueId  Int     @unique
+  operation        String  @default("contains")
+  matchUnset       Boolean @default(false)
 
   listFilter     ListFilter            @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
   propertyConfig PropertyConfig        @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
@@ -567,11 +572,12 @@ model ListFilterLongTextProperty {
 }
 
 model ListFilterShortTextProperty {
-  id               Int    @id @default(autoincrement())
-  listConfigId     String @db.Uuid
+  id               Int     @id @default(autoincrement())
+  listConfigId     String  @db.Uuid
   propertyConfigId Int
-  propertyValueId  Int    @unique
-  operation        String @default("contains")
+  propertyValueId  Int     @unique
+  operation        String  @default("contains")
+  matchUnset       Boolean @default(false)
 
   listFilter     ListFilter             @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
   propertyConfig PropertyConfig         @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)

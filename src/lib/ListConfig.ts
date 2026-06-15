@@ -654,6 +654,7 @@ export class ListConfig {
                 listConfigId,
                 propertyConfigId: property.propertyId,
                 propertyValueId: booleanValue.id,
+                matchUnset: property.matchUnset ?? false,
               },
             });
             break;
@@ -667,6 +668,7 @@ export class ListConfig {
                 listConfigId,
                 propertyConfigId: property.propertyId,
                 propertyValueId: dateValue.id,
+                matchUnset: property.matchUnset ?? false,
               },
             });
             break;
@@ -681,6 +683,7 @@ export class ListConfig {
                 listConfigId,
                 propertyConfigId: property.propertyId,
                 propertyValueId: imageValue.id,
+                matchUnset: property.matchUnset ?? false,
               },
             });
             break;
@@ -694,6 +697,7 @@ export class ListConfig {
                 listConfigId,
                 propertyConfigId: property.propertyId,
                 propertyValueId: intValue.id,
+                matchUnset: property.matchUnset ?? false,
               },
             });
             break;
@@ -708,6 +712,7 @@ export class ListConfig {
                 propertyConfigId: property.propertyId,
                 propertyValueId: longTextValue.id,
                 operation: property.operation,
+                matchUnset: property.matchUnset ?? false,
               },
             });
             break;
@@ -722,6 +727,7 @@ export class ListConfig {
                 propertyConfigId: property.propertyId,
                 propertyValueId: shortTextValue.id,
                 operation: property.operation,
+                matchUnset: property.matchUnset ?? false,
               },
             });
             break;
@@ -888,6 +894,7 @@ export class ListConfig {
         propertyId: p.propertyConfigId,
         value: p.propertyValue.value,
         operation: List.TextType.CONTAINS,
+        matchUnset: p.matchUnset,
       });
     });
     data.dateProperties.forEach((p) => {
@@ -895,6 +902,7 @@ export class ListConfig {
         propertyId: p.propertyConfigId,
         value: p.propertyValue.value,
         operation: List.TextType.CONTAINS,
+        matchUnset: p.matchUnset,
       });
     });
     data.imageProperties.forEach((p) => {
@@ -902,6 +910,7 @@ export class ListConfig {
         propertyId: p.propertyConfigId,
         value: { src: p.propertyValue.url, alt: p.propertyValue.altText },
         operation: List.TextType.CONTAINS,
+        matchUnset: p.matchUnset,
       });
     });
     data.intProperties.forEach((p) => {
@@ -909,6 +918,7 @@ export class ListConfig {
         propertyId: p.propertyConfigId,
         value: p.propertyValue.value,
         operation: List.TextType.CONTAINS,
+        matchUnset: p.matchUnset,
       });
     });
     data.longTextProperties.forEach((p) => {
@@ -916,6 +926,7 @@ export class ListConfig {
         propertyId: p.propertyConfigId,
         value: p.propertyValue.value,
         operation: p.operation as List.TextType,
+        matchUnset: p.matchUnset,
       });
     });
     data.shortTextProperties.forEach((p) => {
@@ -923,6 +934,7 @@ export class ListConfig {
         propertyId: p.propertyConfigId,
         value: p.propertyValue.value,
         operation: p.operation as List.TextType,
+        matchUnset: p.matchUnset,
       });
     });
 

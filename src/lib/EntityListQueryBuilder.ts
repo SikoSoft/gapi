@@ -568,16 +568,60 @@ export class EntityListQueryBuilder {
 
     this.registerParam(propIdParam, prop.propertyId);
 
+    const notSetClause = prop.matchUnset
+      ? `
+          OR NOT EXISTS (
+            SELECT 1
+            FROM "EntityBooleanProperty" ebp2
+            WHERE ebp2."entityId" = e."id"
+            AND ebp2."propertyConfigId" = {${propIdParam}}::int
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "EntityDateProperty" edp2
+            WHERE edp2."entityId" = e."id"
+            AND edp2."propertyConfigId" = {${propIdParam}}::int
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "EntityImageProperty" eimgp2
+            WHERE eimgp2."entityId" = e."id"
+            AND eimgp2."propertyConfigId" = {${propIdParam}}::int
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "EntityIntProperty" eip2
+            WHERE eip2."entityId" = e."id"
+            AND eip2."propertyConfigId" = {${propIdParam}}::int
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "EntityLongTextProperty" eltp2
+            WHERE eltp2."entityId" = e."id"
+            AND eltp2."propertyConfigId" = {${propIdParam}}::int
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "EntityShortTextProperty" estp2
+            WHERE estp2."entityId" = e."id"
+            AND estp2."propertyConfigId" = {${propIdParam}}::int
+          )
+        `
+      : "";
+
     if (typeof value === "boolean") {
       this.registerParam(propValParam, value);
       return `
-        AND EXISTS (
-          SELECT 1
-          FROM "EntityBooleanProperty" ebp
-          JOIN "BooleanPropertyValue" bpv ON ebp."propertyValueId" = bpv."id"
-          WHERE ebp."entityId" = e."id"
-          AND ebp."propertyConfigId" = {${propIdParam}}::int
-          AND bpv."value" = {${propValParam}}::boolean
+        AND (
+          EXISTS (
+            SELECT 1
+            FROM "EntityBooleanProperty" ebp
+            JOIN "BooleanPropertyValue" bpv ON ebp."propertyValueId" = bpv."id"
+            WHERE ebp."entityId" = e."id"
+            AND ebp."propertyConfigId" = {${propIdParam}}::int
+            AND bpv."value" = {${propValParam}}::boolean
+          )
+          ${notSetClause}
         )
       `;
     }
@@ -585,13 +629,16 @@ export class EntityListQueryBuilder {
     if (typeof value === "number") {
       this.registerParam(propValParam, value);
       return `
-        AND EXISTS (
-          SELECT 1
-          FROM "EntityIntProperty" eip
-          JOIN "IntPropertyValue" ipv ON eip."propertyValueId" = ipv."id"
-          WHERE eip."entityId" = e."id"
-          AND eip."propertyConfigId" = {${propIdParam}}::int
-          AND ipv."value" = {${propValParam}}::int
+        AND (
+          EXISTS (
+            SELECT 1
+            FROM "EntityIntProperty" eip
+            JOIN "IntPropertyValue" ipv ON eip."propertyValueId" = ipv."id"
+            WHERE eip."entityId" = e."id"
+            AND eip."propertyConfigId" = {${propIdParam}}::int
+            AND ipv."value" = {${propValParam}}::int
+          )
+          ${notSetClause}
         )
       `;
     }
@@ -620,6 +667,7 @@ export class EntityListQueryBuilder {
             AND eltp."propertyConfigId" = {${propIdParam}}::int
             AND ${textCondition('ltpv."value"')}
           )
+          ${notSetClause}
         )
       `;
     }

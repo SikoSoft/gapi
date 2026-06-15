@@ -107,7 +107,7 @@ export class EntitySuggestion {
         where: {
           userId,
           entityConfigId,
-          suggestion: false,
+          suggested: false,
           createdAt: { gte: oneHourAgo },
         },
         include: {

@@ -941,3 +941,14 @@ model StreakConfig {
 
   @@index([userId])
 }
+
+model FactConfig {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  context   Json
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}

@@ -383,7 +383,7 @@ export class EntityConfig {
 
   static mapPropertyDataToSpec(
     data: PrismaPropertyConfig
-  ): Entity.EntityPropertyConfig {
+  ): Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig {
     return PropertyConfig.mapDataToSpec(data);
   }
 }

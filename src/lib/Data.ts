@@ -130,31 +130,51 @@ export class Data {
         entityConfigMap[config.id] = entityConfig.id;
 
         for (const property of config.properties) {
-          const entityProperty = await prisma.propertyConfig.create({
-            data: {
-              userId,
-              name: property.name,
-              dataType: property.dataType,
-              repeat: property.repeat,
-              allowed: property.allowed,
-              required: property.required,
-              prefix: property.prefix,
-              suffix: property.suffix,
-              hidden: property.hidden,
-              optionsOnly: property.optionsOnly,
-              entityConfigId: entityConfig.id,
-            },
-          });
+          if ("calculation" in property && property.calculation) {
+            const entityProperty = await prisma.propertyConfig.create({
+              data: {
+                userId,
+                name: property.name,
+                dataType: property.dataType,
+                prefix: property.prefix,
+                suffix: property.suffix,
+                hidden: property.hidden,
+                calculation: property.calculation as object,
+                entityConfigId: entityConfig.id,
+                repeat: 0,
+                allowed: 0,
+                required: 0,
+                optionsOnly: false,
+              },
+            });
+            entityPropertyConfigMap[property.id] = entityProperty.id;
+          } else {
+            const entityProperty = await prisma.propertyConfig.create({
+              data: {
+                userId,
+                name: property.name,
+                dataType: property.dataType,
+                repeat: property.repeat,
+                allowed: property.allowed,
+                required: property.required,
+                prefix: property.prefix,
+                suffix: property.suffix,
+                hidden: property.hidden,
+                optionsOnly: property.optionsOnly,
+                entityConfigId: entityConfig.id,
+              },
+            });
 
-          if (property.options && property.options.length > 0) {
-            await PropertyConfig.updateOptions(
-              entityProperty.id,
-              property.dataType as DataType,
-              property.options as string[] | number[]
-            );
+            if (property.options && property.options.length > 0) {
+              await PropertyConfig.updateOptions(
+                entityProperty.id,
+                property.dataType as DataType,
+                property.options as string[] | number[]
+              );
+            }
+
+            entityPropertyConfigMap[property.id] = entityProperty.id;
           }
-
-          entityPropertyConfigMap[property.id] = entityProperty.id;
         }
       }
 

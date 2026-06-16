@@ -453,6 +453,24 @@ export class Entity {
           })
         ).map((entity) => EntityMapper.computeAndAugmentSpec(entity))
       );
+
+      const allPropertyConfigIds = [
+        ...new Set(
+          entities.flatMap((e) => e.properties.map((p) => p.propertyConfigId))
+        ),
+      ];
+      const calculatedIds =
+        await EntityPropLib.getCalculatedConfigIds(allPropertyConfigIds);
+
+      if (calculatedIds.size > 0) {
+        entities = entities.map((e) => ({
+          ...e,
+          properties: e.properties.filter(
+            (p) => !calculatedIds.has(p.propertyConfigId)
+          ),
+        }));
+      }
+
       return ok(entities);
     } catch (error) {
       return err(error);

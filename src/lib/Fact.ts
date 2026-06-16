@@ -21,7 +21,7 @@ export class Fact {
     };
   }
 
-  static async listConfigs(userId: string): Promise<Result<FactSpec[], Error>> {
+  static async list(userId: string): Promise<Result<FactSpec[], Error>> {
     try {
       const rows = await prisma.factConfig.findMany({
         where: { userId },
@@ -29,26 +29,26 @@ export class Fact {
       });
       return ok(rows.map(Fact.mapToSpec));
     } catch (e) {
-      return err(new Error("Failed to list fact configs", { cause: e }));
+      return err(new Error("Failed to list facts", { cause: e }));
     }
   }
 
-  static async createConfig(userId: string, name: string, context: FactContext): Promise<Result<FactSpec, Error>> {
+  static async create(userId: string, name: string, context: FactContext): Promise<Result<FactSpec, Error>> {
     try {
       const row = await prisma.factConfig.create({
         data: { userId, name, context: context as object },
       });
       return ok(Fact.mapToSpec(row));
     } catch (e) {
-      return err(new Error("Failed to create fact config", { cause: e }));
+      return err(new Error("Failed to create fact", { cause: e }));
     }
   }
 
-  static async updateConfig(id: number, userId: string, name?: string, context?: FactContext): Promise<Result<FactSpec, Error>> {
+  static async update(id: number, userId: string, name?: string, context?: FactContext): Promise<Result<FactSpec, Error>> {
     try {
       const row = await prisma.factConfig.findFirst({ where: { id, userId } });
       if (!row) {
-        return err(new Error("Fact config not found"));
+        return err(new Error("Fact not found"));
       }
       const updated = await prisma.factConfig.update({
         where: { id },
@@ -59,11 +59,11 @@ export class Fact {
       });
       return ok(Fact.mapToSpec(updated));
     } catch (e) {
-      return err(new Error("Failed to update fact config", { cause: e }));
+      return err(new Error("Failed to update fact", { cause: e }));
     }
   }
 
-  static async resolveFactConfigs(
+  static async resolveFacts(
     facts: FactSpec[],
     userId: string,
     bypassCache = false
@@ -73,13 +73,13 @@ export class Fact {
     for (const fact of facts) {
       const ctx = fact.context;
       Logger.log(
-        `[Fact] resolveFactConfigs start id=${fact.id} op=${ctx.operation}`
+        `[Fact] resolveFacts start id=${fact.id} op=${ctx.operation}`
       );
 
       const value = await Fact.resolve(ctx, userId, { bypassCache });
 
       Logger.log(
-        `[Fact] resolveFactConfigs id=${fact.id} COMPLETE value=${JSON.stringify(value)}`
+        `[Fact] resolveFacts id=${fact.id} COMPLETE value=${JSON.stringify(value)}`
       );
       results.push({ factId: fact.id, value });
     }

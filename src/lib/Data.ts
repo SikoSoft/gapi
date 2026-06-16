@@ -170,14 +170,24 @@ export class Data {
         });
 
         Tagging.syncEntityTags(prismaEntity.id, entity.tags);
-        await EntityProperty.syncEntityProperties(
-          prismaEntity.id,
-          entity.properties.map((p) => ({
+        const mappedProperties = entity.properties
+          .map((p) => ({
             id: 0,
             value: p.value,
             order: p.order,
             propertyConfigId: entityPropertyConfigMap[p.propertyConfigId],
-          })),
+          }))
+          .filter((p) => p.propertyConfigId !== undefined);
+
+        if (mappedProperties.length < entity.properties.length) {
+          Logger.warn(
+            `Entity ${prismaEntity.id}: skipped ${entity.properties.length - mappedProperties.length} properties with unmapped propertyConfigId`
+          );
+        }
+
+        await EntityProperty.syncEntityProperties(
+          prismaEntity.id,
+          mappedProperties,
           [],
           timeZone
         );

@@ -18,6 +18,7 @@ export const WorkspaceUpdateBodySchema = z.object({
   listConfigs: z.array(z.string()).optional(),
   streaks: z.array(z.number().int()).optional(),
   facts: z.array(z.number().int()).optional(),
+  charts: z.array(z.number().int()).optional(),
 });
 export type WorkspaceUpdateBody = z.infer<typeof WorkspaceUpdateBodySchema>;
 
@@ -26,6 +27,7 @@ const prismaWorkspaceValidator = Prisma.validator<Prisma.WorkspaceFindManyArgs>(
     workspaceListConfigs: true,
     workspaceStreaks: true,
     workspaceFacts: true,
+    workspaceCharts: true,
   },
 });
 

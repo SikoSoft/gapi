@@ -50,7 +50,7 @@ export async function workspace(
     }
     case HttpMethod.PUT: {
       const body = (await request.json()) as WorkspaceUpdateBody;
-      const res = await WorkspaceLib.update(userId, request.params.id, body.name, body.color, body.theme, body.showEverything, body.listConfigs);
+      const res = await WorkspaceLib.update(userId, request.params.id, body);
       if (res.isErr()) {
         context.error(res.error);
         return { status: 400 };

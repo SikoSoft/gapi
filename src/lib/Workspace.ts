@@ -2,7 +2,7 @@ import { Result, err, ok } from "neverthrow";
 import { v4 as uuidv4 } from "uuid";
 import { Workspace as WorkspaceSpec } from "api-spec/models";
 import { prisma } from "..";
-import { PrismaWorkspace } from "../models/Workspace";
+import { PrismaWorkspace, WorkspaceUpdateBody } from "../models/Workspace";
 
 export class Workspace {
   static async create(
@@ -29,6 +29,8 @@ export class Workspace {
         },
         include: {
           workspaceListConfigs: true,
+          workspaceStreaks: true,
+          workspaceFacts: true,
         },
       });
 
@@ -41,28 +43,46 @@ export class Workspace {
   static async update(
     userId: string,
     id: string,
-    name: string,
-    color: string,
-    theme: string,
-    showEverything: boolean,
-    listConfigs: string[]
+    body: WorkspaceUpdateBody
   ): Promise<Result<WorkspaceSpec.Workspace, Error>> {
     try {
-      await prisma.workspaceListConfig.deleteMany({ where: { workspaceId: id } });
+      if (body.listConfigs !== undefined) {
+        await prisma.workspaceListConfig.deleteMany({ where: { workspaceId: id } });
+      }
+      if (body.streaks !== undefined) {
+        await prisma.workspaceStreak.deleteMany({ where: { workspaceId: id } });
+      }
+      if (body.facts !== undefined) {
+        await prisma.workspaceFact.deleteMany({ where: { workspaceId: id } });
+      }
 
       const updated = await prisma.workspace.update({
         where: { id, userId },
         data: {
-          name,
-          color,
-          theme,
-          showEverything,
-          workspaceListConfigs: {
-            create: listConfigs.map(listConfigId => ({ listConfigId })),
-          },
+          ...(body.name !== undefined && { name: body.name }),
+          ...(body.color !== undefined && { color: body.color }),
+          ...(body.theme !== undefined && { theme: body.theme }),
+          ...(body.showEverything !== undefined && { showEverything: body.showEverything }),
+          ...(body.listConfigs !== undefined && {
+            workspaceListConfigs: {
+              create: body.listConfigs.map(listConfigId => ({ listConfigId })),
+            },
+          }),
+          ...(body.streaks !== undefined && {
+            workspaceStreaks: {
+              create: body.streaks.map(streakId => ({ streakId, userId })),
+            },
+          }),
+          ...(body.facts !== undefined && {
+            workspaceFacts: {
+              create: body.facts.map(factId => ({ factId, userId })),
+            },
+          }),
         },
         include: {
           workspaceListConfigs: true,
+          workspaceStreaks: true,
+          workspaceFacts: true,
         },
       });
 
@@ -91,7 +111,11 @@ export class Workspace {
     try {
       const workspace = await prisma.workspace.findFirstOrThrow({
         where: { id, userId },
-        include: { workspaceListConfigs: true },
+        include: {
+          workspaceListConfigs: true,
+          workspaceStreaks: true,
+          workspaceFacts: true,
+        },
       });
 
       return ok(Workspace.mapDataToSpec(workspace));
@@ -106,7 +130,11 @@ export class Workspace {
     try {
       const workspaces = await prisma.workspace.findMany({
         where: { userId },
-        include: { workspaceListConfigs: true },
+        include: {
+          workspaceListConfigs: true,
+          workspaceStreaks: true,
+          workspaceFacts: true,
+        },
         orderBy: { name: "asc" },
       });
 
@@ -127,6 +155,8 @@ export class Workspace {
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       listConfigs: data.workspaceListConfigs.map(wlc => wlc.listConfigId),
+      streaks: data.workspaceStreaks.map(ws => ws.streakId),
+      facts: data.workspaceFacts.map(wf => wf.factId),
     };
   }
 }

@@ -308,6 +308,11 @@ export class Medal {
       }
 
       for (const streakReq of config.streakRequests) {
+        if (!streakReq.context) {
+          Logger.error(`[Medal] streakRequest '${streakReq.alias}' missing context on config ${config.id} — skipping config (stale DB format?)`);
+          factsResolved = false;
+          break;
+        }
         const { current } = await Streak.resolveContext(streakReq.context, userId, utcOffsetMinutes);
         facts[streakReq.alias] = current;
       }
@@ -387,6 +392,10 @@ export class Medal {
       }
     }
     for (const streakRequest of streakRequests) {
+      if (!streakRequest.context) {
+        Logger.error(`[Medal] streakRequest '${streakRequest.alias}' missing context — skipping (stale DB format?)`);
+        continue;
+      }
       const { current } = await Streak.resolveContext(streakRequest.context, userId, utcOffsetMinutes);
       progress.push({ alias: streakRequest.alias, value: current });
     }

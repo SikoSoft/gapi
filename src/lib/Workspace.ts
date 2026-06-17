@@ -31,6 +31,7 @@ export class Workspace {
           workspaceListConfigs: true,
           workspaceStreaks: true,
           workspaceFacts: true,
+          workspaceCharts: true,
         },
       });
 
@@ -55,6 +56,9 @@ export class Workspace {
       if (body.facts !== undefined) {
         await prisma.workspaceFact.deleteMany({ where: { workspaceId: id } });
       }
+      if (body.charts !== undefined) {
+        await prisma.workspaceChart.deleteMany({ where: { workspaceId: id } });
+      }
 
       const updated = await prisma.workspace.update({
         where: { id, userId },
@@ -78,11 +82,17 @@ export class Workspace {
               create: body.facts.map(factId => ({ factId, userId })),
             },
           }),
+          ...(body.charts !== undefined && {
+            workspaceCharts: {
+              create: body.charts.map(chartId => ({ chartId, userId })),
+            },
+          }),
         },
         include: {
           workspaceListConfigs: true,
           workspaceStreaks: true,
           workspaceFacts: true,
+          workspaceCharts: true,
         },
       });
 
@@ -115,6 +125,7 @@ export class Workspace {
           workspaceListConfigs: true,
           workspaceStreaks: true,
           workspaceFacts: true,
+          workspaceCharts: true,
         },
       });
 
@@ -134,6 +145,7 @@ export class Workspace {
           workspaceListConfigs: true,
           workspaceStreaks: true,
           workspaceFacts: true,
+          workspaceCharts: true,
         },
         orderBy: { name: "asc" },
       });
@@ -157,6 +169,7 @@ export class Workspace {
       listConfigs: data.workspaceListConfigs.map(wlc => wlc.listConfigId),
       streaks: data.workspaceStreaks.map(ws => ws.streakId),
       facts: data.workspaceFacts.map(wf => wf.factId),
+      charts: data.workspaceCharts.map(wc => wc.chartId),
     };
   }
 }

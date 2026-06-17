@@ -714,6 +714,7 @@ model Workspace {
   workspaceListConfigs WorkspaceListConfig[]
   workspaceStreaks      WorkspaceStreak[]
   workspaceFacts       WorkspaceFact[]
+  workspaceCharts      WorkspaceChart[]
 }
 
 model WorkspaceListConfig {
@@ -747,6 +748,18 @@ model WorkspaceFact {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, factId])
+}
+
+model WorkspaceChart {
+  id          Int       @id @default(autoincrement())
+  workspaceId String    @db.Uuid
+  chartId     Int
+  userId      String    @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, chartId])
 }
 
 model AccessPolicy {

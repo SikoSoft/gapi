@@ -278,7 +278,7 @@ The `segmentKey` format must match what `Streak.segmentKey` produces for `DAY` s
 | `medalConfig/{id}` | DELETE | Delete a config |
 | `medal` | GET | List medals earned by the authenticated user |
 
-`criteriaProgress` in the GET responses contains the resolved value for each `factRequest` alias — useful for rendering "X of Y" progress indicators. Streak values are **not** included in `criteriaProgress` (only `factRequests` are resolved there).
+`criteriaProgress` in the GET responses contains the resolved value for each `factRequest` alias plus the current streak count for each `streakRequest` alias — useful for rendering "X of Y" progress indicators. Streak counts reflect the user's `current` consecutive run at the time of the request, using the user's TIMEZONE setting to localize segment boundaries.
 
 ---
 

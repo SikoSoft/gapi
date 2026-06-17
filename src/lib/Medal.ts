@@ -166,8 +166,8 @@ export class Medal {
 
   /**
    * Returns a MedalConfig augmented with `criteriaProgress` — the user's current
-   * resolved fact values for each factRequest. Used to render progress UI.
-   * Note: streakRequest values are not included in criteriaProgress (only factRequests).
+   * resolved fact values for each factRequest and streak current counts for each
+   * streakRequest. Used to render progress UI.
    */
   static async getConfigWithProgress(
     id: number,
@@ -179,9 +179,12 @@ export class Medal {
         return err(new Error("Medal config not found"));
       }
       const base = Medal.mapConfigToSpec(config);
+      const utcOffsetMinutes = await Medal.getUtcOffset(userId);
       const criteriaProgress = await Medal.resolveCriteriaProgress(
         base.factRequests,
-        userId
+        base.streakRequests,
+        userId,
+        utcOffsetMinutes
       );
       return ok({ ...base, criteriaProgress });
     } catch (error) {
@@ -197,12 +200,15 @@ export class Medal {
       const configs = await prisma.medalConfig.findMany({
         orderBy: { prestige: "desc" },
       });
+      const utcOffsetMinutes = await Medal.getUtcOffset(userId);
       const results = await Promise.all(
         configs.map(async (config) => {
           const base = Medal.mapConfigToSpec(config);
           const criteriaProgress = await Medal.resolveCriteriaProgress(
             base.factRequests,
-            userId
+            base.streakRequests,
+            userId,
+            utcOffsetMinutes
           );
           return { ...base, criteriaProgress };
         })
@@ -354,14 +360,24 @@ export class Medal {
     }
   }
 
+  /** Fetches the user's UTC offset in minutes from their TIMEZONE setting, defaulting to 0. */
+  private static async getUtcOffset(userId: string): Promise<number> {
+    const settingsRes = await Setting.getForUser(userId);
+    return settingsRes.isOk()
+      ? (settingsRes.value[SettingName.TIMEZONE] as number ?? 0)
+      : 0;
+  }
+
   /**
-   * Resolves the current value of each factRequest for display purposes.
-   * Entries whose fact resolves to undefined are omitted (e.g. ANALYSIS_CLASSIFICATION
-   * before the pipeline has seeded its result).
+   * Resolves the current value of each factRequest and the current streak count for
+   * each streakRequest for display purposes. Fact entries that resolve to undefined
+   * are omitted (e.g. ANALYSIS_CLASSIFICATION before the pipeline has seeded its result).
    */
   private static async resolveCriteriaProgress(
     factRequests: FactRequest[],
-    userId: string
+    streakRequests: StreakRequest[],
+    userId: string,
+    utcOffsetMinutes: number
   ): Promise<CriteriaProgress[]> {
     const progress: CriteriaProgress[] = [];
     for (const factRequest of factRequests) {
@@ -369,6 +385,10 @@ export class Medal {
       if (value !== undefined) {
         progress.push({ alias: factRequest.alias, value });
       }
+    }
+    for (const streakRequest of streakRequests) {
+      const { current } = await Streak.resolveContext(streakRequest.context, userId, utcOffsetMinutes);
+      progress.push({ alias: streakRequest.alias, value: current });
     }
     return progress;
   }

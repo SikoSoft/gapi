@@ -99,6 +99,14 @@ const MedalSchema = z.object({
   awardedAt: z.string(),
 });
 
+const StreakContextSchema = z.object({
+  segmentUnit: z.enum(["hour", "day", "week", "month"]),
+  length: z.number().int().positive(),
+  innerContext: z.record(z.string(), z.unknown()),
+  innerOperator: z.enum(["==", "!=", ">", ">=", "<", "<=", "contains"]),
+  innerValue: z.union([z.string(), z.number(), z.boolean()]),
+});
+
 const MedalConfigSchema = z.object({
   id: z.number(),
   name: z.string(),
@@ -107,8 +115,20 @@ const MedalConfigSchema = z.object({
   recurrence: z.number(),
   prestige: z.number(),
   icon: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
   factRequests: z.array(z.record(z.string(), z.unknown())),
+  streakRequests: z.array(z.object({ alias: z.string(), context: StreakContextSchema })),
   criteria: z.record(z.string(), z.unknown()),
+});
+
+const CriteriaProgressSchema = z.object({
+  alias: z.string(),
+  value: z.union([z.string(), z.number(), z.boolean()]),
+});
+
+const MedalConfigWithProgressSchema = MedalConfigSchema.extend({
+  criteriaProgress: z.array(CriteriaProgressSchema),
 });
 
 const EntityBodyPayloadSchema = z.object({
@@ -1142,7 +1162,7 @@ registry.registerPath({
   summary: "List medal configs",
   ...auth,
   responses: {
-    200: { description: "Medal configs", ...json(z.object({ medalConfigs: z.array(MedalConfigSchema) })) },
+    200: { description: "Medal configs", ...json(z.object({ medalConfigs: z.array(MedalConfigWithProgressSchema) })) },
     403: forbidden,
     500: serverError,
   },
@@ -1156,7 +1176,7 @@ registry.registerPath({
   ...auth,
   request: { params: z.object({ id: z.string() }) },
   responses: {
-    200: { description: "Medal config", ...json(MedalConfigSchema) },
+    200: { description: "Medal config", ...json(MedalConfigWithProgressSchema) },
     403: forbidden,
     500: serverError,
   },

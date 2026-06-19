@@ -723,60 +723,228 @@
       "ChartRequestBody": {
         "type": "object",
         "properties": {
-          "dataWindow": {
-            "type": "object",
-            "properties": {
-              "start": {
-                "type": "string"
-              },
-              "end": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "start",
-              "end"
-            ]
-          },
-          "segmentation": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "time"
+          "config": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number",
+                    "enum": [
+                      1
+                    ]
+                  },
+                  "dataWindow": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "custom"
+                            ]
+                          },
+                          "start": {
+                            "type": "string"
+                          },
+                          "end": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "start",
+                          "end"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "yearToDate",
+                              "monthToDate",
+                              "weekToDate",
+                              "last365Days",
+                              "last30Days",
+                              "last7Days"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ]
+                      }
+                    ]
+                  },
+                  "segmentation": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "time"
+                        ]
+                      },
+                      "unit": {
+                        "type": "string",
+                        "enum": [
+                          "hour",
+                          "day",
+                          "week",
+                          "month",
+                          "year"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "unit"
+                    ]
+                  },
+                  "dataPoints": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "version",
+                  "dataWindow",
+                  "segmentation",
+                  "dataPoints"
                 ]
               },
-              "unit": {
-                "type": "string",
-                "enum": [
-                  "hour",
-                  "day",
-                  "week",
-                  "month",
-                  "year"
+              {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number",
+                    "enum": [
+                      2
+                    ]
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "bar",
+                      "line",
+                      "scatter",
+                      "bubble",
+                      "pie",
+                      "doughnut",
+                      "polarArea",
+                      "radar"
+                    ]
+                  },
+                  "dataWindow": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "custom"
+                            ]
+                          },
+                          "start": {
+                            "type": "string"
+                          },
+                          "end": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "start",
+                          "end"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "yearToDate",
+                              "monthToDate",
+                              "weekToDate",
+                              "last365Days",
+                              "last30Days",
+                              "last7Days"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ]
+                      }
+                    ]
+                  },
+                  "segmentation": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "time"
+                        ]
+                      },
+                      "unit": {
+                        "type": "string",
+                        "enum": [
+                          "hour",
+                          "day",
+                          "week",
+                          "month",
+                          "year"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "unit"
+                    ]
+                  },
+                  "dataPoints": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "version",
+                  "type",
+                  "dataWindow",
+                  "segmentation",
+                  "dataPoints"
                 ]
               }
-            },
-            "required": [
-              "type",
-              "unit"
             ]
           },
-          "dataPoints": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": {
-                "nullable": true
-              }
-            }
+          "name": {
+            "type": "string"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "resync": {
+            "type": "boolean"
           }
         },
         "required": [
-          "dataWindow",
-          "segmentation",
-          "dataPoints"
+          "config"
         ]
       },
       "WorkspaceCreateBody": {
@@ -784,6 +952,15 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          },
+          "showEverything": {
+            "type": "boolean"
           },
           "listConfigs": {
             "type": "array",
@@ -794,6 +971,9 @@
         },
         "required": [
           "name",
+          "color",
+          "theme",
+          "showEverything",
           "listConfigs"
         ]
       },
@@ -803,17 +983,40 @@
           "name": {
             "type": "string"
           },
+          "color": {
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          },
+          "showEverything": {
+            "type": "boolean"
+          },
           "listConfigs": {
             "type": "array",
             "items": {
               "type": "string"
             }
+          },
+          "streaks": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "facts": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "charts": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
           }
-        },
-        "required": [
-          "name",
-          "listConfigs"
-        ]
+        }
       },
       "MedalConfigCreateBody": {
         "type": "object",
@@ -853,6 +1056,75 @@
               ]
             }
           },
+          "streakRequests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": "string"
+                },
+                "context": {
+                  "type": "object",
+                  "properties": {
+                    "segmentUnit": {
+                      "type": "string",
+                      "enum": [
+                        "hour",
+                        "day",
+                        "week",
+                        "month",
+                        "year"
+                      ]
+                    },
+                    "length": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "exclusiveMinimum": true
+                    },
+                    "innerContext": {
+                      "nullable": true
+                    },
+                    "innerOperator": {
+                      "type": "string",
+                      "enum": [
+                        "==",
+                        "!=",
+                        ">",
+                        ">=",
+                        "<",
+                        "<=",
+                        "contains"
+                      ]
+                    },
+                    "innerValue": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "segmentUnit",
+                    "length",
+                    "innerOperator",
+                    "innerValue"
+                  ]
+                }
+              },
+              "required": [
+                "alias",
+                "context"
+              ]
+            }
+          },
           "criteria": {
             "nullable": true
           }
@@ -864,7 +1136,8 @@
           "recurrence",
           "prestige",
           "icon",
-          "factRequests"
+          "factRequests",
+          "streakRequests"
         ]
       },
       "NotificationMessage": {
@@ -6472,6 +6745,12 @@
                           "icon": {
                             "type": "string"
                           },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          },
                           "factRequests": {
                             "type": "array",
                             "items": {
@@ -6481,10 +6760,110 @@
                               }
                             }
                           },
+                          "streakRequests": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "alias": {
+                                  "type": "string"
+                                },
+                                "context": {
+                                  "type": "object",
+                                  "properties": {
+                                    "segmentUnit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "hour",
+                                        "day",
+                                        "week",
+                                        "month"
+                                      ]
+                                    },
+                                    "length": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "exclusiveMinimum": true
+                                    },
+                                    "innerContext": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "nullable": true
+                                      }
+                                    },
+                                    "innerOperator": {
+                                      "type": "string",
+                                      "enum": [
+                                        "==",
+                                        "!=",
+                                        ">",
+                                        ">=",
+                                        "<",
+                                        "<=",
+                                        "contains"
+                                      ]
+                                    },
+                                    "innerValue": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "segmentUnit",
+                                    "length",
+                                    "innerContext",
+                                    "innerOperator",
+                                    "innerValue"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "alias",
+                                "context"
+                              ]
+                            }
+                          },
                           "criteria": {
                             "type": "object",
                             "additionalProperties": {
                               "nullable": true
+                            }
+                          },
+                          "criteriaProgress": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "alias": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "boolean"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "alias",
+                                "value"
+                              ]
                             }
                           }
                         },
@@ -6496,8 +6875,12 @@
                           "recurrence",
                           "prestige",
                           "icon",
+                          "createdAt",
+                          "updatedAt",
                           "factRequests",
-                          "criteria"
+                          "streakRequests",
+                          "criteria",
+                          "criteriaProgress"
                         ]
                       }
                     }
@@ -6565,6 +6948,12 @@
                     "icon": {
                       "type": "string"
                     },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
                     "factRequests": {
                       "type": "array",
                       "items": {
@@ -6572,6 +6961,78 @@
                         "additionalProperties": {
                           "nullable": true
                         }
+                      }
+                    },
+                    "streakRequests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "alias": {
+                            "type": "string"
+                          },
+                          "context": {
+                            "type": "object",
+                            "properties": {
+                              "segmentUnit": {
+                                "type": "string",
+                                "enum": [
+                                  "hour",
+                                  "day",
+                                  "week",
+                                  "month"
+                                ]
+                              },
+                              "length": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "exclusiveMinimum": true
+                              },
+                              "innerContext": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "nullable": true
+                                }
+                              },
+                              "innerOperator": {
+                                "type": "string",
+                                "enum": [
+                                  "==",
+                                  "!=",
+                                  ">",
+                                  ">=",
+                                  "<",
+                                  "<=",
+                                  "contains"
+                                ]
+                              },
+                              "innerValue": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "segmentUnit",
+                              "length",
+                              "innerContext",
+                              "innerOperator",
+                              "innerValue"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "alias",
+                          "context"
+                        ]
                       }
                     },
                     "criteria": {
@@ -6589,7 +7050,10 @@
                     "recurrence",
                     "prestige",
                     "icon",
+                    "createdAt",
+                    "updatedAt",
                     "factRequests",
+                    "streakRequests",
                     "criteria"
                   ]
                 }
@@ -6655,6 +7119,12 @@
                     "icon": {
                       "type": "string"
                     },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
                     "factRequests": {
                       "type": "array",
                       "items": {
@@ -6664,10 +7134,110 @@
                         }
                       }
                     },
+                    "streakRequests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "alias": {
+                            "type": "string"
+                          },
+                          "context": {
+                            "type": "object",
+                            "properties": {
+                              "segmentUnit": {
+                                "type": "string",
+                                "enum": [
+                                  "hour",
+                                  "day",
+                                  "week",
+                                  "month"
+                                ]
+                              },
+                              "length": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "exclusiveMinimum": true
+                              },
+                              "innerContext": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "nullable": true
+                                }
+                              },
+                              "innerOperator": {
+                                "type": "string",
+                                "enum": [
+                                  "==",
+                                  "!=",
+                                  ">",
+                                  ">=",
+                                  "<",
+                                  "<=",
+                                  "contains"
+                                ]
+                              },
+                              "innerValue": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "segmentUnit",
+                              "length",
+                              "innerContext",
+                              "innerOperator",
+                              "innerValue"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "alias",
+                          "context"
+                        ]
+                      }
+                    },
                     "criteria": {
                       "type": "object",
                       "additionalProperties": {
                         "nullable": true
+                      }
+                    },
+                    "criteriaProgress": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "alias": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "boolean"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "alias",
+                          "value"
+                        ]
                       }
                     }
                   },
@@ -6679,8 +7249,12 @@
                     "recurrence",
                     "prestige",
                     "icon",
+                    "createdAt",
+                    "updatedAt",
                     "factRequests",
-                    "criteria"
+                    "streakRequests",
+                    "criteria",
+                    "criteriaProgress"
                   ]
                 }
               }
@@ -6752,6 +7326,12 @@
                     "icon": {
                       "type": "string"
                     },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
                     "factRequests": {
                       "type": "array",
                       "items": {
@@ -6759,6 +7339,78 @@
                         "additionalProperties": {
                           "nullable": true
                         }
+                      }
+                    },
+                    "streakRequests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "alias": {
+                            "type": "string"
+                          },
+                          "context": {
+                            "type": "object",
+                            "properties": {
+                              "segmentUnit": {
+                                "type": "string",
+                                "enum": [
+                                  "hour",
+                                  "day",
+                                  "week",
+                                  "month"
+                                ]
+                              },
+                              "length": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "exclusiveMinimum": true
+                              },
+                              "innerContext": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "nullable": true
+                                }
+                              },
+                              "innerOperator": {
+                                "type": "string",
+                                "enum": [
+                                  "==",
+                                  "!=",
+                                  ">",
+                                  ">=",
+                                  "<",
+                                  "<=",
+                                  "contains"
+                                ]
+                              },
+                              "innerValue": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "segmentUnit",
+                              "length",
+                              "innerContext",
+                              "innerOperator",
+                              "innerValue"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "alias",
+                          "context"
+                        ]
                       }
                     },
                     "criteria": {
@@ -6776,7 +7428,10 @@
                     "recurrence",
                     "prestige",
                     "icon",
+                    "createdAt",
+                    "updatedAt",
                     "factRequests",
+                    "streakRequests",
                     "criteria"
                   ]
                 }

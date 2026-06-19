@@ -87,9 +87,15 @@ const WorkspaceSchema = z.object({
   id: z.string(),
   name: z.string(),
   userId: z.string(),
+  color: z.string(),
+  theme: z.string(),
+  showEverything: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
   listConfigs: z.array(z.string()),
+  streaks: z.array(z.number()),
+  facts: z.array(z.number()),
+  charts: z.array(z.number()),
 });
 
 const MedalSchema = z.object({
@@ -1275,6 +1281,133 @@ registry.registerPath({
     202: { description: "Nuked" },
     400: badRequest,
     403: forbidden,
+  },
+});
+
+// ─── Streak / Fact config routes ─────────────────────────────────────────────
+
+const StreakSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  userId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  context: StreakContextSchema,
+});
+
+const StreakResultSchema = z.object({
+  streakId: z.number(),
+  current: z.number(),
+  longest: z.number(),
+});
+
+const FactSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  userId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  context: z.record(z.string(), z.unknown()),
+});
+
+const FactResultSchema = z.object({
+  factId: z.number(),
+  value: z.union([z.string(), z.number()]),
+});
+
+registry.registerPath({
+  tags: ["Streaks"],
+  method: "get",
+  path: "/streakRequest",
+  summary: "List saved streak configs with current and longest counts",
+  ...auth,
+  request: { query: z.object({ bypassCache: z.string().optional() }) },
+  responses: {
+    200: { description: "Streaks and results", ...json(z.object({ streaks: z.array(StreakSchema), results: z.array(StreakResultSchema) })) },
+    403: forbidden,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Streaks"],
+  method: "post",
+  path: "/streakRequest",
+  summary: "Create a saved streak config",
+  ...auth,
+  request: { body: { content: { "application/json": { schema: z.object({ name: z.string(), context: StreakContextSchema }) } } } },
+  responses: {
+    200: { description: "Created streak", ...json(z.object({ streak: StreakSchema })) },
+    400: badRequest,
+    403: forbidden,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Streaks"],
+  method: "put",
+  path: "/streakRequest/{id}",
+  summary: "Update a saved streak config",
+  ...auth,
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: z.object({ name: z.string().optional(), context: StreakContextSchema.optional() }) } } },
+  },
+  responses: {
+    200: { description: "Updated streak", ...json(z.object({ streak: StreakSchema })) },
+    400: badRequest,
+    403: forbidden,
+    404: notFound,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Facts"],
+  method: "get",
+  path: "/factRequest",
+  summary: "List saved fact configs with current resolved values",
+  ...auth,
+  request: { query: z.object({ bypassCache: z.string().optional() }) },
+  responses: {
+    200: { description: "Facts and results", ...json(z.object({ facts: z.array(FactSchema), results: z.array(FactResultSchema) })) },
+    403: forbidden,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Facts"],
+  method: "post",
+  path: "/factRequest",
+  summary: "Create a saved fact config",
+  ...auth,
+  request: { body: { content: { "application/json": { schema: z.object({ name: z.string(), context: z.record(z.string(), z.unknown()) }) } } } },
+  responses: {
+    200: { description: "Created fact", ...json(z.object({ fact: FactSchema })) },
+    400: badRequest,
+    403: forbidden,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Facts"],
+  method: "put",
+  path: "/factRequest/{id}",
+  summary: "Update a saved fact config",
+  ...auth,
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: z.object({ name: z.string().optional(), context: z.record(z.string(), z.unknown()).optional() }) } } },
+  },
+  responses: {
+    200: { description: "Updated fact", ...json(z.object({ fact: FactSchema })) },
+    400: badRequest,
+    403: forbidden,
+    404: notFound,
+    500: serverError,
   },
 });
 

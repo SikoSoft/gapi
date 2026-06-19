@@ -6343,6 +6343,15 @@
                           "userId": {
                             "type": "string"
                           },
+                          "color": {
+                            "type": "string"
+                          },
+                          "theme": {
+                            "type": "string"
+                          },
+                          "showEverything": {
+                            "type": "boolean"
+                          },
                           "createdAt": {
                             "type": "string"
                           },
@@ -6354,15 +6363,39 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "streaks": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "facts": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "charts": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
                           }
                         },
                         "required": [
                           "id",
                           "name",
                           "userId",
+                          "color",
+                          "theme",
+                          "showEverything",
                           "createdAt",
                           "updatedAt",
-                          "listConfigs"
+                          "listConfigs",
+                          "streaks",
+                          "facts",
+                          "charts"
                         ]
                       }
                     }
@@ -6418,6 +6451,15 @@
                     "userId": {
                       "type": "string"
                     },
+                    "color": {
+                      "type": "string"
+                    },
+                    "theme": {
+                      "type": "string"
+                    },
+                    "showEverything": {
+                      "type": "boolean"
+                    },
                     "createdAt": {
                       "type": "string"
                     },
@@ -6429,15 +6471,39 @@
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "streaks": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "facts": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "charts": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
                     }
                   },
                   "required": [
                     "id",
                     "name",
                     "userId",
+                    "color",
+                    "theme",
+                    "showEverything",
                     "createdAt",
                     "updatedAt",
-                    "listConfigs"
+                    "listConfigs",
+                    "streaks",
+                    "facts",
+                    "charts"
                   ]
                 }
               }
@@ -6490,6 +6556,15 @@
                     "userId": {
                       "type": "string"
                     },
+                    "color": {
+                      "type": "string"
+                    },
+                    "theme": {
+                      "type": "string"
+                    },
+                    "showEverything": {
+                      "type": "boolean"
+                    },
                     "createdAt": {
                       "type": "string"
                     },
@@ -6501,15 +6576,39 @@
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "streaks": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "facts": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "charts": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
                     }
                   },
                   "required": [
                     "id",
                     "name",
                     "userId",
+                    "color",
+                    "theme",
+                    "showEverything",
                     "createdAt",
                     "updatedAt",
-                    "listConfigs"
+                    "listConfigs",
+                    "streaks",
+                    "facts",
+                    "charts"
                   ]
                 }
               }
@@ -6569,6 +6668,15 @@
                     "userId": {
                       "type": "string"
                     },
+                    "color": {
+                      "type": "string"
+                    },
+                    "theme": {
+                      "type": "string"
+                    },
+                    "showEverything": {
+                      "type": "boolean"
+                    },
                     "createdAt": {
                       "type": "string"
                     },
@@ -6580,15 +6688,39 @@
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "streaks": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "facts": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "charts": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
                     }
                   },
                   "required": [
                     "id",
                     "name",
                     "userId",
+                    "color",
+                    "theme",
+                    "showEverything",
                     "createdAt",
                     "updatedAt",
-                    "listConfigs"
+                    "listConfigs",
+                    "streaks",
+                    "facts",
+                    "charts"
                   ]
                 }
               }
@@ -7659,6 +7791,878 @@
           },
           "403": {
             "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/streakRequest": {
+      "get": {
+        "tags": [
+          "Streaks"
+        ],
+        "summary": "List saved streak configs with current and longest counts",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "bypassCache",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Streaks and results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "streaks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          },
+                          "context": {
+                            "type": "object",
+                            "properties": {
+                              "segmentUnit": {
+                                "type": "string",
+                                "enum": [
+                                  "hour",
+                                  "day",
+                                  "week",
+                                  "month"
+                                ]
+                              },
+                              "length": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "exclusiveMinimum": true
+                              },
+                              "innerContext": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "nullable": true
+                                }
+                              },
+                              "innerOperator": {
+                                "type": "string",
+                                "enum": [
+                                  "==",
+                                  "!=",
+                                  ">",
+                                  ">=",
+                                  "<",
+                                  "<=",
+                                  "contains"
+                                ]
+                              },
+                              "innerValue": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "segmentUnit",
+                              "length",
+                              "innerContext",
+                              "innerOperator",
+                              "innerValue"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "userId",
+                          "createdAt",
+                          "updatedAt",
+                          "context"
+                        ]
+                      }
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "streakId": {
+                            "type": "number"
+                          },
+                          "current": {
+                            "type": "number"
+                          },
+                          "longest": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "streakId",
+                          "current",
+                          "longest"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "streaks",
+                    "results"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Streaks"
+        ],
+        "summary": "Create a saved streak config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "object",
+                    "properties": {
+                      "segmentUnit": {
+                        "type": "string",
+                        "enum": [
+                          "hour",
+                          "day",
+                          "week",
+                          "month"
+                        ]
+                      },
+                      "length": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true
+                      },
+                      "innerContext": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "nullable": true
+                        }
+                      },
+                      "innerOperator": {
+                        "type": "string",
+                        "enum": [
+                          "==",
+                          "!=",
+                          ">",
+                          ">=",
+                          "<",
+                          "<=",
+                          "contains"
+                        ]
+                      },
+                      "innerValue": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "segmentUnit",
+                      "length",
+                      "innerContext",
+                      "innerOperator",
+                      "innerValue"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "context"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created streak",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "streak": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "context": {
+                          "type": "object",
+                          "properties": {
+                            "segmentUnit": {
+                              "type": "string",
+                              "enum": [
+                                "hour",
+                                "day",
+                                "week",
+                                "month"
+                              ]
+                            },
+                            "length": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true
+                            },
+                            "innerContext": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "nullable": true
+                              }
+                            },
+                            "innerOperator": {
+                              "type": "string",
+                              "enum": [
+                                "==",
+                                "!=",
+                                ">",
+                                ">=",
+                                "<",
+                                "<=",
+                                "contains"
+                              ]
+                            },
+                            "innerValue": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "boolean"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "segmentUnit",
+                            "length",
+                            "innerContext",
+                            "innerOperator",
+                            "innerValue"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "userId",
+                        "createdAt",
+                        "updatedAt",
+                        "context"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "streak"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/streakRequest/{id}": {
+      "put": {
+        "tags": [
+          "Streaks"
+        ],
+        "summary": "Update a saved streak config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "object",
+                    "properties": {
+                      "segmentUnit": {
+                        "type": "string",
+                        "enum": [
+                          "hour",
+                          "day",
+                          "week",
+                          "month"
+                        ]
+                      },
+                      "length": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true
+                      },
+                      "innerContext": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "nullable": true
+                        }
+                      },
+                      "innerOperator": {
+                        "type": "string",
+                        "enum": [
+                          "==",
+                          "!=",
+                          ">",
+                          ">=",
+                          "<",
+                          "<=",
+                          "contains"
+                        ]
+                      },
+                      "innerValue": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "segmentUnit",
+                      "length",
+                      "innerContext",
+                      "innerOperator",
+                      "innerValue"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated streak",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "streak": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "context": {
+                          "type": "object",
+                          "properties": {
+                            "segmentUnit": {
+                              "type": "string",
+                              "enum": [
+                                "hour",
+                                "day",
+                                "week",
+                                "month"
+                              ]
+                            },
+                            "length": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true
+                            },
+                            "innerContext": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "nullable": true
+                              }
+                            },
+                            "innerOperator": {
+                              "type": "string",
+                              "enum": [
+                                "==",
+                                "!=",
+                                ">",
+                                ">=",
+                                "<",
+                                "<=",
+                                "contains"
+                              ]
+                            },
+                            "innerValue": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "boolean"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "segmentUnit",
+                            "length",
+                            "innerContext",
+                            "innerOperator",
+                            "innerValue"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "userId",
+                        "createdAt",
+                        "updatedAt",
+                        "context"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "streak"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/factRequest": {
+      "get": {
+        "tags": [
+          "Facts"
+        ],
+        "summary": "List saved fact configs with current resolved values",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "bypassCache",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Facts and results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "facts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          },
+                          "context": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "userId",
+                          "createdAt",
+                          "updatedAt",
+                          "context"
+                        ]
+                      }
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "factId": {
+                            "type": "number"
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "factId",
+                          "value"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "facts",
+                    "results"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Facts"
+        ],
+        "summary": "Create a saved fact config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "nullable": true
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "context"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created fact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fact": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "context": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "nullable": true
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "userId",
+                        "createdAt",
+                        "updatedAt",
+                        "context"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "fact"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/factRequest/{id}": {
+      "put": {
+        "tags": [
+          "Facts"
+        ],
+        "summary": "Update a saved fact config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated fact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fact": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "context": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "nullable": true
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "userId",
+                        "createdAt",
+                        "updatedAt",
+                        "context"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "fact"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         }
       }

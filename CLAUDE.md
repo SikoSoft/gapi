@@ -102,6 +102,17 @@ The `docs/` folder contains system-level documentation. When changing code that 
 
 Doc blocks above public and private method definitions in `src/lib/Fact.ts`, `src/lib/Medal.ts`, and `src/lib/Streak.ts` explain non-obvious contracts and invariants. Keep them current when modifying those methods — stale doc blocks are worse than none.
 
+### OpenAPI Spec
+
+The OpenAPI spec is generated from `src/openapi/registry.ts` via `npm run spec` (output: `openapi.json`). The registry must always be kept in sync with the actual endpoint behavior. Whenever you:
+
+- Add a new endpoint (`src/functions/`) → add a matching `registry.registerPath(...)` block
+- Change a response shape (e.g. add fields to a `mapDataToSpec` return, or extend an interface) → update the matching response schema in the registry
+- Add fields to a request body schema (`src/models/`) → verify the corresponding `registry.register(...)` schema reflects those fields
+- Remove or rename a field from any lib return type or model → update the registry schema
+
+After making any changes to endpoint logic or models, always run `npm run spec` to regenerate `openapi.json` and commit both together. The frontend (`orbit`) and any other consumers depend on this spec — a stale spec causes contract drift that is difficult to debug later.
+
 ### Guidelines
 
 - mapDataToSpec functions should never be async

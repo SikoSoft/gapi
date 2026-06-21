@@ -19,6 +19,7 @@ export interface EntityBodyPayload {
   userId?: string;
   suggested?: boolean;
   identified?: boolean;
+  allowComments?: boolean;
   createdAt?: string;
 }
 

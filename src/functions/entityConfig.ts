@@ -66,6 +66,7 @@ export async function listConfig(
         public: createBody.public,
         uniqueConstraints: [],
         allowTags: createBody.allowTags,
+        allowComments: createBody.allowComments,
       });
 
       if (entityConfigRes.isErr()) {

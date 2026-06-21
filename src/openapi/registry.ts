@@ -13,6 +13,7 @@ import { AccessPolicyAssignmentSchema, AccessPolicyBodySchema, AccessPolicyGroup
 import { ListConfigCreateBodySchema } from "../models/ListConfig";
 import { TagCreateBodySchema } from "../models/Tag";
 import { LeaderboardCreateBodySchema, LeaderboardRecordSchema } from "../models/Leaderboard";
+import { commentCreateSchema, commentReactionSchema, commentUpdateSchema } from "../models/Comment";
 
 export const registry = new OpenAPIRegistry();
 
@@ -45,6 +46,7 @@ const EntityConfigSchema = z.object({
   aiIdentifyPrompt: z.string(),
   public: z.boolean(),
   allowTags: z.boolean(),
+  allowComments: z.boolean(),
   uniqueConstraints: z.array(z.object({ propertyIds: z.array(z.number()) })),
 });
 
@@ -58,6 +60,20 @@ const EntitySchema = z.object({
   properties: z.array(EntityPropertySchema),
   suggested: z.boolean(),
   identified: z.boolean(),
+  allowComments: z.boolean(),
+});
+
+const CommentSchema = z.object({
+  id: z.number(),
+  entityId: z.number(),
+  userId: z.string().nullable(),
+  guestName: z.string().nullable(),
+  body: z.string(),
+  published: z.boolean(),
+  likeCount: z.number(),
+  dislikeCount: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 const AccessPolicySchema = z.object({
@@ -147,6 +163,7 @@ const EntityBodyPayloadSchema = z.object({
   userId: z.string().optional(),
   suggested: z.boolean().optional(),
   identified: z.boolean().optional(),
+  allowComments: z.boolean().optional(),
   createdAt: z.string().optional(),
 });
 
@@ -161,6 +178,7 @@ const EntityConfigCreateBodySchema = z.object({
   aiIdentifyPrompt: z.string().optional(),
   public: z.boolean().optional(),
   allowTags: z.boolean().optional(),
+  allowComments: z.boolean().optional(),
   uniqueConstraints: z.array(z.object({ propertyIds: z.array(z.number()) })).optional(),
 });
 
@@ -210,6 +228,9 @@ const AccessPolicyAssignment = registry.register("AccessPolicyAssignment", Acces
 const ListConfigCreateBody = registry.register("ListConfigCreateBody", ListConfigCreateBodySchema);
 const TagCreateBody = registry.register("TagCreateBody", TagCreateBodySchema);
 const LeaderboardCreateBody = registry.register("LeaderboardCreateBody", LeaderboardCreateBodySchema);
+const CommentCreateBody = registry.register("CommentCreateBody", commentCreateSchema);
+const CommentUpdateBody = registry.register("CommentUpdateBody", commentUpdateSchema);
+const CommentReactionBody = registry.register("CommentReactionBody", commentReactionSchema);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1584,6 +1605,109 @@ registry.registerPath({
       description: "Leaderboard with new rank",
       ...json(z.object({ rank: z.number(), records: z.array(LeaderboardRecordSchema) })),
     },
+  },
+});
+
+// ─── Comment ──────────────────────────────────────────────────────────────────
+
+registry.registerPath({
+  tags: ["Comment"],
+  method: "get",
+  path: "/comment",
+  summary: "List comments for an entity",
+  request: { query: z.object({ entityId: z.string() }) },
+  responses: {
+    200: { description: "Comments", ...json(z.object({ comments: z.array(CommentSchema) })) },
+    400: badRequest,
+    404: notFound,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Comment"],
+  method: "get",
+  path: "/comment/{id}",
+  summary: "Get a single comment",
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: { description: "Comment", ...json(CommentSchema) },
+    404: notFound,
+  },
+});
+
+registry.registerPath({
+  tags: ["Comment"],
+  method: "post",
+  path: "/comment",
+  summary: "Post a comment as an authenticated user or guest",
+  request: { body: { content: { "application/json": { schema: CommentCreateBody } } } },
+  responses: {
+    201: { description: "Created comment", ...json(CommentSchema) },
+    400: badRequest,
+    403: forbidden,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Comment"],
+  method: "patch",
+  path: "/comment/{id}",
+  summary: "Publish or unpublish a comment (entity owner only)",
+  ...auth,
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: CommentUpdateBody } } },
+  },
+  responses: {
+    200: { description: "Updated comment", ...json(CommentSchema) },
+    400: badRequest,
+    403: forbidden,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Comment"],
+  method: "delete",
+  path: "/comment/{id}",
+  summary: "Delete a comment (entity owner or comment author)",
+  ...auth,
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    204: noContent,
+    400: badRequest,
+    403: forbidden,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Comment"],
+  method: "post",
+  path: "/commentReaction/{id}",
+  summary: "Like or dislike a comment as an authenticated user or guest",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: CommentReactionBody } } },
+  },
+  responses: {
+    200: { description: "Updated reaction counts", ...json(z.object({ likeCount: z.number(), dislikeCount: z.number() })) },
+    400: badRequest,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Comment"],
+  method: "delete",
+  path: "/commentReaction/{id}",
+  summary: "Remove the caller's reaction to a comment",
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: { description: "Updated reaction counts", ...json(z.object({ likeCount: z.number(), dislikeCount: z.number() })) },
+    500: serverError,
   },
 });
 

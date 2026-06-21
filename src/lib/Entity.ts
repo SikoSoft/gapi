@@ -160,6 +160,7 @@ export class Entity {
           published: data.published ?? false,
           suggested: data.suggested ?? false,
           identified: data.identified ?? false,
+          allowComments: data.allowComments ?? false,
           ...(data.createdAt
             ? {
                 createdAt: Util.getDateInTimeZone(
@@ -291,7 +292,8 @@ export class Entity {
       if (
         data.published !== undefined ||
         data.suggested !== undefined ||
-        data.identified !== undefined
+        data.identified !== undefined ||
+        data.allowComments !== undefined
       ) {
         await prisma.entity.update({
           where: { id, userId },
@@ -302,6 +304,9 @@ export class Entity {
             }),
             ...(data.identified !== undefined && {
               identified: data.identified,
+            }),
+            ...(data.allowComments !== undefined && {
+              allowComments: data.allowComments,
             }),
           },
         });

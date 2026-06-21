@@ -15,7 +15,7 @@ Each `FactContext` has an `operation` field that determines the computation path
 | `entityCount` | Number of entities matching a list filter | `filter: ListFilter` |
 | `uniqueTagCount` | Count of distinct tag labels across filtered entities | `filter: ListFilter` |
 | `medalCount` | Number of times a specific medal config (or series) has been earned | `medalConfigId`, `series`, optional `start`/`end` |
-| `propertySum` | Sum of all integer property values for the given property across filtered entities | `propertyConfigId: number`, `filter: ListFilter` |
+| `propertySum` | Sum of the given property's values across filtered entities. For a standard int property this sums stored `IntPropertyValue` rows; for a calculated property (non-null `calculation`) there are no stored values, so each entity's value is derived in SQL (see `Fact.sumCalculatedProperty`) and the derived values are summed | `propertyConfigId: number`, `filter: ListFilter` |
 | `analysisClassification` | A numeric value produced by an external AI analysis service | `filter: ListFilter`, `analysisType: AnalysisClassificationType` |
 
 Available `analysisType` values: `"morningFasting"`, `"afternoonSnacking"`, `"caffeineIntake"`.

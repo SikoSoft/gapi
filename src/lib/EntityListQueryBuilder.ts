@@ -358,7 +358,7 @@ export class EntityListQueryBuilder {
     return this.getCustomSortFragment();
   }
 
-  getCalcOperandExpr(
+  static getCalcOperandExpr(
     operand: EntityPropertyCalculationReference | number,
     dataType: DataType | null
   ): string {
@@ -381,11 +381,11 @@ export class EntityListQueryBuilder {
 
     const caseEntries = this.calculatedPropertyConfigs
       .map((config) => {
-        const v1Expr = this.getCalcOperandExpr(
+        const v1Expr = EntityListQueryBuilder.getCalcOperandExpr(
           config.calculation.value1,
           config.value1DataType
         );
-        const v2Expr = this.getCalcOperandExpr(
+        const v2Expr = EntityListQueryBuilder.getCalcOperandExpr(
           config.calculation.value2,
           config.value2DataType
         );
@@ -423,11 +423,11 @@ export class EntityListQueryBuilder {
     }
     const propValParam = `filterPropVal${index}`;
     this.registerParam(propValParam, prop.value);
-    const v1Expr = this.getCalcOperandExpr(
+    const v1Expr = EntityListQueryBuilder.getCalcOperandExpr(
       calcConfig.calculation.value1,
       calcConfig.value1DataType
     );
-    const v2Expr = this.getCalcOperandExpr(
+    const v2Expr = EntityListQueryBuilder.getCalcOperandExpr(
       calcConfig.calculation.value2,
       calcConfig.value2DataType
     );
@@ -436,11 +436,11 @@ export class EntityListQueryBuilder {
   }
 
   getCalculatedSortJoinFragment(calcConfig: ResolvedCalculatedConfig): string {
-    const v1Expr = this.getCalcOperandExpr(
+    const v1Expr = EntityListQueryBuilder.getCalcOperandExpr(
       calcConfig.calculation.value1,
       calcConfig.value1DataType
     );
-    const v2Expr = this.getCalcOperandExpr(
+    const v2Expr = EntityListQueryBuilder.getCalcOperandExpr(
       calcConfig.calculation.value2,
       calcConfig.value2DataType
     );

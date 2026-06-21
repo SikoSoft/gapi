@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { Result, err, ok } from "neverthrow";
 import { Fact as FactSpec, FactContext, FactOperation, FactResult } from "api-spec/models/Fact";
+import { DataType, EntityPropertyCalculation } from "api-spec/models/Entity";
 import { prisma } from "..";
 import { FACT_TTL_MS, FactResolveOptions } from "../models/FactCache";
 import { PrismaFactConfig } from "../models/Fact";
@@ -274,7 +275,10 @@ export class Fact {
    * - ENTITY_COUNT: filtered count via EntityListQueryBuilder
    * - UNIQUE_TAG_COUNT: distinct tag labels across filtered entities
    * - MEDAL_COUNT: awarded medal count with optional date range
-   * - PROPERTY_SUM: sum of all IntPropertyValues for the given propertyConfigId across filtered entities
+   * - PROPERTY_SUM: sum of the given propertyConfigId across filtered entities. For a standard
+   *   int property this sums its IntPropertyValue rows directly; for a calculated property
+   *   (one with a non-null `calculation`) there are no stored values, so each entity's value is
+   *   derived in SQL via `sumCalculatedProperty` and the derived values are summed.
    * - ANALYSIS_CLASSIFICATION: always returns undefined — this operation's values come from an
    *   external AI pipeline and must be pre-seeded into FactCache via `writeCache` (Chart engine
    *   path) or queried from `analysisClassificationResult` directly (streak path). The `filter`
@@ -338,6 +342,21 @@ export class Fact {
           Logger.log(`[Fact] compute PROPERTY_SUM userId=${userId} propertyConfigId=${context.propertyConfigId} result=0 (no entities)`);
           return 0;
         }
+
+        const propertyConfig = await prisma.propertyConfig.findUnique({
+          where: { id: context.propertyConfigId },
+          select: { calculation: true },
+        });
+
+        if (propertyConfig?.calculation) {
+          const sum = await Fact.sumCalculatedProperty(
+            propertyConfig.calculation as EntityPropertyCalculation,
+            entityIds
+          );
+          Logger.log(`[Fact] compute PROPERTY_SUM userId=${userId} propertyConfigId=${context.propertyConfigId} result=${sum} (calculated)`);
+          return sum;
+        }
+
         const agg = await prisma.intPropertyValue.aggregate({
           _sum: { value: true },
           where: {
@@ -365,5 +384,57 @@ export class Fact {
         return undefined;
       }
     }
+  }
+
+  /**
+   * Sums the derived value of a calculated property (one whose value is computed from
+   * other properties via `PropertyConfig.calculation`, not stored in a per-type value table)
+   * across the given entities. Resolves each operand's data type so the right value table is
+   * joined, then sums the per-entity calculation result in SQL.
+   */
+  private static async sumCalculatedProperty(
+    calc: EntityPropertyCalculation,
+    entityIds: number[]
+  ): Promise<number> {
+    const refIds: number[] = [];
+    if (typeof calc.value1 === "object" && "propertyConfigId" in calc.value1) {
+      refIds.push(calc.value1.propertyConfigId);
+    }
+    if (typeof calc.value2 === "object" && "propertyConfigId" in calc.value2) {
+      refIds.push(calc.value2.propertyConfigId);
+    }
+
+    const sourceConfigs =
+      refIds.length > 0
+        ? await prisma.propertyConfig.findMany({
+            where: { id: { in: refIds } },
+            select: { id: true, dataType: true },
+          })
+        : [];
+    const dataTypeMap = new Map(
+      sourceConfigs.map((c) => [c.id, c.dataType as DataType])
+    );
+
+    const value1DataType =
+      typeof calc.value1 === "object" && "propertyConfigId" in calc.value1
+        ? (dataTypeMap.get(calc.value1.propertyConfigId) ?? null)
+        : null;
+    const value2DataType =
+      typeof calc.value2 === "object" && "propertyConfigId" in calc.value2
+        ? (dataTypeMap.get(calc.value2.propertyConfigId) ?? null)
+        : null;
+
+    const v1Expr = EntityListQueryBuilder.getCalcOperandExpr(calc.value1, value1DataType);
+    const v2Expr =
+      calc.operation === "/"
+        ? `NULLIF(${EntityListQueryBuilder.getCalcOperandExpr(calc.value2, value2DataType)}, 0)`
+        : EntityListQueryBuilder.getCalcOperandExpr(calc.value2, value2DataType);
+
+    const rows = await prisma.$queryRawUnsafe<{ sum: number | null }[]>(
+      `SELECT COALESCE(SUM(${v1Expr} ${calc.operation} ${v2Expr}), 0) AS "sum" FROM "Entity" e WHERE e."id" = ANY($1::int[])`,
+      entityIds
+    );
+
+    return Number(rows[0]?.sum ?? 0);
   }
 }

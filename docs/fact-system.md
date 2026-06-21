@@ -34,7 +34,9 @@ These are **two different tables** (`FactCache` vs `analysisClassificationResult
 
 ## Cache
 
-Every call to `Fact.resolve` checks the `FactCache` table before computing. The cache key is a **SHA256 hash of the canonical JSON** representation of the `FactContext` (object keys sorted alphabetically so key ordering never produces different hashes for logically identical contexts).
+Every call to `Fact.resolve` checks the `FactCache` table before computing. The cache key is a **SHA256 hash of the canonical JSON** representation of the `FactContext` (object keys sorted alphabetically so key ordering never produces different hashes for logically identical contexts). `Fact.contextKey(context)` computes this key; it's pure and does not touch the DB.
+
+`FactCache` rows are keyed by `(userId, contextKey)` — see the `@@unique([userId, contextKey])` constraint on the `FactCache` model in `prisma/schema.prisma`. A cache row is only ever a hit for the exact user who originally computed it.
 
 TTLs by operation (defined in `src/models/FactCache.ts`):
 
@@ -46,7 +48,13 @@ TTLs by operation (defined in `src/models/FactCache.ts`):
 | `propertySum` | 1 hour |
 | `analysisClassification` | 24 hours |
 
-Cache errors (DB failures on read or write) are treated as misses — the system always falls back to a fresh computation rather than throwing.
+Cache errors (DB failures on read or write) are treated as misses — the system always falls back to a fresh computation rather than throwing. There is no special-casing of the computed value: a `0` or `false` result is cached for the full TTL exactly like any other value, and `bypassCache: true` (see Notes below) never writes to the cache, so it cannot be used to "refresh" a stale entry — only deletion does that.
+
+### Streaks share this same cache — there is no separate streak cache
+
+Streaks (`StreakConfig`) have no cache table of their own. `Streak.resolveContext` breaks a streak into lookback segments (one per day/week/etc., per `segmentUnit` and `length`) and, for every segment except `analysisClassification`, calls `Streak.injectDateRange` to scope the streak's `innerContext` to that segment's date range, then calls `Fact.resolve` on the result. Each segment therefore produces its own distinct `FactContext` (because the injected `start`/`end` differ) and lands as its own row in `FactCache`. A single streak with a 14-day lookback can have up to 14 separate cache rows, and which rows those are shifts every day as the lookback window rolls forward.
+
+`analysisClassification` streaks are the exception: they bypass `Fact.resolve`/`FactCache` entirely and read the `analysisClassificationResult` table directly (see the section above), so there is nothing to cache or invalidate for them.
 
 ## Key Methods
 
@@ -58,14 +66,22 @@ Cache errors (DB failures on read or write) are treated as misses — the system
 | `Fact.writeCache(context, userId, value)` | public | Seeds the cache directly (used by external analysis pipelines for `analysisClassification`). |
 | `Fact.invalidate(contextKey, userId)` | public | Removes a single entry by pre-computed key. |
 | `Fact.invalidateUser(userId)` | public | Clears all cache for a user. |
+| `Fact.invalidateForConfig(factConfigId, userId)` | public | Looks up a saved fact (`FactConfig`), computes its contextKey, and removes that one entry. Returns an error if the config isn't found or isn't owned by `userId`. |
 | `Fact.purgeExpired()` | public | Deletes all expired rows — intended for periodic housekeeping. |
+| `Streak.invalidateForConfig(streakConfigId, userId, utcOffsetMinutes)` | public | Looks up a saved streak (`StreakConfig`), regenerates its *current* lookback segments the same way `resolveContext` does, computes each segment's contextKey, and bulk-deletes those `FactCache` rows. No-ops (returns `ok`) for `analysisClassification` streaks since they never write to `FactCache`. |
 
 ## HTTP Endpoints
 
-The `factCache` function (`src/functions/factCache.ts`) exposes cache management at the route `factCache/{contextKey?}`:
+Three endpoints expose cache invalidation, all scoped to the authenticated user (`introspect()`'s `userId` — there is no way to purge another user's cache):
 
-- `DELETE factCache/{contextKey}` — invalidates a specific entry
-- `DELETE factCache` — clears all cache for the authenticated user
+| Endpoint | Route | Behavior |
+|---|---|---|
+| `factCache` (`src/functions/factCache.ts`) | `DELETE /factCache/{contextKey}` | Invalidates one entry by its raw, pre-computed contextKey hash. Low-level — the caller must already know the hash. |
+| `factCache` (`src/functions/factCache.ts`) | `DELETE /factCache` | Clears **all** cache for the authenticated user (covers both fact and streak-segment rows, since they share the same table). |
+| `factRequestCache` (`src/functions/factRequestCache.ts`) | `DELETE /factRequestCache/{id}` | Invalidates the cache for one saved fact by its `FactConfig` id — calls `Fact.invalidateForConfig`. Returns `404` if the id doesn't exist or isn't owned by the caller. |
+| `streakRequestCache` (`src/functions/streakRequestCache.ts`) | `DELETE /streakRequestCache/{id}` | Invalidates all current segment cache rows for one saved streak by its `StreakConfig` id — calls `Streak.invalidateForConfig`, resolving `utcOffsetMinutes` from the user's `TIMEZONE` setting the same way `GET /streakRequest` does. Returns `404` if the id doesn't exist or isn't owned by the caller. |
+
+Use `factRequestCache`/`streakRequestCache` when you know *which saved fact or streak* looks stale — they don't require computing a hash client-side. Use the raw `factCache/{contextKey}` route only when you already have a specific contextKey (e.g. from logs). Use `DELETE /factCache` to nuke everything for a user when in doubt.
 
 ## Notes
 

@@ -1440,6 +1440,38 @@ registry.registerPath({
   },
 });
 
+registry.registerPath({
+  tags: ["Fact Cache"],
+  method: "delete",
+  path: "/factRequestCache/{id}",
+  summary: "Invalidate the cache for a single saved fact config",
+  ...auth,
+  request: { params: z.object({ id: z.coerce.number() }) },
+  responses: {
+    200: { description: "Invalidated", ...json(z.object({ invalidated: z.number() })) },
+    400: { description: "Invalid id" },
+    403: forbidden,
+    404: { description: "Fact not found" },
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Fact Cache"],
+  method: "delete",
+  path: "/streakRequestCache/{id}",
+  summary: "Invalidate the cache for a single saved streak config",
+  ...auth,
+  request: { params: z.object({ id: z.coerce.number() }) },
+  responses: {
+    200: { description: "Invalidated", ...json(z.object({ invalidated: z.number() })) },
+    400: { description: "Invalid id" },
+    403: forbidden,
+    404: { description: "Streak not found" },
+    500: serverError,
+  },
+});
+
 // ─── File upload ──────────────────────────────────────────────────────────────
 
 registry.registerPath({

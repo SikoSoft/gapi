@@ -62,6 +62,47 @@ export class Streak {
   }
 
   /**
+   * Invalidates the `FactCache` rows backing a single saved streak (`StreakConfig`),
+   * scoped to `userId`. Streaks have no cache table of their own — `resolveContext`
+   * caches each lookback segment as a separate `Fact.resolve` call, so this regenerates
+   * the *current* set of segment context keys the same way `resolveContext` does and
+   * deletes those rows. ANALYSIS_CLASSIFICATION streaks never touch `FactCache` (they
+   * read `analysisClassificationResult` directly), so this is a no-op for them.
+   */
+  static async invalidateForConfig(
+    streakConfigId: number,
+    userId: string,
+    utcOffsetMinutes: number
+  ): Promise<Result<void, Error>> {
+    try {
+      const row = await prisma.streakConfig.findFirst({
+        where: { id: streakConfigId, userId },
+      });
+      if (!row) {
+        return err(new Error("Streak not found"));
+      }
+      const ctx = row.context as unknown as StreakContext;
+
+      if (ctx.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
+        Logger.log(`[Streak] invalidateForConfig id=${streakConfigId} op=ANALYSIS_CLASSIFICATION — no FactCache rows to clear`);
+        return ok(undefined);
+      }
+
+      const segments = Streak.generateLookbackSegments(ctx.segmentUnit, ctx.length, new Date(), utcOffsetMinutes);
+      const contextKeys = segments
+        .map((segment) => Streak.injectDateRange(ctx.innerContext, segment.start, segment.end))
+        .filter((injected): injected is FactContext => injected !== null)
+        .map((injected) => Fact.contextKey(injected));
+
+      Logger.log(`[Streak] invalidateForConfig id=${streakConfigId} clearing ${contextKeys.length} FactCache rows`);
+      await prisma.factCache.deleteMany({ where: { userId, contextKey: { in: contextKeys } } });
+      return ok(undefined);
+    } catch (error) {
+      return err(new Error("Failed to invalidate streak cache for config", { cause: error }));
+    }
+  }
+
+  /**
    * Returns a human-readable string identifier for the segment that contains `utcDate`
    * after adjusting for the user's local timezone. Format by unit:
    * - HOUR  → "YYYY-MM-DDTHH"

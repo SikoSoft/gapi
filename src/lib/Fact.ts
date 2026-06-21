@@ -144,6 +144,30 @@ export class Fact {
     return hash;
   }
 
+  /**
+   * Invalidates the cache entry for a single saved fact (`FactConfig`), scoped to `userId`.
+   * A saved fact's cache key is derived directly from its own context (no date-range
+   * injection like streak segments), so there is exactly one `FactCache` row to remove.
+   */
+  static async invalidateForConfig(
+    factConfigId: number,
+    userId: string
+  ): Promise<Result<void, Error>> {
+    try {
+      const row = await prisma.factConfig.findFirst({
+        where: { id: factConfigId, userId },
+      });
+      if (!row) {
+        return err(new Error("Fact not found"));
+      }
+      const contextKey = Fact.contextKey(row.context as unknown as FactContext);
+      await prisma.factCache.deleteMany({ where: { userId, contextKey } });
+      return ok(undefined);
+    } catch (error) {
+      return err(new Error("Failed to invalidate fact cache for config", { cause: error }));
+    }
+  }
+
   /** Removes a single cache entry by its pre-computed context key. */
   static async invalidate(
     contextKey: string,

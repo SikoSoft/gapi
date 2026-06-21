@@ -8755,6 +8755,118 @@
         }
       }
     },
+    "/factRequestCache/{id}": {
+      "delete": {
+        "tags": [
+          "Fact Cache"
+        ],
+        "summary": "Invalidate the cache for a single saved fact config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "number",
+              "nullable": true
+            },
+            "required": false,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invalidated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invalidated": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "invalidated"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Fact not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/streakRequestCache/{id}": {
+      "delete": {
+        "tags": [
+          "Fact Cache"
+        ],
+        "summary": "Invalidate the cache for a single saved streak config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "number",
+              "nullable": true
+            },
+            "required": false,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invalidated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invalidated": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "invalidated"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Streak not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/file/{path}": {
       "post": {
         "tags": [

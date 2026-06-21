@@ -21,7 +21,7 @@ import {
   ListSortNativeProperty,
   ListSortDirection,
 } from "api-spec/models/List";
-import { DataType } from "api-spec/models/Entity";
+import { DataType, EntityPropertyCalculation } from "api-spec/models/Entity";
 import { Revision } from "api-spec/lib/Revision";
 import { EntityConfig } from "./EntityConfig";
 import { Logger } from "./Logger";
@@ -45,6 +45,37 @@ export class Data {
     } catch (err) {
       return err(new Error("Failed to reset data"));
     }
+  }
+
+  static remapCalculation(
+    calculation: EntityPropertyCalculation,
+    propertyConfigMap: ImportEntityPropertyConfigMap
+  ): EntityPropertyCalculation {
+    const remapOperand = (
+      operand: EntityPropertyCalculation["value1"]
+    ): EntityPropertyCalculation["value1"] => {
+      if (
+        typeof operand === "object" &&
+        operand !== null &&
+        "propertyConfigId" in operand
+      ) {
+        const mappedId = propertyConfigMap[operand.propertyConfigId];
+        if (mappedId === undefined) {
+          Logger.warn(
+            `Calculation references unmapped propertyConfigId: ${operand.propertyConfigId}, leaving unresolved`
+          );
+          return operand;
+        }
+        return { propertyConfigId: mappedId };
+      }
+      return operand;
+    };
+
+    return {
+      ...calculation,
+      value1: remapOperand(calculation.value1),
+      value2: remapOperand(calculation.value2),
+    };
   }
 
   static async import(
@@ -129,6 +160,11 @@ export class Data {
 
         entityConfigMap[config.id] = entityConfig.id;
 
+        const pendingCalculations: {
+          newId: number;
+          calculation: EntityPropertyCalculation;
+        }[] = [];
+
         for (const property of config.properties) {
           if ("calculation" in property && property.calculation) {
             const entityProperty = await prisma.propertyConfig.create({
@@ -139,7 +175,6 @@ export class Data {
                 prefix: property.prefix,
                 suffix: property.suffix,
                 hidden: property.hidden,
-                calculation: property.calculation as object,
                 entityConfigId: entityConfig.id,
                 repeat: 0,
                 allowed: 0,
@@ -148,6 +183,10 @@ export class Data {
               },
             });
             entityPropertyConfigMap[property.id] = entityProperty.id;
+            pendingCalculations.push({
+              newId: entityProperty.id,
+              calculation: property.calculation as EntityPropertyCalculation,
+            });
           } else {
             const entityProperty = await prisma.propertyConfig.create({
               data: {
@@ -175,6 +214,18 @@ export class Data {
 
             entityPropertyConfigMap[property.id] = entityProperty.id;
           }
+        }
+
+        for (const pending of pendingCalculations) {
+          await prisma.propertyConfig.update({
+            where: { id: pending.newId },
+            data: {
+              calculation: Data.remapCalculation(
+                pending.calculation,
+                entityPropertyConfigMap
+              ) as object,
+            },
+          });
         }
       }
 

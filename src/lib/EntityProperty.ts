@@ -369,30 +369,48 @@ export class EntityProperty {
           await prisma.entityBooleanProperty.deleteMany({
             where: { propertyValueId: { in: ids }, entityId },
           });
+          await prisma.booleanPropertyValue.deleteMany({
+            where: { id: { in: ids } },
+          });
           break;
         case DataType.DATE:
           await prisma.entityDateProperty.deleteMany({
             where: { propertyValueId: { in: ids }, entityId },
+          });
+          await prisma.datePropertyValue.deleteMany({
+            where: { id: { in: ids } },
           });
           break;
         case DataType.IMAGE:
           await prisma.entityImageProperty.deleteMany({
             where: { propertyValueId: { in: ids }, entityId },
           });
+          await prisma.imagePropertyValue.deleteMany({
+            where: { id: { in: ids } },
+          });
           break;
         case DataType.INT:
           await prisma.entityIntProperty.deleteMany({
             where: { propertyValueId: { in: ids }, entityId },
+          });
+          await prisma.intPropertyValue.deleteMany({
+            where: { id: { in: ids } },
           });
           break;
         case DataType.SHORT_TEXT:
           await prisma.entityShortTextProperty.deleteMany({
             where: { propertyValueId: { in: ids }, entityId },
           });
+          await prisma.shortTextPropertyValue.deleteMany({
+            where: { id: { in: ids } },
+          });
           break;
         case DataType.LONG_TEXT:
           await prisma.entityLongTextProperty.deleteMany({
             where: { propertyValueId: { in: ids }, entityId },
+          });
+          await prisma.longTextPropertyValue.deleteMany({
+            where: { id: { in: ids } },
           });
           break;
       }
@@ -859,36 +877,84 @@ export class EntityProperty {
   ): Promise<void> {
     for (const propertyConfigId of propertyConfigIds) {
       switch (dataTypes[propertyConfigId]) {
-        case DataType.BOOLEAN:
+        case DataType.BOOLEAN: {
+          const rows = await prisma.entityBooleanProperty.findMany({
+            where: { entityId, propertyConfigId },
+            select: { propertyValueId: true },
+          });
           await prisma.entityBooleanProperty.deleteMany({
             where: { entityId, propertyConfigId },
           });
+          await prisma.booleanPropertyValue.deleteMany({
+            where: { id: { in: rows.map((r) => r.propertyValueId) } },
+          });
           break;
-        case DataType.DATE:
+        }
+        case DataType.DATE: {
+          const rows = await prisma.entityDateProperty.findMany({
+            where: { entityId, propertyConfigId },
+            select: { propertyValueId: true },
+          });
           await prisma.entityDateProperty.deleteMany({
             where: { entityId, propertyConfigId },
           });
+          await prisma.datePropertyValue.deleteMany({
+            where: { id: { in: rows.map((r) => r.propertyValueId) } },
+          });
           break;
-        case DataType.IMAGE:
+        }
+        case DataType.IMAGE: {
+          const rows = await prisma.entityImageProperty.findMany({
+            where: { entityId, propertyConfigId },
+            select: { propertyValueId: true },
+          });
           await prisma.entityImageProperty.deleteMany({
             where: { entityId, propertyConfigId },
           });
+          await prisma.imagePropertyValue.deleteMany({
+            where: { id: { in: rows.map((r) => r.propertyValueId) } },
+          });
           break;
-        case DataType.INT:
+        }
+        case DataType.INT: {
+          const rows = await prisma.entityIntProperty.findMany({
+            where: { entityId, propertyConfigId },
+            select: { propertyValueId: true },
+          });
           await prisma.entityIntProperty.deleteMany({
             where: { entityId, propertyConfigId },
           });
+          await prisma.intPropertyValue.deleteMany({
+            where: { id: { in: rows.map((r) => r.propertyValueId) } },
+          });
           break;
-        case DataType.SHORT_TEXT:
+        }
+        case DataType.SHORT_TEXT: {
+          const rows = await prisma.entityShortTextProperty.findMany({
+            where: { entityId, propertyConfigId },
+            select: { propertyValueId: true },
+          });
           await prisma.entityShortTextProperty.deleteMany({
             where: { entityId, propertyConfigId },
           });
+          await prisma.shortTextPropertyValue.deleteMany({
+            where: { id: { in: rows.map((r) => r.propertyValueId) } },
+          });
           break;
-        case DataType.LONG_TEXT:
+        }
+        case DataType.LONG_TEXT: {
+          const rows = await prisma.entityLongTextProperty.findMany({
+            where: { entityId, propertyConfigId },
+            select: { propertyValueId: true },
+          });
           await prisma.entityLongTextProperty.deleteMany({
             where: { entityId, propertyConfigId },
           });
+          await prisma.longTextPropertyValue.deleteMany({
+            where: { id: { in: rows.map((r) => r.propertyValueId) } },
+          });
           break;
+        }
       }
     }
   }
@@ -997,21 +1063,39 @@ export class EntityProperty {
     switch (dataType) {
       case DataType.BOOLEAN:
         await prisma.entityBooleanProperty.deleteMany({ where });
+        await prisma.booleanPropertyValue.deleteMany({
+          where: { id: { in: propertyValueIds } },
+        });
         break;
       case DataType.DATE:
         await prisma.entityDateProperty.deleteMany({ where });
+        await prisma.datePropertyValue.deleteMany({
+          where: { id: { in: propertyValueIds } },
+        });
         break;
       case DataType.IMAGE:
         await prisma.entityImageProperty.deleteMany({ where });
+        await prisma.imagePropertyValue.deleteMany({
+          where: { id: { in: propertyValueIds } },
+        });
         break;
       case DataType.INT:
         await prisma.entityIntProperty.deleteMany({ where });
+        await prisma.intPropertyValue.deleteMany({
+          where: { id: { in: propertyValueIds } },
+        });
         break;
       case DataType.SHORT_TEXT:
         await prisma.entityShortTextProperty.deleteMany({ where });
+        await prisma.shortTextPropertyValue.deleteMany({
+          where: { id: { in: propertyValueIds } },
+        });
         break;
       case DataType.LONG_TEXT:
         await prisma.entityLongTextProperty.deleteMany({ where });
+        await prisma.longTextPropertyValue.deleteMany({
+          where: { id: { in: propertyValueIds } },
+        });
         break;
     }
   }

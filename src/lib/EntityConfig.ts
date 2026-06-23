@@ -117,6 +117,7 @@ export class EntityConfig {
             ? { revision: { connect: { id: entityConfig.revisionOf } } }
             : {}),
           allowTags: entityConfig.allowTags ?? false,
+          allowComments: entityConfig.allowComments ?? false,
         },
         include: entityConfigInclude,
       });
@@ -168,6 +169,7 @@ export class EntityConfig {
           aiIdentifyPrompt: entityConfig.aiIdentifyPrompt,
           public: entityConfig.public,
           allowTags: entityConfig.allowTags,
+          allowComments: entityConfig.allowComments,
         },
         where: { id: entityConfig.id },
         include: entityConfigInclude,
@@ -348,6 +350,7 @@ export class EntityConfig {
         propertyIds: uc.properties.map((p) => p.propertyConfigId),
       })),
       allowTags: data.allowTags,
+      allowComments: data.allowComments,
     };
   }
 

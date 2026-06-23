@@ -243,6 +243,7 @@ model Entity {
   suggested             Boolean                     @default(false)
   published             Boolean                     @default(false)
   identified            Boolean                     @default(false)
+  allowComments         Boolean                     @default(false)
   tags                  EntityTag[]
   booleanProperties     EntityBooleanProperty[]
   dateProperties        EntityDateProperty[]
@@ -251,6 +252,7 @@ model Entity {
   longTextProperties    EntityLongTextProperty[]
   shortTextProperties   EntityShortTextProperty[]
   calculatedProperties  EntityCalculatedProperty[]
+  comments              Comment[]
 
   entityConfig EntityConfig        @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
   accessPolicy EntityAccessPolicy?
@@ -352,6 +354,7 @@ model EntityConfig {
   aiIdentifyPrompt      String?          @db.VarChar(255)
   public                Boolean          @default(false)
   allowTags             Boolean          @default(false)
+  allowComments         Boolean          @default(false)
 
   entityPropertyConfigOrders EntityPropertyConfigOrder[]
   entities                   Entity[]
@@ -413,6 +416,37 @@ model Leaderboard {
   duration Int      @default(0)
   time     DateTime @updatedAt
   ip       String   @db.VarChar(64)
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  entityId  Int
+  userId    String?  @db.Uuid
+  guestName String?  @db.VarChar(128)
+  body      String
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entity    Entity            @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  reactions CommentReaction[]
+
+  @@index([entityId, createdAt], map: "idx_comment_entityid_createdat")
+}
+
+model CommentReaction {
+  id        Int      @id @default(autoincrement())
+  commentId Int
+  userId    String?  @db.Uuid
+  ip        String?  @db.VarChar(64)
+  type      String   @db.VarChar(16)
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@unique([commentId, ip])
+  @@index([commentId], map: "idx_commentreaction_commentid")
 }
 
 model ListConfig {

@@ -20,6 +20,7 @@ export interface EntityBodyPayload {
   suggested?: boolean;
   identified?: boolean;
   createdAt?: string;
+  allowComments?: boolean;
 }
 
 export type ContextEntities = Record<number, PrismaEntity[]>;

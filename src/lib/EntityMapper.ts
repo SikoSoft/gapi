@@ -240,6 +240,7 @@ export class EntityMapper {
       suggested: entity.suggested,
       published: entity.published,
       identified: entity.identified,
+      allowComments: entity.allowComments,
     };
   }
 }

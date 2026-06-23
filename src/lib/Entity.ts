@@ -153,6 +153,15 @@ export class Entity {
 
       await Hook.trigger({ type: HookType.PRE_CREATE, userId, data });
 
+      let allowComments = data.allowComments ?? false;
+      if (data.allowComments === undefined && data.entityConfigId !== undefined) {
+        const entityConfig = await prisma.entityConfig.findUnique({
+          where: { id: data.entityConfigId },
+          select: { allowComments: true },
+        });
+        allowComments = entityConfig?.allowComments ?? false;
+      }
+
       const entity = await prisma.entity.create({
         data: {
           userId: data.userId ?? userId,
@@ -160,6 +169,7 @@ export class Entity {
           published: data.published ?? false,
           suggested: data.suggested ?? false,
           identified: data.identified ?? false,
+          allowComments,
           ...(data.createdAt
             ? {
                 createdAt: Util.getDateInTimeZone(
@@ -291,7 +301,8 @@ export class Entity {
       if (
         data.published !== undefined ||
         data.suggested !== undefined ||
-        data.identified !== undefined
+        data.identified !== undefined ||
+        data.allowComments !== undefined
       ) {
         await prisma.entity.update({
           where: { id, userId },
@@ -302,6 +313,9 @@ export class Entity {
             }),
             ...(data.identified !== undefined && {
               identified: data.identified,
+            }),
+            ...(data.allowComments !== undefined && {
+              allowComments: data.allowComments,
             }),
           },
         });

@@ -1,9 +1,9 @@
 import { Result, err, ok } from "neverthrow";
 import { prisma } from "..";
+import { CommentReactionType } from "api-spec/models/Comment";
 import {
   CommentCounts,
   CommentCreateBody,
-  CommentReactionType,
   CommentSpec,
 } from "../models/Comment";
 import { ValidationError } from "../errors/ValidationError";
@@ -111,9 +111,7 @@ export class Comment {
         return err(new ValidationError("Comment not found"));
       }
       if (comment.entity.userId !== userId) {
-        return err(
-          new AccessError("Not authorized to moderate this comment")
-        );
+        return err(new AccessError("Not authorized to moderate this comment"));
       }
 
       const updated = await prisma.comment.update({

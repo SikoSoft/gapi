@@ -1296,6 +1296,86 @@ export class EntityProperty {
     }
   }
 
+  static async orderProperties(
+    entityId: number,
+    properties: ApiEntityProperty[]
+  ): Promise<Result<null, Error>> {
+    try {
+      const calculatedIds = await EntityProperty.getCalculatedConfigIds(
+        properties.map((p) => p.propertyConfigId)
+      );
+
+      const regularProperties = properties.filter(
+        (p) => !calculatedIds.has(p.propertyConfigId) && p.id
+      );
+      const calculatedProperties = properties.filter((p) =>
+        calculatedIds.has(p.propertyConfigId)
+      );
+
+      const dataTypesRes =
+        await EntityProperty.getDataTypesForProperties(regularProperties);
+      if (dataTypesRes.isErr()) {
+        return err(dataTypesRes.error);
+      }
+      const dataTypes = dataTypesRes.value;
+
+      for (const property of regularProperties) {
+        const where = { entityId, propertyValueId: property.id };
+        switch (dataTypes[property.propertyConfigId]) {
+          case DataType.BOOLEAN:
+            await prisma.entityBooleanProperty.updateMany({
+              where,
+              data: { order: property.order },
+            });
+            break;
+          case DataType.DATE:
+            await prisma.entityDateProperty.updateMany({
+              where,
+              data: { order: property.order },
+            });
+            break;
+          case DataType.IMAGE:
+            await prisma.entityImageProperty.updateMany({
+              where,
+              data: { order: property.order },
+            });
+            break;
+          case DataType.INT:
+            await prisma.entityIntProperty.updateMany({
+              where,
+              data: { order: property.order },
+            });
+            break;
+          case DataType.SHORT_TEXT:
+            await prisma.entityShortTextProperty.updateMany({
+              where,
+              data: { order: property.order },
+            });
+            break;
+          case DataType.LONG_TEXT:
+            await prisma.entityLongTextProperty.updateMany({
+              where,
+              data: { order: property.order },
+            });
+            break;
+        }
+      }
+
+      for (const property of calculatedProperties) {
+        await prisma.entityCalculatedProperty.updateMany({
+          where: { entityId, propertyConfigId: property.propertyConfigId },
+          data: { order: property.order },
+        });
+      }
+
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to order entity properties", { cause: error })
+      );
+    }
+  }
+
   static async getTextValues(
     entityId: number
   ): Promise<Result<string[], Error>> {

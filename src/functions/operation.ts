@@ -146,6 +146,18 @@ export async function operation(
         }
       }
       break;
+    case OperationType.ORDER_PROPERTIES:
+      for (const entityId of body.entities) {
+        const orderPropertiesRes = await EntityProperty.orderProperties(
+          entityId,
+          body.operation.properties
+        );
+        if (orderPropertiesRes.isErr()) {
+          context.error(orderPropertiesRes.error);
+          return { status: 500 };
+        }
+      }
+      break;
   }
 
   return jsonReply({ status: 1 });

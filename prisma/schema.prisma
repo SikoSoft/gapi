@@ -1005,14 +1005,42 @@ model Chart {
 }
 
 model StreakConfig {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(255)
-  context   Json
-  userId    String   @db.Uuid
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int                 @id @default(autoincrement())
+  name         String              @db.VarChar(255)
+  context      Json
+  userId       String              @db.Uuid
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  alertConfigs StreakAlertConfig[]
 
   @@index([userId])
+}
+
+model StreakAlertConfig {
+  id         Int           @id @default(autoincrement())
+  streakId   Int
+  userId     String        @db.Uuid
+  noticeTime Int
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  streak     StreakConfig  @relation(fields: [streakId], references: [id], onDelete: Cascade)
+  alerts     StreakAlert[]
+
+  @@index([userId])
+  @@index([streakId])
+}
+
+model StreakAlert {
+  id            Int               @id @default(autoincrement())
+  userId        String            @db.Uuid
+  alertConfigId Int
+  sentAt        DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  alertConfig   StreakAlertConfig @relation(fields: [alertConfigId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([alertConfigId])
 }
 
 model FactConfig {

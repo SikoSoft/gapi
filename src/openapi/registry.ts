@@ -1309,6 +1309,80 @@ registry.registerPath({
   },
 });
 
+// ─── Streak alert config routes ──────────────────────────────────────────────
+
+const StreakAlertConfigSchema = z.object({
+  id: z.number(),
+  streakId: z.number(),
+  userId: z.string(),
+  noticeTime: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+registry.registerPath({
+  tags: ["Streaks"],
+  method: "get",
+  path: "/streakAlertConfig",
+  summary: "List streak alert configs for the current user",
+  ...auth,
+  responses: {
+    200: { description: "Alert configs", ...json(z.object({ alertConfigs: z.array(StreakAlertConfigSchema) })) },
+    403: forbidden,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Streaks"],
+  method: "post",
+  path: "/streakAlertConfig",
+  summary: "Create a streak alert config",
+  ...auth,
+  request: { body: { content: { "application/json": { schema: z.object({ streakId: z.number(), noticeTime: z.number() }) } } } },
+  responses: {
+    200: { description: "Created alert config", ...json(z.object({ alertConfig: StreakAlertConfigSchema })) },
+    400: badRequest,
+    403: forbidden,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Streaks"],
+  method: "put",
+  path: "/streakAlertConfig/{id}",
+  summary: "Update a streak alert config",
+  ...auth,
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: z.object({ noticeTime: z.number() }) } } },
+  },
+  responses: {
+    200: { description: "Updated alert config", ...json(z.object({ alertConfig: StreakAlertConfigSchema })) },
+    400: badRequest,
+    403: forbidden,
+    404: notFound,
+    500: serverError,
+  },
+});
+
+registry.registerPath({
+  tags: ["Streaks"],
+  method: "delete",
+  path: "/streakAlertConfig/{id}",
+  summary: "Delete a streak alert config",
+  ...auth,
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    204: { description: "Deleted" },
+    400: badRequest,
+    403: forbidden,
+    404: notFound,
+    500: serverError,
+  },
+});
+
 // ─── Streak / Fact config routes ─────────────────────────────────────────────
 
 const StreakSchema = z.object({

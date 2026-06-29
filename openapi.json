@@ -1372,6 +1372,54 @@
           "duration",
           "name"
         ]
+      },
+      "CommentCreateBody": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "number"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "guestName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "entityId",
+          "body"
+        ]
+      },
+      "CommentUpdateBody": {
+        "type": "object",
+        "properties": {
+          "published": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "published"
+        ]
+      },
+      "CommentReactionBody": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "like",
+              "dislike"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ]
       }
     },
     "parameters": {}
@@ -1920,6 +1968,9 @@
                           "allowTags": {
                             "type": "boolean"
                           },
+                          "allowComments": {
+                            "type": "boolean"
+                          },
                           "uniqueConstraints": {
                             "type": "array",
                             "items": {
@@ -1950,6 +2001,7 @@
                           "aiIdentifyPrompt",
                           "public",
                           "allowTags",
+                          "allowComments",
                           "uniqueConstraints"
                         ]
                       }
@@ -2018,6 +2070,9 @@
                     "type": "boolean"
                   },
                   "allowTags": {
+                    "type": "boolean"
+                  },
+                  "allowComments": {
                     "type": "boolean"
                   },
                   "uniqueConstraints": {
@@ -2095,6 +2150,9 @@
                     "allowTags": {
                       "type": "boolean"
                     },
+                    "allowComments": {
+                      "type": "boolean"
+                    },
                     "uniqueConstraints": {
                       "type": "array",
                       "items": {
@@ -2125,6 +2183,7 @@
                     "aiIdentifyPrompt",
                     "public",
                     "allowTags",
+                    "allowComments",
                     "uniqueConstraints"
                   ]
                 }
@@ -2195,6 +2254,9 @@
                   "allowTags": {
                     "type": "boolean"
                   },
+                  "allowComments": {
+                    "type": "boolean"
+                  },
                   "uniqueConstraints": {
                     "type": "array",
                     "items": {
@@ -2225,6 +2287,7 @@
                   "aiIdentifyPrompt",
                   "public",
                   "allowTags",
+                  "allowComments",
                   "uniqueConstraints"
                 ]
               }
@@ -2279,6 +2342,9 @@
                     "allowTags": {
                       "type": "boolean"
                     },
+                    "allowComments": {
+                      "type": "boolean"
+                    },
                     "uniqueConstraints": {
                       "type": "array",
                       "items": {
@@ -2309,6 +2375,7 @@
                     "aiIdentifyPrompt",
                     "public",
                     "allowTags",
+                    "allowComments",
                     "uniqueConstraints"
                   ]
                 }
@@ -2629,6 +2696,9 @@
                           },
                           "identified": {
                             "type": "boolean"
+                          },
+                          "allowComments": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -2640,7 +2710,8 @@
                           "tags",
                           "properties",
                           "suggested",
-                          "identified"
+                          "identified",
+                          "allowComments"
                         ]
                       }
                     },
@@ -2763,6 +2834,9 @@
                   },
                   "createdAt": {
                     "type": "string"
+                  },
+                  "allowComments": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -2857,6 +2931,9 @@
                     },
                     "identified": {
                       "type": "boolean"
+                    },
+                    "allowComments": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -2868,7 +2945,8 @@
                     "tags",
                     "properties",
                     "suggested",
-                    "identified"
+                    "identified",
+                    "allowComments"
                   ]
                 }
               }
@@ -2995,6 +3073,9 @@
                     },
                     "identified": {
                       "type": "boolean"
+                    },
+                    "allowComments": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -3006,7 +3087,8 @@
                     "tags",
                     "properties",
                     "suggested",
-                    "identified"
+                    "identified",
+                    "allowComments"
                   ]
                 }
               }
@@ -3129,6 +3211,9 @@
                   },
                   "createdAt": {
                     "type": "string"
+                  },
+                  "allowComments": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -3223,6 +3308,9 @@
                     },
                     "identified": {
                       "type": "boolean"
+                    },
+                    "allowComments": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -3234,7 +3322,8 @@
                     "tags",
                     "properties",
                     "suggested",
-                    "identified"
+                    "identified",
+                    "allowComments"
                   ]
                 }
               }
@@ -3359,6 +3448,9 @@
                     },
                     "identified": {
                       "type": "boolean"
+                    },
+                    "allowComments": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -3370,7 +3462,8 @@
                     "tags",
                     "properties",
                     "suggested",
-                    "identified"
+                    "identified",
+                    "allowComments"
                   ]
                 }
               }
@@ -3978,6 +4071,9 @@
                           },
                           "identified": {
                             "type": "boolean"
+                          },
+                          "allowComments": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -3989,7 +4085,8 @@
                           "tags",
                           "properties",
                           "suggested",
-                          "identified"
+                          "identified",
+                          "allowComments"
                         ]
                       }
                     },
@@ -7795,6 +7892,303 @@
         }
       }
     },
+    "/streakAlertConfig": {
+      "get": {
+        "tags": [
+          "Streaks"
+        ],
+        "summary": "List streak alert configs for the current user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alert configs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "alertConfigs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "streakId": {
+                            "type": "number"
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "noticeTime": {
+                            "type": "number"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "streakId",
+                          "userId",
+                          "noticeTime",
+                          "createdAt",
+                          "updatedAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "alertConfigs"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Streaks"
+        ],
+        "summary": "Create a streak alert config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "streakId": {
+                    "type": "number"
+                  },
+                  "noticeTime": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "streakId",
+                  "noticeTime"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created alert config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "alertConfig": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "streakId": {
+                          "type": "number"
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "noticeTime": {
+                          "type": "number"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "streakId",
+                        "userId",
+                        "noticeTime",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "alertConfig"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/streakAlertConfig/{id}": {
+      "put": {
+        "tags": [
+          "Streaks"
+        ],
+        "summary": "Update a streak alert config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "noticeTime": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "noticeTime"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated alert config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "alertConfig": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "streakId": {
+                          "type": "number"
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "noticeTime": {
+                          "type": "number"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "streakId",
+                        "userId",
+                        "noticeTime",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "alertConfig"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Streaks"
+        ],
+        "summary": "Delete a streak alert config",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/streakRequest": {
       "get": {
         "tags": [
@@ -9179,6 +9573,455 @@
         }
       }
     },
+    "/comment": {
+      "get": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "List comments for an entity (owners see unpublished comments too)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "entityId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "comments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "entityId": {
+                            "type": "number"
+                          },
+                          "userId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "guestName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "body": {
+                            "type": "string"
+                          },
+                          "published": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          },
+                          "counts": {
+                            "type": "object",
+                            "properties": {
+                              "like": {
+                                "type": "number"
+                              },
+                              "dislike": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "like",
+                              "dislike"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "entityId",
+                          "userId",
+                          "guestName",
+                          "body",
+                          "published",
+                          "createdAt",
+                          "updatedAt",
+                          "counts"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "comments"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Post a comment as an authenticated user or guest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentCreateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created comment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "entityId": {
+                      "type": "number"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "guestName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "published": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "like": {
+                          "type": "number"
+                        },
+                        "dislike": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "like",
+                        "dislike"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "entityId",
+                    "userId",
+                    "guestName",
+                    "body",
+                    "published",
+                    "createdAt",
+                    "updatedAt",
+                    "counts"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/comment/{id}": {
+      "patch": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Publish or unpublish a comment (entity owner only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentUpdateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated comment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "entityId": {
+                      "type": "number"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "guestName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "published": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "like": {
+                          "type": "number"
+                        },
+                        "dislike": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "like",
+                        "dislike"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "entityId",
+                    "userId",
+                    "guestName",
+                    "body",
+                    "published",
+                    "createdAt",
+                    "updatedAt",
+                    "counts"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Delete a comment (entity owner or comment author)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/commentReaction/{id}": {
+      "post": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Like or dislike a comment (authenticated users or guests, deduped by user/IP)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentReactionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated reaction counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "like": {
+                          "type": "number"
+                        },
+                        "dislike": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "like",
+                        "dislike"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "counts"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Remove your reaction from a comment",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated reaction counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "like": {
+                          "type": "number"
+                        },
+                        "dislike": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "like",
+                        "dislike"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "counts"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/weather": {
       "get": {
         "tags": [
@@ -9428,6 +10271,9 @@
                     },
                     "createdAt": {
                       "type": "string"
+                    },
+                    "allowComments": {
+                      "type": "boolean"
                     }
                   }
                 }
@@ -9528,6 +10374,9 @@
                           },
                           "identified": {
                             "type": "boolean"
+                          },
+                          "allowComments": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -9539,7 +10388,8 @@
                           "tags",
                           "properties",
                           "suggested",
-                          "identified"
+                          "identified",
+                          "allowComments"
                         ]
                       }
                     }

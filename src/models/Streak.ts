@@ -48,5 +48,7 @@ export interface StreakConfigUpdateBody {
   context?: object;
 }
 
-const prismaStreakConfigValidator = Prisma.validator<Prisma.StreakConfigDefaultArgs>()({});
+const prismaStreakConfigValidator = Prisma.validator<Prisma.StreakConfigDefaultArgs>()({
+  include: { alertConfigs: true },
+});
 export type PrismaStreakConfig = Prisma.StreakConfigGetPayload<typeof prismaStreakConfigValidator>;

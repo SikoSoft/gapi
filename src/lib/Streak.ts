@@ -1,4 +1,4 @@
-import { FactContext, FactOperation, Streak as StreakSpec, StreakContext, StreakResult } from "api-spec/models/Fact";
+import { FactContext, FactOperation, Streak as StreakSpec, StreakAlertConfig as StreakAlertConfigSpec, StreakContext, StreakResult } from "api-spec/models/Fact";
 import { ListFilterTimeType } from "api-spec/models/List";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 import { ok, err, Result } from "neverthrow";
@@ -16,6 +16,14 @@ export class Streak {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       context: row.context as unknown as StreakContext,
+      alerts: row.alertConfigs.map((a): StreakAlertConfigSpec => ({
+        id: a.id,
+        streakId: a.streakId,
+        userId: a.userId,
+        noticeTime: a.noticeTime,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+      })),
     };
   }
 
@@ -24,6 +32,7 @@ export class Streak {
       const rows = await prisma.streakConfig.findMany({
         where: { userId },
         orderBy: { createdAt: "asc" },
+        include: { alertConfigs: true },
       });
       return ok(rows.map(Streak.mapToSpec));
     } catch (e) {
@@ -35,6 +44,7 @@ export class Streak {
     try {
       const row = await prisma.streakConfig.create({
         data: { userId, name, context: context as object },
+        include: { alertConfigs: true },
       });
       return ok(Streak.mapToSpec(row));
     } catch (e) {
@@ -54,6 +64,7 @@ export class Streak {
           ...(name !== undefined && { name }),
           ...(context !== undefined && { context: context as object }),
         },
+        include: { alertConfigs: true },
       });
       return ok(Streak.mapToSpec(updated));
     } catch (e) {

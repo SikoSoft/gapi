@@ -7928,6 +7928,9 @@
                           "noticeTime": {
                             "type": "number"
                           },
+                          "message": {
+                            "type": "string"
+                          },
                           "createdAt": {
                             "type": "string"
                           },
@@ -7982,6 +7985,9 @@
                   },
                   "noticeTime": {
                     "type": "number"
+                  },
+                  "message": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -8014,6 +8020,9 @@
                         },
                         "noticeTime": {
                           "type": "number"
+                        },
+                        "message": {
+                          "type": "string"
                         },
                         "createdAt": {
                           "type": "string"
@@ -8080,6 +8089,9 @@
                 "properties": {
                   "noticeTime": {
                     "type": "number"
+                  },
+                  "message": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -8111,6 +8123,9 @@
                         },
                         "noticeTime": {
                           "type": "number"
+                        },
+                        "message": {
+                          "type": "string"
                         },
                         "createdAt": {
                           "type": "string"

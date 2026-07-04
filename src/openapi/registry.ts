@@ -1316,6 +1316,7 @@ const StreakAlertConfigSchema = z.object({
   streakId: z.number(),
   userId: z.string(),
   noticeTime: z.number(),
+  message: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -1339,7 +1340,7 @@ registry.registerPath({
   path: "/streakAlertConfig",
   summary: "Create a streak alert config",
   ...auth,
-  request: { body: { content: { "application/json": { schema: z.object({ streakId: z.number(), noticeTime: z.number() }) } } } },
+  request: { body: { content: { "application/json": { schema: z.object({ streakId: z.number(), noticeTime: z.number(), message: z.string().optional() }) } } } },
   responses: {
     200: { description: "Created alert config", ...json(z.object({ alertConfig: StreakAlertConfigSchema })) },
     400: badRequest,
@@ -1356,7 +1357,7 @@ registry.registerPath({
   ...auth,
   request: {
     params: z.object({ id: z.string() }),
-    body: { content: { "application/json": { schema: z.object({ noticeTime: z.number() }) } } },
+    body: { content: { "application/json": { schema: z.object({ noticeTime: z.number(), message: z.string().optional() }) } } },
   },
   responses: {
     200: { description: "Updated alert config", ...json(z.object({ alertConfig: StreakAlertConfigSchema })) },

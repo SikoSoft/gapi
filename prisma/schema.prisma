@@ -1021,6 +1021,7 @@ model StreakAlertConfig {
   streakId   Int
   userId     String        @db.Uuid
   noticeTime Int
+  message    String?
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
   streak     StreakConfig  @relation(fields: [streakId], references: [id], onDelete: Cascade)

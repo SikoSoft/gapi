@@ -46,7 +46,7 @@ export async function streakAlertConfigHandler(
 
       Logger.log(`[streakAlertConfig] POST userId=${userId} streakId=${parsed.data.streakId}`);
 
-      const createRes = await StreakAlertConfig.create(userId, parsed.data.streakId, parsed.data.noticeTime);
+      const createRes = await StreakAlertConfig.create(userId, parsed.data.streakId, parsed.data.noticeTime, parsed.data.message);
       if (createRes.isErr()) {
         context.error(createRes.error);
         return { status: 500 };
@@ -79,7 +79,7 @@ export async function streakAlertConfigHandler(
 
       Logger.log(`[streakAlertConfig] PUT userId=${userId} id=${id}`);
 
-      const updateRes = await StreakAlertConfig.update(id, userId, parsed.data.noticeTime);
+      const updateRes = await StreakAlertConfig.update(id, userId, parsed.data.noticeTime, parsed.data.message);
       if (updateRes.isErr()) {
         context.error(updateRes.error);
         return { status: updateRes.error.message === "Streak alert config not found" ? 404 : 500 };

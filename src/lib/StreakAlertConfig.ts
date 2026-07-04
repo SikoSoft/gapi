@@ -10,6 +10,7 @@ export class StreakAlertConfig {
       streakId: row.streakId,
       userId: row.userId,
       noticeTime: row.noticeTime,
+      message: row.message ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -27,10 +28,10 @@ export class StreakAlertConfig {
     }
   }
 
-  static async create(userId: string, streakId: number, noticeTime: number): Promise<Result<StreakAlertConfigSpec, Error>> {
+  static async create(userId: string, streakId: number, noticeTime: number, message?: string): Promise<Result<StreakAlertConfigSpec, Error>> {
     try {
       const row = await prisma.streakAlertConfig.create({
-        data: { userId, streakId, noticeTime },
+        data: { userId, streakId, noticeTime, message },
       });
       return ok(StreakAlertConfig.mapToSpec(row));
     } catch (e) {
@@ -38,7 +39,7 @@ export class StreakAlertConfig {
     }
   }
 
-  static async update(id: number, userId: string, noticeTime: number): Promise<Result<StreakAlertConfigSpec, Error>> {
+  static async update(id: number, userId: string, noticeTime: number, message?: string): Promise<Result<StreakAlertConfigSpec, Error>> {
     try {
       const row = await prisma.streakAlertConfig.findFirst({ where: { id, userId } });
       if (!row) {
@@ -46,7 +47,7 @@ export class StreakAlertConfig {
       }
       const updated = await prisma.streakAlertConfig.update({
         where: { id },
-        data: { noticeTime },
+        data: { noticeTime, message },
       });
       return ok(StreakAlertConfig.mapToSpec(updated));
     } catch (e) {

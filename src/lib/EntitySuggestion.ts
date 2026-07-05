@@ -89,26 +89,27 @@ export class EntitySuggestion {
     }
   }
 
-  static async hasMatchingEntityLoggedInPastHour(
+  static async hasMatchingEntityLoggedInWindow(
     userId: string,
     entityConfigId: number,
-    textValues: string[]
+    textValues: string[],
+    windowMinutes: number
   ): Promise<Result<boolean, Error>> {
     try {
       if (textValues.length === 0) {
         Logger.log(
-          "[Entity] hasMatchingEntityLoggedInPastHour: textValues is empty — skipping dedupe check"
+          "[Entity] hasMatchingEntityLoggedInWindow: textValues is empty — skipping dedupe check"
         );
         return ok(false);
       }
 
-      const oneHourAgo = new Date(Date.now() - 3600000);
+      const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000);
       const entities = await prisma.entity.findMany({
         where: {
           userId,
           entityConfigId,
           suggested: false,
-          createdAt: { gte: oneHourAgo },
+          createdAt: { gte: windowStart },
         },
         include: {
           shortTextProperties: { include: { propertyValue: true } },
@@ -117,7 +118,7 @@ export class EntitySuggestion {
       });
 
       Logger.log(
-        `[Entity] hasMatchingEntityLoggedInPastHour: found ${entities.length} non-suggestion entities of type ${entityConfigId} logged in past hour`,
+        `[Entity] hasMatchingEntityLoggedInWindow: found ${entities.length} non-suggestion entities of type ${entityConfigId} logged in past ${windowMinutes} minutes`,
         { textValues }
       );
 
@@ -129,7 +130,7 @@ export class EntitySuggestion {
 
         if (textValues.every((v) => entityTextValues.includes(v))) {
           Logger.log(
-            `[Entity] hasMatchingEntityLoggedInPastHour: match found on entity ${entity.id}`,
+            `[Entity] hasMatchingEntityLoggedInWindow: match found on entity ${entity.id}`,
             { entityTextValues, textValues }
           );
           return ok(true);

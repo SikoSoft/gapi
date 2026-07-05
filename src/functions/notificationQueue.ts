@@ -2,8 +2,10 @@ import { app, InvocationContext } from "@azure/functions";
 import { EntitySuggestion } from "../lib/EntitySuggestion";
 import { IdentityManager } from "../lib/IdentityManager";
 import { Notification } from "../lib/Notification";
+import { Setting } from "../lib/Setting";
 import { OneTimeTokenScope } from "../models/Identity";
 import { NotificationQueueMessage } from "../models/NotificationQueue";
+import { SettingName } from "api-spec/models/Setting";
 
 async function notificationQueueHandler(
   message: unknown,
@@ -50,10 +52,36 @@ async function notificationQueueHandler(
     return;
   }
 
-  const alreadyLoggedRes = await EntitySuggestion.hasMatchingEntityLoggedInPastHour(
+  const [userSettingRes, appSettingRes] = await Promise.all([
+    Setting.getForUser(queueMessage.userId),
+    Setting.getForSystem(),
+  ]);
+
+  if (userSettingRes.isErr()) {
+    context.error(
+      "[notificationQueue] failed to get user settings",
+      userSettingRes.error
+    );
+    return;
+  }
+
+  if (appSettingRes.isErr()) {
+    context.error(
+      "[notificationQueue] failed to get app settings",
+      appSettingRes.error
+    );
+    return;
+  }
+
+  const windowMinutes =
+    userSettingRes.value[SettingName.ASSIST_LOOKBACK_WINDOW] ??
+    appSettingRes.value[SettingName.ASSIST_LOOKBACK_WINDOW];
+
+  const alreadyLoggedRes = await EntitySuggestion.hasMatchingEntityLoggedInWindow(
     queueMessage.userId,
     queueMessage.entityConfigId,
-    queueMessage.textValues
+    queueMessage.textValues,
+    windowMinutes
   );
 
   if (alreadyLoggedRes.isErr()) {
@@ -63,7 +91,7 @@ async function notificationQueueHandler(
 
   if (alreadyLoggedRes.value) {
     context.log(
-      "[notificationQueue] user already logged a matching entity in the past hour — skipping notification"
+      `[notificationQueue] user already logged a matching entity in the past ${windowMinutes} minutes — skipping notification`
     );
     return;
   }

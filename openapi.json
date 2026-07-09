@@ -195,6 +195,12 @@
               "optionsOnly": {
                 "type": "boolean"
               },
+              "formatters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
               "dataType": {
                 "type": "string",
                 "enum": [
@@ -259,6 +265,12 @@
               },
               "optionsOnly": {
                 "type": "boolean"
+              },
+              "formatters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               },
               "dataType": {
                 "type": "string",
@@ -327,6 +339,12 @@
               "optionsOnly": {
                 "type": "boolean"
               },
+              "formatters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
               "dataType": {
                 "type": "string",
                 "enum": [
@@ -391,6 +409,12 @@
               },
               "optionsOnly": {
                 "type": "boolean"
+              },
+              "formatters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               },
               "dataType": {
                 "type": "string",
@@ -481,6 +505,12 @@
               "optionsOnly": {
                 "type": "boolean"
               },
+              "formatters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
               "dataType": {
                 "type": "string",
                 "enum": [
@@ -545,6 +575,12 @@
               },
               "optionsOnly": {
                 "type": "boolean"
+              },
+              "formatters": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               },
               "dataType": {
                 "type": "string",
@@ -4417,6 +4453,12 @@
                       "optionsOnly": {
                         "type": "boolean"
                       },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
                       "dataType": {
                         "type": "string",
                         "enum": [
@@ -4481,6 +4523,12 @@
                       },
                       "optionsOnly": {
                         "type": "boolean"
+                      },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "dataType": {
                         "type": "string",
@@ -4549,6 +4597,12 @@
                       "optionsOnly": {
                         "type": "boolean"
                       },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
                       "dataType": {
                         "type": "string",
                         "enum": [
@@ -4613,6 +4667,12 @@
                       },
                       "optionsOnly": {
                         "type": "boolean"
+                      },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "dataType": {
                         "type": "string",
@@ -4703,6 +4763,12 @@
                       "optionsOnly": {
                         "type": "boolean"
                       },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
                       "dataType": {
                         "type": "string",
                         "enum": [
@@ -4767,6 +4833,12 @@
                       },
                       "optionsOnly": {
                         "type": "boolean"
+                      },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "dataType": {
                         "type": "string",
@@ -4901,6 +4973,12 @@
                       "optionsOnly": {
                         "type": "boolean"
                       },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
                       "dataType": {
                         "type": "string",
                         "enum": [
@@ -4965,6 +5043,12 @@
                       },
                       "optionsOnly": {
                         "type": "boolean"
+                      },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "dataType": {
                         "type": "string",
@@ -5033,6 +5117,12 @@
                       "optionsOnly": {
                         "type": "boolean"
                       },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
                       "dataType": {
                         "type": "string",
                         "enum": [
@@ -5097,6 +5187,12 @@
                       },
                       "optionsOnly": {
                         "type": "boolean"
+                      },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "dataType": {
                         "type": "string",
@@ -5187,6 +5283,12 @@
                       "optionsOnly": {
                         "type": "boolean"
                       },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
                       "dataType": {
                         "type": "string",
                         "enum": [
@@ -5251,6 +5353,12 @@
                       },
                       "optionsOnly": {
                         "type": "boolean"
+                      },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "dataType": {
                         "type": "string",

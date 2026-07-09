@@ -36,6 +36,7 @@ export const propertyConfigInclude = {
     },
     optionsShortText: true,
     optionsInt: true,
+    formatters: true,
   } satisfies Prisma.PropertyConfigFindUniqueArgs["include"];
 
 const prismaPropertyConfig =
@@ -82,6 +83,7 @@ const CommonPropertyConfigSchema = z.object({
   suffix: z.string(),
   hidden: z.boolean(),
   optionsOnly: z.boolean(),
+  formatters: z.array(z.string()).optional(),
 });
 
 export const propertyConfigCreateSchema = z.discriminatedUnion("dataType", [

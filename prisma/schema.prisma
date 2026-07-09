@@ -337,8 +337,17 @@ model PropertyConfig {
   listFilterShortTextProperties ListFilterShortTextProperty[]
 
   uniqueConstraintProperties EntityConfigUniqueConstraintProperty[]
+  formatters                 PropertyConfigFormatter[]
 
   @@unique([entityConfigId, id])
+}
+
+model PropertyConfigFormatter {
+  id               Int            @id @default(autoincrement())
+  propertyConfigId Int
+  formatterId      String         @db.VarChar(128)
+  order            Int
+  propertyConfig   PropertyConfig @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
 }
 
 model EntityConfig {

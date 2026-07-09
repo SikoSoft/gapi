@@ -38,7 +38,7 @@ export class PropertyConfig {
       return err(new Error("Not authorized to edit this entity config"));
     }
 
-    const { defaultValue, timeZone, performDriftCheck, options, ...data } =
+    const { defaultValue, timeZone, performDriftCheck, options, formatters, ...data } =
       propertyConfig;
 
     try {
@@ -63,6 +63,13 @@ export class PropertyConfig {
         );
         if (optionsRes.isErr()) {
           return err(optionsRes.error);
+        }
+      }
+
+      if (formatters !== undefined) {
+        const formattersRes = await PropertyConfig.syncFormatters(createdPropertyConfig.id, formatters);
+        if (formattersRes.isErr()) {
+          return err(formattersRes.error);
         }
       }
 
@@ -113,7 +120,7 @@ export class PropertyConfig {
     }
 
     try {
-      const { defaultValue, timeZone, performDriftCheck, options, ...data } =
+      const { defaultValue, timeZone, performDriftCheck, options, formatters, ...data } =
         propertyConfig;
 
       if (
@@ -128,6 +135,13 @@ export class PropertyConfig {
         );
         if (optionsRes.isErr()) {
           return err(optionsRes.error);
+        }
+      }
+
+      if (formatters !== undefined) {
+        const formattersRes = await PropertyConfig.syncFormatters(id, formatters);
+        if (formattersRes.isErr()) {
+          return err(formattersRes.error);
         }
       }
 
@@ -190,6 +204,27 @@ export class PropertyConfig {
     } catch (error) {
       return err(
         new Error("Failed to update property config options", { cause: error })
+      );
+    }
+  }
+
+  static async syncFormatters(
+    propertyConfigId: number,
+    formatters: string[]
+  ): Promise<Result<null, Error>> {
+    try {
+      await prisma.propertyConfigFormatter.deleteMany({ where: { propertyConfigId } });
+      await prisma.propertyConfigFormatter.createMany({
+        data: formatters.map((formatterId, index) => ({
+          propertyConfigId,
+          formatterId,
+          order: index,
+        })),
+      });
+      return ok(null);
+    } catch (error) {
+      return err(
+        new Error("Failed to sync property config formatters", { cause: error })
       );
     }
   }
@@ -777,6 +812,9 @@ export class PropertyConfig {
       hidden: data.hidden,
       optionsOnly: data.optionsOnly,
       options,
+      formatters: data.formatters
+        .sort((a, b) => a.order - b.order)
+        .map(f => f.formatterId),
     };
 
     switch (data.dataType) {

@@ -25,6 +25,7 @@ const entityConfigInclude = {
       defaultShortTextValue: { include: { shortTextValue: true } },
       optionsShortText: true,
       optionsInt: true,
+      formatters: true,
     },
   },
   accessPolicy: {

@@ -29,7 +29,7 @@ export class PropertyConfig {
     userId: string,
     entityConfigId: number,
     propertyConfig: PropertyConfigCreateBody
-  ): Promise<Result<Entity.EntityPropertyConfig, Error>> {
+  ): Promise<Result<Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig, Error>> {
     const isAllowed = await EntityConfig.isEditAllowed(userId, entityConfigId);
     if (isAllowed.isErr()) {
       return err(isAllowed.error);
@@ -103,7 +103,7 @@ export class PropertyConfig {
     entityConfigId: number,
     id: number,
     propertyConfig: PropertyConfigUpdateBody
-  ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
+  ): Promise<Result<Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig | null, Error>> {
     Logger.log("Updating property config:", {
       userId,
       entityConfigId,
@@ -248,7 +248,7 @@ export class PropertyConfig {
   static async getById(
     userId: string,
     propertyConfigId: number
-  ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
+  ): Promise<Result<Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig | null, Error>> {
     try {
       const propertyConfig = await prisma.propertyConfig.findUnique({
         where: { userId, id: propertyConfigId },
@@ -812,7 +812,7 @@ export class PropertyConfig {
       hidden: data.hidden,
       optionsOnly: data.optionsOnly,
       options,
-      formatters: data.formatters
+      formatters: (data.formatters ?? [])
         .sort((a, b) => a.order - b.order)
         .map(f => f.formatterId),
     };

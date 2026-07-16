@@ -1,4 +1,11 @@
-import { FactContext, FactOperation, Streak as StreakSpec, StreakAlertConfig as StreakAlertConfigSpec, StreakContext, StreakResult } from "api-spec/models/Fact";
+import {
+  FactContext,
+  FactOperation,
+  Streak as StreakSpec,
+  StreakAlertConfig as StreakAlertConfigSpec,
+  StreakContext,
+  StreakResult,
+} from "api-spec/models/Fact";
 import { ListFilterTimeType } from "api-spec/models/List";
 import { SegmentationTimeUnit } from "api-spec/models/Statistic";
 import { ok, err, Result } from "neverthrow";
@@ -16,14 +23,17 @@ export class Streak {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       context: row.context as unknown as StreakContext,
-      alerts: row.alertConfigs.map((a): StreakAlertConfigSpec => ({
-        id: a.id,
-        streakId: a.streakId,
-        userId: a.userId,
-        noticeTime: a.noticeTime,
-        createdAt: a.createdAt,
-        updatedAt: a.updatedAt,
-      })),
+      alerts: row.alertConfigs.map(
+        (a): StreakAlertConfigSpec => ({
+          id: a.id,
+          streakId: a.streakId,
+          userId: a.userId,
+          noticeTime: a.noticeTime,
+          createdAt: a.createdAt,
+          updatedAt: a.updatedAt,
+          message: a.message,
+        })
+      ),
     };
   }
 
@@ -40,7 +50,11 @@ export class Streak {
     }
   }
 
-  static async create(userId: string, name: string, context: StreakContext): Promise<Result<StreakSpec, Error>> {
+  static async create(
+    userId: string,
+    name: string,
+    context: StreakContext
+  ): Promise<Result<StreakSpec, Error>> {
     try {
       const row = await prisma.streakConfig.create({
         data: { userId, name, context: context as object },
@@ -52,9 +66,16 @@ export class Streak {
     }
   }
 
-  static async update(id: number, userId: string, name?: string, context?: StreakContext): Promise<Result<StreakSpec, Error>> {
+  static async update(
+    id: number,
+    userId: string,
+    name?: string,
+    context?: StreakContext
+  ): Promise<Result<StreakSpec, Error>> {
     try {
-      const row = await prisma.streakConfig.findFirst({ where: { id, userId } });
+      const row = await prisma.streakConfig.findFirst({
+        where: { id, userId },
+      });
       if (!row) {
         return err(new Error("Streak not found"));
       }
@@ -94,22 +115,41 @@ export class Streak {
       }
       const ctx = row.context as unknown as StreakContext;
 
-      if (ctx.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION) {
-        Logger.log(`[Streak] invalidateForConfig id=${streakConfigId} op=ANALYSIS_CLASSIFICATION — no FactCache rows to clear`);
+      if (
+        ctx.innerContext.operation === FactOperation.ANALYSIS_CLASSIFICATION
+      ) {
+        Logger.log(
+          `[Streak] invalidateForConfig id=${streakConfigId} op=ANALYSIS_CLASSIFICATION — no FactCache rows to clear`
+        );
         return ok(undefined);
       }
 
-      const segments = Streak.generateLookbackSegments(ctx.segmentUnit, ctx.length, new Date(), utcOffsetMinutes);
+      const segments = Streak.generateLookbackSegments(
+        ctx.segmentUnit,
+        ctx.length,
+        new Date(),
+        utcOffsetMinutes
+      );
       const contextKeys = segments
-        .map((segment) => Streak.injectDateRange(ctx.innerContext, segment.start, segment.end))
+        .map((segment) =>
+          Streak.injectDateRange(ctx.innerContext, segment.start, segment.end)
+        )
         .filter((injected): injected is FactContext => injected !== null)
         .map((injected) => Fact.contextKey(injected));
 
-      Logger.log(`[Streak] invalidateForConfig id=${streakConfigId} clearing ${contextKeys.length} FactCache rows`);
-      await prisma.factCache.deleteMany({ where: { userId, contextKey: { in: contextKeys } } });
+      Logger.log(
+        `[Streak] invalidateForConfig id=${streakConfigId} clearing ${contextKeys.length} FactCache rows`
+      );
+      await prisma.factCache.deleteMany({
+        where: { userId, contextKey: { in: contextKeys } },
+      });
       return ok(undefined);
     } catch (error) {
-      return err(new Error("Failed to invalidate streak cache for config", { cause: error }));
+      return err(
+        new Error("Failed to invalidate streak cache for config", {
+          cause: error,
+        })
+      );
     }
   }
 
@@ -122,7 +162,11 @@ export class Streak {
    * - MONTH → "YYYY-MM"
    * - YEAR  → "YYYY"
    */
-  static segmentKey(unit: SegmentationTimeUnit, utcDate: Date, utcOffsetMinutes: number): string {
+  static segmentKey(
+    unit: SegmentationTimeUnit,
+    utcDate: Date,
+    utcOffsetMinutes: number
+  ): string {
     const localMs = utcDate.getTime() + utcOffsetMinutes * 60 * 1000;
     const d = new Date(localMs);
     const Y = d.getUTCFullYear();
@@ -156,7 +200,12 @@ export class Streak {
     now: Date,
     utcOffsetMinutes: number
   ): string[] {
-    return Streak.generateLookbackSegments(unit, length, now, utcOffsetMinutes).map(s => s.key);
+    return Streak.generateLookbackSegments(
+      unit,
+      length,
+      now,
+      utcOffsetMinutes
+    ).map((s) => s.key);
   }
 
   /**
@@ -175,17 +224,24 @@ export class Streak {
   ): Promise<{ current: number; longest: number }> {
     const now = new Date();
     const op = ctx.innerContext.operation;
-    const segments = Streak.generateLookbackSegments(ctx.segmentUnit, ctx.length, now, utcOffsetMinutes);
+    const segments = Streak.generateLookbackSegments(
+      ctx.segmentUnit,
+      ctx.length,
+      now,
+      utcOffsetMinutes
+    );
     let longest = 0;
     let current = 0;
     let runLength = 0;
     let currentStillActive = true;
 
     if (op === FactOperation.ANALYSIS_CLASSIFICATION) {
-      const keys = segments.map(s => s.key);
+      const keys = segments.map((s) => s.key);
       Logger.log(
         `[Streak] resolveContext ANALYSIS_CLASSIFICATION querying analysisClassificationResult` +
-        ` analysisType=${ctx.innerContext.analysisType} segmentUnit=${ctx.segmentUnit} keys=[${keys.join(",")}]`
+          ` analysisType=${ctx.innerContext.analysisType} segmentUnit=${
+            ctx.segmentUnit
+          } keys=[${keys.join(",")}]`
       );
 
       const rows = await prisma.analysisClassificationResult.findMany({
@@ -197,13 +253,15 @@ export class Streak {
         },
       });
 
-      const byKey = new Map(rows.map(r => [r.segmentKey, JSON.parse(r.value) as FactValue]));
+      const byKey = new Map(
+        rows.map((r) => [r.segmentKey, JSON.parse(r.value) as FactValue])
+      );
       const foundKeys = [...byKey.keys()];
-      const missingKeys = keys.filter(k => !byKey.has(k));
+      const missingKeys = keys.filter((k) => !byKey.has(k));
       Logger.log(
         `[Streak] resolveContext DB returned rows=${rows.length}` +
-        ` found=[${foundKeys.join(",")}]` +
-        ` missing=[${missingKeys.join(",")}]`
+          ` found=[${foundKeys.join(",")}]` +
+          ` missing=[${missingKeys.join(",")}]`
       );
 
       // Segment 0 is the current (possibly in-progress) period. Classification results for
@@ -221,20 +279,38 @@ export class Streak {
           );
           continue;
         }
-        if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
+        if (
+          value !== undefined &&
+          Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)
+        ) {
           runLength++;
-          if (currentStillActive) { current = runLength; }
-          if (runLength > longest) { longest = runLength; }
+          if (currentStillActive) {
+            current = runLength;
+          }
+          if (runLength > longest) {
+            longest = runLength;
+          }
           Logger.log(
-            `[Streak] resolveContext segment=${segment.key} value=${JSON.stringify(value)}` +
-            ` condition: ${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} → PASS` +
-            ` runLength=${runLength} current=${current} longest=${longest}`
+            `[Streak] resolveContext segment=${
+              segment.key
+            } value=${JSON.stringify(value)}` +
+              ` condition: ${JSON.stringify(value)} ${
+                ctx.innerOperator
+              } ${JSON.stringify(ctx.innerValue)} → PASS` +
+              ` runLength=${runLength} current=${current} longest=${longest}`
           );
         } else {
-          const reason = value === undefined ? "no data" : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} is false`;
+          const reason =
+            value === undefined
+              ? "no data"
+              : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(
+                  ctx.innerValue
+                )} is false`;
           Logger.log(
-            `[Streak] resolveContext segment=${segment.key} value=${JSON.stringify(value)}` +
-            ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
+            `[Streak] resolveContext segment=${
+              segment.key
+            } value=${JSON.stringify(value)}` +
+              ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
           );
           currentStillActive = false;
           runLength = 0;
@@ -248,7 +324,11 @@ export class Streak {
       // resetting it to 0 mid-period.
       for (let i = 0; i < segments.length; i++) {
         const segment = segments[i];
-        const injected = Streak.injectDateRange(ctx.innerContext, segment.start, segment.end);
+        const injected = Streak.injectDateRange(
+          ctx.innerContext,
+          segment.start,
+          segment.end
+        );
         if (!injected) {
           Logger.error(
             `[Streak] resolveContext Cannot inject date range into op=${op} — skipping remaining segments`
@@ -259,8 +339,8 @@ export class Streak {
         const contextKey = Fact.contextKey(injected);
         Logger.log(
           `[Streak] resolveContext segment=${segment.key}` +
-          ` [${segment.start.toISOString()} → ${segment.end.toISOString()}]` +
-          ` injected op=${op} contextKey=${contextKey} — calling Fact.resolve...`
+            ` [${segment.start.toISOString()} → ${segment.end.toISOString()}]` +
+            ` injected op=${op} contextKey=${contextKey} — calling Fact.resolve...`
         );
 
         const value = await Fact.resolve(injected, userId, { bypassCache });
@@ -270,20 +350,38 @@ export class Streak {
           );
           continue;
         }
-        if (value !== undefined && Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)) {
+        if (
+          value !== undefined &&
+          Streak.evalInner(value, ctx.innerOperator, ctx.innerValue)
+        ) {
           runLength++;
-          if (currentStillActive) { current = runLength; }
-          if (runLength > longest) { longest = runLength; }
+          if (currentStillActive) {
+            current = runLength;
+          }
+          if (runLength > longest) {
+            longest = runLength;
+          }
           Logger.log(
-            `[Streak] resolveContext segment=${segment.key} value=${JSON.stringify(value)}` +
-            ` condition: ${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} → PASS` +
-            ` runLength=${runLength} current=${current} longest=${longest}`
+            `[Streak] resolveContext segment=${
+              segment.key
+            } value=${JSON.stringify(value)}` +
+              ` condition: ${JSON.stringify(value)} ${
+                ctx.innerOperator
+              } ${JSON.stringify(ctx.innerValue)} → PASS` +
+              ` runLength=${runLength} current=${current} longest=${longest}`
           );
         } else {
-          const reason = value === undefined ? "undefined from Fact.resolve" : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(ctx.innerValue)} is false`;
+          const reason =
+            value === undefined
+              ? "undefined from Fact.resolve"
+              : `${JSON.stringify(value)} ${ctx.innerOperator} ${JSON.stringify(
+                  ctx.innerValue
+                )} is false`;
           Logger.log(
-            `[Streak] resolveContext segment=${segment.key} value=${JSON.stringify(value)}` +
-            ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
+            `[Streak] resolveContext segment=${
+              segment.key
+            } value=${JSON.stringify(value)}` +
+              ` → RESET (${reason}) runLength=0 current=${current} longest=${longest}`
           );
           currentStillActive = false;
           runLength = 0;
@@ -291,7 +389,9 @@ export class Streak {
       }
     }
 
-    Logger.log(`[Streak] resolveContext COMPLETE op=${op} current=${current} longest=${longest}`);
+    Logger.log(
+      `[Streak] resolveContext COMPLETE op=${op} current=${current} longest=${longest}`
+    );
     return { current, longest };
   }
 
@@ -318,10 +418,17 @@ export class Streak {
       const ctx = streak.context;
       Logger.log(
         `[Streak] resolveStreaks start id=${streak.id} op=${ctx.innerContext.operation} segmentUnit=${ctx.segmentUnit}` +
-        ` length=${ctx.length} utcOffset=${utcOffsetMinutes} operator=${ctx.innerOperator} innerValue=${JSON.stringify(ctx.innerValue)}`
+          ` length=${ctx.length} utcOffset=${utcOffsetMinutes} operator=${
+            ctx.innerOperator
+          } innerValue=${JSON.stringify(ctx.innerValue)}`
       );
 
-      const { current, longest } = await Streak.resolveContext(ctx, userId, utcOffsetMinutes, bypassCache);
+      const { current, longest } = await Streak.resolveContext(
+        ctx,
+        userId,
+        utcOffsetMinutes,
+        bypassCache
+      );
 
       Logger.log(
         `[Streak] resolveStreaks id=${streak.id} COMPLETE current=${current} longest=${longest}`
@@ -347,7 +454,11 @@ export class Streak {
     for (let i = 0; i < length; i++) {
       const pivotUtc = Streak.subtractSegment(now, unit, i, utcOffsetMinutes);
       const key = Streak.segmentKey(unit, pivotUtc, utcOffsetMinutes);
-      const { start, end } = Streak.segmentDateRange(unit, pivotUtc, utcOffsetMinutes);
+      const { start, end } = Streak.segmentDateRange(
+        unit,
+        pivotUtc,
+        utcOffsetMinutes
+      );
       segments.push({ key, start, end });
     }
     if (segments.length > 0) {
@@ -355,8 +466,12 @@ export class Streak {
       const oldest = segments[segments.length - 1];
       Logger.log(
         `[Streak] generateLookbackSegments unit=${unit} length=${length} utcOffset=${utcOffsetMinutes} now=${now.toISOString()}` +
-        ` → newest: key=${newest.key} [${newest.start.toISOString()} → ${newest.end.toISOString()}]` +
-        ` oldest: key=${oldest.key} [${oldest.start.toISOString()} → ${oldest.end.toISOString()}]`
+          ` → newest: key=${
+            newest.key
+          } [${newest.start.toISOString()} → ${newest.end.toISOString()}]` +
+          ` oldest: key=${
+            oldest.key
+          } [${oldest.start.toISOString()} → ${oldest.end.toISOString()}]`
       );
     }
     return segments;
@@ -380,34 +495,59 @@ export class Streak {
 
     switch (unit) {
       case SegmentationTimeUnit.HOUR: {
-        const s = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), local.getUTCHours()));
+        const s = new Date(
+          Date.UTC(
+            local.getUTCFullYear(),
+            local.getUTCMonth(),
+            local.getUTCDate(),
+            local.getUTCHours()
+          )
+        );
         startLocalMs = s.getTime();
         endLocalMs = startLocalMs + 3600 * 1000 - 1;
         break;
       }
       case SegmentationTimeUnit.DAY: {
-        const s = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()));
+        const s = new Date(
+          Date.UTC(
+            local.getUTCFullYear(),
+            local.getUTCMonth(),
+            local.getUTCDate()
+          )
+        );
         startLocalMs = s.getTime();
         endLocalMs = startLocalMs + 86400 * 1000 - 1;
         break;
       }
       case SegmentationTimeUnit.WEEK: {
         const dayOfWeek = local.getUTCDay() || 7;
-        const s = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() - (dayOfWeek - 1)));
+        const s = new Date(
+          Date.UTC(
+            local.getUTCFullYear(),
+            local.getUTCMonth(),
+            local.getUTCDate() - (dayOfWeek - 1)
+          )
+        );
         startLocalMs = s.getTime();
         endLocalMs = startLocalMs + 7 * 86400 * 1000 - 1;
         break;
       }
       case SegmentationTimeUnit.MONTH: {
-        const s = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1));
+        const s = new Date(
+          Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1)
+        );
         startLocalMs = s.getTime();
-        endLocalMs = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 1)).getTime() - 1;
+        endLocalMs =
+          new Date(
+            Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 1)
+          ).getTime() - 1;
         break;
       }
       case SegmentationTimeUnit.YEAR: {
         const s = new Date(Date.UTC(local.getUTCFullYear(), 0, 1));
         startLocalMs = s.getTime();
-        endLocalMs = new Date(Date.UTC(local.getUTCFullYear() + 1, 0, 1)).getTime() - 1;
+        endLocalMs =
+          new Date(Date.UTC(local.getUTCFullYear() + 1, 0, 1)).getTime() - 1;
         break;
       }
     }
@@ -441,7 +581,11 @@ export class Streak {
           ...ctx,
           filter: {
             ...ctx.filter,
-            time: { type: ListFilterTimeType.RANGE, start: startIso, end: endIso },
+            time: {
+              type: ListFilterTimeType.RANGE,
+              start: startIso,
+              end: endIso,
+            },
           },
         };
       case FactOperation.MEDAL_COUNT:
@@ -490,12 +634,18 @@ export class Streak {
    */
   private static isoWeek(localDate: Date): { year: number; week: number } {
     const d = new Date(
-      Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate())
+      Date.UTC(
+        localDate.getUTCFullYear(),
+        localDate.getUTCMonth(),
+        localDate.getUTCDate()
+      )
     );
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+    const week = Math.ceil(
+      ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
+    );
     return { year: d.getUTCFullYear(), week };
   }
 
@@ -506,13 +656,20 @@ export class Streak {
     target: string | number | boolean
   ): boolean {
     switch (operator) {
-      case "==": return value == target;
-      case "!=": return value != target;
-      case ">": return (value as number) > (target as number);
-      case ">=": return (value as number) >= (target as number);
-      case "<": return (value as number) < (target as number);
-      case "<=": return (value as number) <= (target as number);
-      case "contains": return String(value).includes(String(target));
+      case "==":
+        return value == target;
+      case "!=":
+        return value != target;
+      case ">":
+        return (value as number) > (target as number);
+      case ">=":
+        return (value as number) >= (target as number);
+      case "<":
+        return (value as number) < (target as number);
+      case "<=":
+        return (value as number) <= (target as number);
+      case "contains":
+        return String(value).includes(String(target));
       default:
         Logger.error(`[Streak] Unknown inner operator: ${operator}`);
         return false;

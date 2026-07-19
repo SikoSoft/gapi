@@ -631,6 +631,12 @@
           "hidden": {
             "type": "boolean"
           },
+          "formatters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "calculation": {
             "type": "object",
             "properties": {

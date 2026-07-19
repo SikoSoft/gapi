@@ -599,8 +599,24 @@ export class PropertyConfig {
         include: propertyConfigInclude,
       });
 
+      if (body.formatters !== undefined) {
+        const formattersRes = await PropertyConfig.syncFormatters(created.id, body.formatters);
+        if (formattersRes.isErr()) {
+          return err(formattersRes.error);
+        }
+      }
+
+      const propertyConfig = await prisma.propertyConfig.findUnique({
+        where: { id: created.id },
+        include: propertyConfigInclude,
+      });
+
+      if (!propertyConfig) {
+        return ok(null);
+      }
+
       return ok(
-        PropertyConfig.mapDataToSpec(created) as Entity.EntityCalculatedPropertyConfig
+        PropertyConfig.mapDataToSpec(propertyConfig) as Entity.EntityCalculatedPropertyConfig
       );
     } catch (error) {
       return err(
@@ -632,6 +648,13 @@ export class PropertyConfig {
     }
 
     try {
+      if (body.formatters !== undefined) {
+        const formattersRes = await PropertyConfig.syncFormatters(id, body.formatters);
+        if (formattersRes.isErr()) {
+          return err(formattersRes.error);
+        }
+      }
+
       const updated = await prisma.propertyConfig.update({
         where: { id, entityConfigId },
         data: {

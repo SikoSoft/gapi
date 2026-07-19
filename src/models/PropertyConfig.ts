@@ -140,6 +140,7 @@ export const calculatedPropertyConfigCreateSchema = z.object({
   prefix: z.string(),
   suffix: z.string(),
   hidden: z.boolean(),
+  formatters: z.array(z.string()).optional(),
   calculation: z.object({
     value1: CalculationOperand,
     value2: CalculationOperand,
@@ -153,6 +154,7 @@ export interface CalculatedPropertyConfigCreateBody {
   prefix: string;
   suffix: string;
   hidden: boolean;
+  formatters?: string[];
   calculation: {
     value1: { propertyConfigId: number } | number;
     value2: { propertyConfigId: number } | number;

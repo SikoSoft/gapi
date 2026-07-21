@@ -29,7 +29,12 @@ export class PropertyConfig {
     userId: string,
     entityConfigId: number,
     propertyConfig: PropertyConfigCreateBody
-  ): Promise<Result<Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig, Error>> {
+  ): Promise<
+    Result<
+      Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig,
+      Error
+    >
+  > {
     const isAllowed = await EntityConfig.isEditAllowed(userId, entityConfigId);
     if (isAllowed.isErr()) {
       return err(isAllowed.error);
@@ -38,8 +43,14 @@ export class PropertyConfig {
       return err(new Error("Not authorized to edit this entity config"));
     }
 
-    const { defaultValue, timeZone, performDriftCheck, options, formatters, ...data } =
-      propertyConfig;
+    const {
+      defaultValue,
+      timeZone,
+      performDriftCheck,
+      options,
+      formatters,
+      ...data
+    } = propertyConfig;
 
     try {
       const createdPropertyConfig = await prisma.propertyConfig.create({
@@ -67,7 +78,10 @@ export class PropertyConfig {
       }
 
       if (formatters !== undefined) {
-        const formattersRes = await PropertyConfig.syncFormatters(createdPropertyConfig.id, formatters);
+        const formattersRes = await PropertyConfig.syncFormatters(
+          createdPropertyConfig.id,
+          formatters
+        );
         if (formattersRes.isErr()) {
           return err(formattersRes.error);
         }
@@ -103,7 +117,14 @@ export class PropertyConfig {
     entityConfigId: number,
     id: number,
     propertyConfig: PropertyConfigUpdateBody
-  ): Promise<Result<Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig | null, Error>> {
+  ): Promise<
+    Result<
+      | Entity.EntityPropertyConfig
+      | Entity.EntityCalculatedPropertyConfig
+      | null,
+      Error
+    >
+  > {
     Logger.log("Updating property config:", {
       userId,
       entityConfigId,
@@ -120,8 +141,14 @@ export class PropertyConfig {
     }
 
     try {
-      const { defaultValue, timeZone, performDriftCheck, options, formatters, ...data } =
-        propertyConfig;
+      const {
+        defaultValue,
+        timeZone,
+        performDriftCheck,
+        options,
+        formatters,
+        ...data
+      } = propertyConfig;
 
       if (
         options !== undefined &&
@@ -139,7 +166,10 @@ export class PropertyConfig {
       }
 
       if (formatters !== undefined) {
-        const formattersRes = await PropertyConfig.syncFormatters(id, formatters);
+        const formattersRes = await PropertyConfig.syncFormatters(
+          id,
+          formatters
+        );
         if (formattersRes.isErr()) {
           return err(formattersRes.error);
         }
@@ -213,7 +243,9 @@ export class PropertyConfig {
     formatters: string[]
   ): Promise<Result<null, Error>> {
     try {
-      await prisma.propertyConfigFormatter.deleteMany({ where: { propertyConfigId } });
+      await prisma.propertyConfigFormatter.deleteMany({
+        where: { propertyConfigId },
+      });
       await prisma.propertyConfigFormatter.createMany({
         data: formatters.map((formatterId, index) => ({
           propertyConfigId,
@@ -248,7 +280,14 @@ export class PropertyConfig {
   static async getById(
     userId: string,
     propertyConfigId: number
-  ): Promise<Result<Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig | null, Error>> {
+  ): Promise<
+    Result<
+      | Entity.EntityPropertyConfig
+      | Entity.EntityCalculatedPropertyConfig
+      | null,
+      Error
+    >
+  > {
     try {
       const propertyConfig = await prisma.propertyConfig.findUnique({
         where: { userId, id: propertyConfigId },
@@ -600,7 +639,10 @@ export class PropertyConfig {
       });
 
       if (body.formatters !== undefined) {
-        const formattersRes = await PropertyConfig.syncFormatters(created.id, body.formatters);
+        const formattersRes = await PropertyConfig.syncFormatters(
+          created.id,
+          body.formatters
+        );
         if (formattersRes.isErr()) {
           return err(formattersRes.error);
         }
@@ -616,11 +658,15 @@ export class PropertyConfig {
       }
 
       return ok(
-        PropertyConfig.mapDataToSpec(propertyConfig) as Entity.EntityCalculatedPropertyConfig
+        PropertyConfig.mapDataToSpec(
+          propertyConfig
+        ) as Entity.EntityCalculatedPropertyConfig
       );
     } catch (error) {
       return err(
-        new Error("Failed to create calculated property config", { cause: error })
+        new Error("Failed to create calculated property config", {
+          cause: error,
+        })
       );
     }
   }
@@ -649,7 +695,10 @@ export class PropertyConfig {
 
     try {
       if (body.formatters !== undefined) {
-        const formattersRes = await PropertyConfig.syncFormatters(id, body.formatters);
+        const formattersRes = await PropertyConfig.syncFormatters(
+          id,
+          body.formatters
+        );
         if (formattersRes.isErr()) {
           return err(formattersRes.error);
         }
@@ -668,11 +717,15 @@ export class PropertyConfig {
       });
 
       return ok(
-        PropertyConfig.mapDataToSpec(updated) as Entity.EntityCalculatedPropertyConfig
+        PropertyConfig.mapDataToSpec(
+          updated
+        ) as Entity.EntityCalculatedPropertyConfig
       );
     } catch (error) {
       return err(
-        new Error("Failed to update calculated property config", { cause: error })
+        new Error("Failed to update calculated property config", {
+          cause: error,
+        })
       );
     }
   }
@@ -727,10 +780,16 @@ export class PropertyConfig {
     const refIds = new Set<number>();
     for (const config of calculatedConfigs) {
       const calc = config.calculation as Entity.EntityPropertyCalculation;
-      if (typeof calc.value1 === "object" && "propertyConfigId" in calc.value1) {
+      if (
+        typeof calc.value1 === "object" &&
+        "propertyConfigId" in calc.value1
+      ) {
         refIds.add(calc.value1.propertyConfigId);
       }
-      if (typeof calc.value2 === "object" && "propertyConfigId" in calc.value2) {
+      if (
+        typeof calc.value2 === "object" &&
+        "propertyConfigId" in calc.value2
+      ) {
         refIds.add(calc.value2.propertyConfigId);
       }
     }
@@ -751,11 +810,11 @@ export class PropertyConfig {
       const calc = config.calculation as Entity.EntityPropertyCalculation;
       const v1DataType =
         typeof calc.value1 === "object" && "propertyConfigId" in calc.value1
-          ? (dataTypeMap.get(calc.value1.propertyConfigId) ?? null)
+          ? dataTypeMap.get(calc.value1.propertyConfigId) ?? null
           : null;
       const v2DataType =
         typeof calc.value2 === "object" && "propertyConfigId" in calc.value2
-          ? (dataTypeMap.get(calc.value2.propertyConfigId) ?? null)
+          ? dataTypeMap.get(calc.value2.propertyConfigId) ?? null
           : null;
 
       return {
@@ -805,6 +864,10 @@ export class PropertyConfig {
   static mapDataToSpec(
     data: PrismaPropertyConfig
   ): Entity.EntityPropertyConfig | Entity.EntityCalculatedPropertyConfig {
+    const formatters = (data.formatters ?? [])
+      .sort((a, b) => a.order - b.order)
+      .map((f) => f.formatterId);
+
     if (data.calculation !== null && data.calculation !== undefined) {
       return {
         entityConfigId: data.entityConfigId,
@@ -817,6 +880,7 @@ export class PropertyConfig {
         dataType: DataType.INT,
         defaultValue: 0,
         calculation: data.calculation as Entity.EntityPropertyCalculation,
+        formatters,
       } as Entity.EntityCalculatedPropertyConfig;
     }
 
@@ -835,9 +899,7 @@ export class PropertyConfig {
       hidden: data.hidden,
       optionsOnly: data.optionsOnly,
       options,
-      formatters: (data.formatters ?? [])
-        .sort((a, b) => a.order - b.order)
-        .map(f => f.formatterId),
+      formatters,
     };
 
     switch (data.dataType) {

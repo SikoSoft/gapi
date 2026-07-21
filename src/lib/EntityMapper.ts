@@ -2,6 +2,7 @@ import { prisma } from "..";
 import {
   EntityPropertyCalculation,
   EntityPropertyCalculationReference,
+  PropertyValue,
 } from "api-spec/models/Entity";
 import { Entity as EntitySpec } from "api-spec/models";
 import { PrismaEntity } from "../models/Entity";
@@ -14,10 +15,11 @@ export class EntityMapper {
 
     if (entity.booleanProperties) {
       entity.booleanProperties.forEach((prop) => {
+        const raw = prop.propertyValue ? prop.propertyValue.value : false;
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: prop.propertyValue ? prop.propertyValue.value : false,
+          value: { raw, formatted: String(raw) },
           order: prop.order,
         });
       });
@@ -33,10 +35,11 @@ export class EntityMapper {
 
     if (entity.dateProperties) {
       entity.dateProperties.forEach((prop) => {
+        const raw = prop.propertyValue ? prop.propertyValue.value : new Date();
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: prop.propertyValue ? prop.propertyValue.value : new Date(),
+          value: { raw, formatted: raw ? raw.toISOString() : "" },
           order: prop.order,
         });
       });
@@ -52,10 +55,11 @@ export class EntityMapper {
 
     if (entity.intProperties) {
       entity.intProperties.forEach((prop) => {
+        const raw = prop.propertyValue ? prop.propertyValue.value : 0;
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: prop.propertyValue ? prop.propertyValue.value : 0,
+          value: { raw, formatted: String(raw) },
           order: prop.order,
         });
       });
@@ -71,12 +75,13 @@ export class EntityMapper {
 
     if (entity.imageProperties) {
       entity.imageProperties.forEach((prop) => {
+        const raw = prop.propertyValue
+          ? { src: prop.propertyValue.url, alt: prop.propertyValue.altText }
+          : { src: "", alt: "" };
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: prop.propertyValue
-            ? { src: prop.propertyValue.url, alt: prop.propertyValue.altText }
-            : { src: "", alt: "" },
+          value: { raw, formatted: raw.src },
           order: prop.order,
         });
       });
@@ -92,10 +97,11 @@ export class EntityMapper {
 
     if (entity.shortTextProperties) {
       entity.shortTextProperties.forEach((prop) => {
+        const raw = prop.propertyValue ? prop.propertyValue.value : "";
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: prop.propertyValue ? prop.propertyValue.value : "",
+          value: { raw, formatted: raw },
           order: prop.order,
         });
       });
@@ -111,10 +117,11 @@ export class EntityMapper {
 
     if (entity.longTextProperties) {
       entity.longTextProperties.forEach((prop) => {
+        const raw = prop.propertyValue ? prop.propertyValue.value : null;
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: prop.propertyValue ? prop.propertyValue.value : null,
+          value: { raw, formatted: raw ?? "" },
           order: prop.order,
         });
       });
@@ -130,12 +137,15 @@ export class EntityMapper {
     if (!Array.isArray(raw)) {
       return [];
     }
-    return raw.map((prop: any) => ({
-      id: 0,
-      propertyConfigId: prop.propertyConfigId,
-      value: prop.propertyValue?.value ?? null,
-      order: prop.order,
-    }));
+    return raw.map((prop: any) => {
+      const rawVal = prop.propertyValue?.value ?? null;
+      return {
+        id: 0,
+        propertyConfigId: prop.propertyConfigId,
+        value: { raw: rawVal, formatted: rawVal !== null ? String(rawVal) : "" },
+        order: prop.order,
+      };
+    });
   }
 
   static computeCalculatedValue(
@@ -151,10 +161,10 @@ export class EntityMapper {
       const sourceProp = properties.find(
         (p) => p.propertyConfigId === operand.propertyConfigId
       );
-      if (!sourceProp || sourceProp.value === null) {
+      if (!sourceProp || sourceProp.value.raw === null) {
         return null;
       }
-      return sourceProp.value as number;
+      return sourceProp.value.raw as number;
     };
 
     const v1 = resolveOperand(calc.value1);
@@ -205,7 +215,7 @@ export class EntityMapper {
         (p) => p.propertyConfigId === record.propertyConfigId && p.id === 0
       );
       if (prop) {
-        prop.value = value;
+        prop.value = { raw: value, formatted: value !== null ? String(value) : "" };
       }
     }
 

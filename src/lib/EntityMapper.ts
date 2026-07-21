@@ -35,11 +35,11 @@ export class EntityMapper {
 
     if (entity.dateProperties) {
       entity.dateProperties.forEach((prop) => {
-        const raw = prop.propertyValue ? prop.propertyValue.value : new Date();
+        const raw = prop.propertyValue?.value ?? null;
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: { raw, formatted: raw ? raw.toISOString() : "" },
+          value: { raw, formatted: raw instanceof Date ? raw.toISOString() : "" },
           order: prop.order,
         });
       });

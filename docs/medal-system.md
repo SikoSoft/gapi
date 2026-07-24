@@ -82,7 +82,7 @@ A `StreakRequest` measures **consecutive time periods** where a condition held. 
 
 1. Generate `length` lookback segments from now. Segment 0 is the current period; segment `length - 1` is the oldest.
 2. For each segment, resolve the inner fact value.
-3. If the value is missing for a segment, **the streak is broken at that point** — a gap in data is treated as failure.
+3. If the value is missing for a segment, **the streak is broken at that point** — a gap in data is treated as failure. **Exception: segment 0** (the current, still-in-progress period). Since the period hasn't ended yet, an unresolved value *or* a resolved value that doesn't yet satisfy `innerOperator`/`innerValue` (e.g. an `entityCount` of 0 because nothing has been logged today) is skipped rather than treated as a break, so `current` reflects the run through the most recently *completed* period instead of dropping to 0 every time the current period hasn't been satisfied yet.
 4. Compare the value against `innerOperator`/`innerValue`. If the condition fails, stop.
 5. Otherwise increment the counter and continue to the next (older) segment.
 6. The final count is stored in the fact map under the alias.

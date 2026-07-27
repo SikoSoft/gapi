@@ -318,10 +318,11 @@ export class Streak {
       }
     } else {
       // Segment 0 is the current (possibly in-progress) period. Fact data for the current
-      // period may return undefined or zero simply because the period hasn't ended yet, not
-      // because the user failed the condition. Skipping a missing segment-0 value preserves
-      // the current streak through the most recently completed period rather than always
-      // resetting it to 0 mid-period.
+      // period may resolve to undefined or to a real value that doesn't yet satisfy the
+      // condition (e.g. entityCount of 0 because nothing has been logged today), simply
+      // because the period hasn't ended yet — not because the user failed the condition.
+      // Skipping segment 0 in either case preserves the current streak through the most
+      // recently completed period rather than always resetting it to 0 mid-period.
       for (let i = 0; i < segments.length; i++) {
         const segment = segments[i];
         const injected = Streak.injectDateRange(
@@ -344,9 +345,15 @@ export class Streak {
         );
 
         const value = await Fact.resolve(injected, userId, { bypassCache });
-        if (i === 0 && value === undefined) {
+        const currentPeriodIncomplete =
+          i === 0 &&
+          (value === undefined ||
+            !Streak.evalInner(value, ctx.innerOperator, ctx.innerValue));
+        if (currentPeriodIncomplete) {
           Logger.log(
-            `[Streak] resolveContext segment=${segment.key} (current period) returned undefined — skipping without breaking streak`
+            `[Streak] resolveContext segment=${segment.key} (current period) value=${JSON.stringify(
+              value
+            )} does not yet satisfy condition — skipping without breaking streak`
           );
           continue;
         }

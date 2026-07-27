@@ -2,7 +2,6 @@ import { prisma } from "..";
 import {
   EntityPropertyCalculation,
   EntityPropertyCalculationReference,
-  PropertyValue,
 } from "api-spec/models/Entity";
 import { Entity as EntitySpec } from "api-spec/models";
 import { PrismaEntity } from "../models/Entity";
@@ -19,7 +18,7 @@ export class EntityMapper {
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: { raw, formatted: String(raw) },
+          value: raw,
           order: prop.order,
         });
       });
@@ -39,7 +38,7 @@ export class EntityMapper {
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: { raw, formatted: raw instanceof Date ? raw.toISOString() : "" },
+          value: raw,
           order: prop.order,
         });
       });
@@ -59,7 +58,7 @@ export class EntityMapper {
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: { raw, formatted: String(raw) },
+          value: raw,
           order: prop.order,
         });
       });
@@ -81,7 +80,7 @@ export class EntityMapper {
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: { raw, formatted: raw.src },
+          value: raw,
           order: prop.order,
         });
       });
@@ -101,7 +100,7 @@ export class EntityMapper {
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: { raw, formatted: raw },
+          value: raw,
           order: prop.order,
         });
       });
@@ -121,7 +120,7 @@ export class EntityMapper {
         properties.push({
           id: prop.propertyValueId,
           propertyConfigId: prop.propertyConfigId,
-          value: { raw, formatted: raw ?? "" },
+          value: raw,
           order: prop.order,
         });
       });
@@ -142,7 +141,7 @@ export class EntityMapper {
       return {
         id: 0,
         propertyConfigId: prop.propertyConfigId,
-        value: { raw: rawVal, formatted: rawVal !== null ? String(rawVal) : "" },
+        value: rawVal,
         order: prop.order,
       };
     });
@@ -161,10 +160,10 @@ export class EntityMapper {
       const sourceProp = properties.find(
         (p) => p.propertyConfigId === operand.propertyConfigId
       );
-      if (!sourceProp || sourceProp.value.raw === null) {
+      if (!sourceProp || sourceProp.value === null) {
         return null;
       }
-      return sourceProp.value.raw as number;
+      return sourceProp.value as number;
     };
 
     const v1 = resolveOperand(calc.value1);
@@ -215,7 +214,7 @@ export class EntityMapper {
         (p) => p.propertyConfigId === record.propertyConfigId && p.id === 0
       );
       if (prop) {
-        prop.value = { raw: value, formatted: value !== null ? String(value) : "" };
+        prop.value = value;
       }
     }
 

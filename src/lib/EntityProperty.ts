@@ -3,7 +3,6 @@ import {
   DataType,
   EntityProperty as ApiEntityProperty,
   ImageDataValue,
-  PropertyValue,
 } from "api-spec/models/Entity";
 import { prisma } from "..";
 import { PropertyReference } from "../models/Entity";
@@ -27,14 +26,13 @@ export class EntityProperty {
       return [];
     }
 
-    const raw = (value as PropertyValue).raw;
     switch (dataType) {
       case DataType.BOOLEAN: {
         const rows = await prisma.entityBooleanProperty.findMany({
           where: {
             entityId: { in: entityIds },
             propertyConfigId,
-            propertyValue: { value: raw as boolean },
+            propertyValue: { value: value as boolean },
           },
           select: { entityId: true },
         });
@@ -45,14 +43,14 @@ export class EntityProperty {
           where: {
             entityId: { in: entityIds },
             propertyConfigId,
-            propertyValue: { value: new Date(raw as string) },
+            propertyValue: { value: new Date(value as string) },
           },
           select: { entityId: true },
         });
         return rows.map((r) => r.entityId);
       }
       case DataType.IMAGE: {
-        const v = raw as { src: string; alt: string };
+        const v = value as ImageDataValue;
         const rows = await prisma.entityImageProperty.findMany({
           where: {
             entityId: { in: entityIds },
@@ -68,7 +66,7 @@ export class EntityProperty {
           where: {
             entityId: { in: entityIds },
             propertyConfigId,
-            propertyValue: { value: raw as number },
+            propertyValue: { value: value as number },
           },
           select: { entityId: true },
         });
@@ -79,7 +77,7 @@ export class EntityProperty {
           where: {
             entityId: { in: entityIds },
             propertyConfigId,
-            propertyValue: { value: raw as string },
+            propertyValue: { value: value as string },
           },
           select: { entityId: true },
         });
@@ -90,7 +88,7 @@ export class EntityProperty {
           where: {
             entityId: { in: entityIds },
             propertyConfigId,
-            propertyValue: { value: raw as string },
+            propertyValue: { value: value as string },
           },
           select: { entityId: true },
         });
@@ -113,8 +111,7 @@ export class EntityProperty {
           include: { propertyValue: true },
         });
         if (!row) { return undefined; }
-        const raw = row.propertyValue.value;
-        return { raw, formatted: String(raw) };
+        return row.propertyValue.value;
       }
       case DataType.DATE: {
         const row = await prisma.entityDateProperty.findFirst({
@@ -122,8 +119,7 @@ export class EntityProperty {
           include: { propertyValue: true },
         });
         if (!row) { return undefined; }
-        const raw = row.propertyValue.value;
-        return { raw: raw.toISOString(), formatted: raw.toISOString() };
+        return row.propertyValue.value;
       }
       case DataType.IMAGE: {
         const row = await prisma.entityImageProperty.findFirst({
@@ -131,8 +127,7 @@ export class EntityProperty {
           include: { propertyValue: true },
         });
         if (!row) { return undefined; }
-        const raw = { src: row.propertyValue.url, alt: row.propertyValue.altText };
-        return { raw, formatted: raw.src };
+        return { src: row.propertyValue.url, alt: row.propertyValue.altText };
       }
       case DataType.INT: {
         const row = await prisma.entityIntProperty.findFirst({
@@ -140,8 +135,7 @@ export class EntityProperty {
           include: { propertyValue: true },
         });
         if (!row) { return undefined; }
-        const raw = row.propertyValue.value;
-        return { raw, formatted: String(raw) };
+        return row.propertyValue.value;
       }
       case DataType.SHORT_TEXT: {
         const row = await prisma.entityShortTextProperty.findFirst({
@@ -149,8 +143,7 @@ export class EntityProperty {
           include: { propertyValue: true },
         });
         if (!row) { return undefined; }
-        const raw = row.propertyValue.value;
-        return { raw, formatted: raw };
+        return row.propertyValue.value;
       }
       case DataType.LONG_TEXT: {
         const row = await prisma.entityLongTextProperty.findFirst({
@@ -158,8 +151,7 @@ export class EntityProperty {
           include: { propertyValue: true },
         });
         if (!row) { return undefined; }
-        const raw = row.propertyValue.value;
-        return { raw, formatted: raw };
+        return row.propertyValue.value;
       }
       default:
         return undefined;
@@ -283,7 +275,7 @@ export class EntityProperty {
 
       if (
         config.required &&
-        (property.value.raw === null || property.value.raw === "")
+        (property.value === null || property.value === "")
       ) {
         return err(
           new ValidationError(
@@ -296,7 +288,7 @@ export class EntityProperty {
         config.dataType === "shortText" &&
         config.optionsOnly &&
         PropertyConfig.mapDataToOptions(config).includes(
-          property.value.raw as string
+          property.value as string
         ) === false
       ) {
         return err(
@@ -518,10 +510,10 @@ export class EntityProperty {
           await EntityProperty.syncBooleanProperty(entityId, property);
           break;
         case DataType.DATE:
-          property.value.raw =
-            property.value.raw === null
+          property.value =
+            property.value === null
               ? null
-              : Util.getDateInTimeZone(property.value.raw as string, timeZone);
+              : Util.getDateInTimeZone(property.value as unknown as string, timeZone);
           await EntityProperty.syncDateProperty(entityId, property);
           break;
         case DataType.IMAGE:
@@ -554,7 +546,7 @@ export class EntityProperty {
   ): Promise<Result<null, Error>> {
     Logger.log("Syncing boolean property:", { entityId, property });
     try {
-      const value = property.value.raw as boolean;
+      const value = property.value as boolean;
 
       if (!property.id) {
         const booleanPropertyValue = await prisma.booleanPropertyValue.create({
@@ -598,7 +590,7 @@ export class EntityProperty {
   ): Promise<Result<null, Error>> {
     Logger.log("Syncing date property:", { entityId, property });
     try {
-      const value = property.value.raw as Date;
+      const value = property.value as Date;
 
       if (!property.id) {
         const datePropertyValue = await prisma.datePropertyValue.create({
@@ -641,7 +633,7 @@ export class EntityProperty {
     property: ApiEntityProperty
   ): Promise<Result<null, Error>> {
     try {
-      const value = property.value.raw as number;
+      const value = property.value as number;
 
       if (!property.id) {
         const intPropertyValue = await prisma.intPropertyValue.create({
@@ -685,7 +677,7 @@ export class EntityProperty {
   ): Promise<Result<null, Error>> {
     Logger.log("Syncing image property:", { entityId, property });
     try {
-      const value = property.value.raw as ImageDataValue;
+      const value = property.value as ImageDataValue;
 
       if (!property.id) {
         const imagePropertyValue = await prisma.imagePropertyValue.create({
@@ -733,7 +725,7 @@ export class EntityProperty {
     property: ApiEntityProperty
   ): Promise<Result<null, Error>> {
     try {
-      const value = property.value.raw as string;
+      const value = property.value as string;
 
       if (!property.id) {
         const shortTextPropertyValue =
@@ -775,7 +767,7 @@ export class EntityProperty {
     property: ApiEntityProperty
   ): Promise<Result<null, Error>> {
     try {
-      const value = property.value.raw as string;
+      const value = property.value as string;
 
       if (!property.id) {
         const longTextPropertyValue = await prisma.longTextPropertyValue.create(
@@ -985,7 +977,7 @@ export class EntityProperty {
         });
         return rows
           .filter((r) =>
-            properties.some((p) => p.value.raw === r.propertyValue?.value)
+            properties.some((p) => p.value === r.propertyValue?.value)
           )
           .map((r) => r.propertyValueId);
       }
@@ -998,9 +990,9 @@ export class EntityProperty {
           .filter((r) =>
             properties.some(
               (p) =>
-                p.value.raw !== null &&
+                p.value !== null &&
                 r.propertyValue !== null &&
-                new Date(p.value.raw as Date).toISOString() ===
+                new Date(p.value as Date).toISOString() ===
                   new Date(r.propertyValue.value).toISOString()
             )
           )
@@ -1014,7 +1006,7 @@ export class EntityProperty {
         return rows
           .filter((r) =>
             properties.some((p) => {
-              const v = p.value.raw as { src: string; alt: string };
+              const v = p.value as ImageDataValue;
               return (
                 v.src === r.propertyValue?.url &&
                 v.alt === r.propertyValue?.altText
@@ -1030,7 +1022,7 @@ export class EntityProperty {
         });
         return rows
           .filter((r) =>
-            properties.some((p) => p.value.raw === r.propertyValue?.value)
+            properties.some((p) => p.value === r.propertyValue?.value)
           )
           .map((r) => r.propertyValueId);
       }
@@ -1041,7 +1033,7 @@ export class EntityProperty {
         });
         return rows
           .filter((r) =>
-            properties.some((p) => p.value.raw === r.propertyValue?.value)
+            properties.some((p) => p.value === r.propertyValue?.value)
           )
           .map((r) => r.propertyValueId);
       }
@@ -1052,7 +1044,7 @@ export class EntityProperty {
         });
         return rows
           .filter((r) =>
-            properties.some((p) => p.value.raw === r.propertyValue?.value)
+            properties.some((p) => p.value === r.propertyValue?.value)
           )
           .map((r) => r.propertyValueId);
       }

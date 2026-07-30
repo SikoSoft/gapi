@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { Entity } from "api-spec/models";
 import { DataType } from "api-spec/models/Entity";
+import { FormatterId } from "api-spec/models/Formatter";
 
 export const propertyConfigInclude = {
     defaultBooleanValue: {
@@ -83,7 +84,7 @@ const CommonPropertyConfigSchema = z.object({
   suffix: z.string(),
   hidden: z.boolean(),
   optionsOnly: z.boolean(),
-  formatters: z.array(z.string()).optional(),
+  formatters: z.array(z.nativeEnum(FormatterId)).optional(),
 });
 
 export const propertyConfigCreateSchema = z.discriminatedUnion("dataType", [
@@ -140,7 +141,7 @@ export const calculatedPropertyConfigCreateSchema = z.object({
   prefix: z.string(),
   suffix: z.string(),
   hidden: z.boolean(),
-  formatters: z.array(z.string()).optional(),
+  formatters: z.array(z.nativeEnum(FormatterId)).optional(),
   calculation: z.object({
     value1: CalculationOperand,
     value2: CalculationOperand,
@@ -154,7 +155,7 @@ export interface CalculatedPropertyConfigCreateBody {
   prefix: string;
   suffix: string;
   hidden: boolean;
-  formatters?: string[];
+  formatters?: FormatterId[];
   calculation: {
     value1: { propertyConfigId: number } | number;
     value2: { propertyConfigId: number } | number;

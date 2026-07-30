@@ -2,6 +2,7 @@ import { Result, err, ok } from "neverthrow";
 import { prisma } from "..";
 import { Logger } from "./Logger";
 import { Entity } from "api-spec/models";
+import { FormatterId } from "api-spec/models/Formatter";
 import {
   CalculatedPropertyConfigCreateBody,
   CalculatedPropertyConfigUpdateBody,
@@ -240,7 +241,7 @@ export class PropertyConfig {
 
   static async syncFormatters(
     propertyConfigId: number,
-    formatters: string[]
+    formatters: FormatterId[]
   ): Promise<Result<null, Error>> {
     try {
       await prisma.propertyConfigFormatter.deleteMany({

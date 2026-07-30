@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { AnalysisClassificationType, FactContext, FactOperation } from "api-spec/models/Fact";
 import { ListFilter } from "api-spec/models/List";
+import { FormatterId } from "api-spec/models/Formatter";
 
 const filterSchema = z.custom<ListFilter>();
 
@@ -16,12 +17,16 @@ const factContextSchema = z.discriminatedUnion("operation", [
 export const FactConfigBodySchema = z.object({
   name: z.string().min(1),
   context: factContextSchema,
+  formatters: z.array(z.nativeEnum(FormatterId)).optional(),
 });
 
 export const FactConfigUpdateBodySchema = z.object({
   name: z.string().min(1).optional(),
   context: factContextSchema.optional(),
+  formatters: z.array(z.nativeEnum(FormatterId)).optional(),
 });
 
-const prismaFactConfigValidator = Prisma.validator<Prisma.FactConfigDefaultArgs>()({});
+const prismaFactConfigValidator = Prisma.validator<Prisma.FactConfigDefaultArgs>()({
+  include: { formatters: true },
+});
 export type PrismaFactConfig = Prisma.FactConfigGetPayload<typeof prismaFactConfigValidator>;

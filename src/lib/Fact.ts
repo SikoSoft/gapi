@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { Result, err, ok } from "neverthrow";
 import { Fact as FactSpec, FactContext, FactOperation, FactResult } from "api-spec/models/Fact";
 import { DataType, EntityPropertyCalculation } from "api-spec/models/Entity";
+import { FormatterId } from "api-spec/models/Formatter";
 import { prisma } from "..";
 import { FACT_TTL_MS, FactResolveOptions } from "../models/FactCache";
 import { PrismaFactConfig } from "../models/Fact";
@@ -12,6 +13,9 @@ export type FactValue = string | number | boolean;
 
 export class Fact {
   static mapToSpec(row: PrismaFactConfig): FactSpec {
+    const formatters = (row.formatters ?? [])
+      .sort((a, b) => a.order - b.order)
+      .map(f => f.formatterId as FormatterId);
     return {
       id: row.id,
       name: row.name,
@@ -19,6 +23,7 @@ export class Fact {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       context: row.context as unknown as FactContext,
+      formatters,
     };
   }
 
@@ -27,6 +32,7 @@ export class Fact {
       const rows = await prisma.factConfig.findMany({
         where: { userId },
         orderBy: { createdAt: "asc" },
+        include: { formatters: true },
       });
       return ok(rows.map(Fact.mapToSpec));
     } catch (e) {
@@ -34,33 +40,66 @@ export class Fact {
     }
   }
 
-  static async create(userId: string, name: string, context: FactContext): Promise<Result<FactSpec, Error>> {
+  static async create(userId: string, name: string, context: FactContext, formatters?: FormatterId[]): Promise<Result<FactSpec, Error>> {
     try {
       const row = await prisma.factConfig.create({
         data: { userId, name, context: context as object },
+        include: { formatters: true },
       });
-      return ok(Fact.mapToSpec(row));
+      if (formatters !== undefined) {
+        const syncRes = await Fact.syncFormatters(row.id, formatters);
+        if (syncRes.isErr()) {
+          return err(syncRes.error);
+        }
+      }
+      const updated = await prisma.factConfig.findUnique({
+        where: { id: row.id },
+        include: { formatters: true },
+      });
+      return ok(Fact.mapToSpec(updated!));
     } catch (e) {
       return err(new Error("Failed to create fact", { cause: e }));
     }
   }
 
-  static async update(id: number, userId: string, name?: string, context?: FactContext): Promise<Result<FactSpec, Error>> {
+  static async update(id: number, userId: string, name?: string, context?: FactContext, formatters?: FormatterId[]): Promise<Result<FactSpec, Error>> {
     try {
       const row = await prisma.factConfig.findFirst({ where: { id, userId } });
       if (!row) {
         return err(new Error("Fact not found"));
       }
-      const updated = await prisma.factConfig.update({
+      await prisma.factConfig.update({
         where: { id },
         data: {
           ...(name !== undefined && { name }),
           ...(context !== undefined && { context: context as object }),
         },
       });
-      return ok(Fact.mapToSpec(updated));
+      if (formatters !== undefined) {
+        const syncRes = await Fact.syncFormatters(id, formatters);
+        if (syncRes.isErr()) {
+          return err(syncRes.error);
+        }
+      }
+      const updated = await prisma.factConfig.findUnique({
+        where: { id },
+        include: { formatters: true },
+      });
+      return ok(Fact.mapToSpec(updated!));
     } catch (e) {
       return err(new Error("Failed to update fact", { cause: e }));
+    }
+  }
+
+  static async syncFormatters(factConfigId: number, formatters: FormatterId[]): Promise<Result<null, Error>> {
+    try {
+      await prisma.factFormatter.deleteMany({ where: { factConfigId } });
+      await prisma.factFormatter.createMany({
+        data: formatters.map((formatterId, index) => ({ factConfigId, formatterId, order: index })),
+      });
+      return ok(null);
+    } catch (error) {
+      return err(new Error("Failed to sync fact formatters", { cause: error }));
     }
   }
 

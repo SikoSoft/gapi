@@ -1061,5 +1061,15 @@ model FactConfig {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  formatters FactFormatter[]
+
   @@index([userId])
+}
+
+model FactFormatter {
+  id           Int        @id @default(autoincrement())
+  factConfigId Int
+  formatterId  String     @db.VarChar(128)
+  order        Int
+  factConfig   FactConfig @relation(fields: [factConfigId], references: [id], onDelete: Cascade)
 }

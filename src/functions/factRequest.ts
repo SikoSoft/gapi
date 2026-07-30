@@ -52,7 +52,7 @@ export async function factRequestHandler(
 
       Logger.log(`[factRequest] POST userId=${userId} name=${parsed.data.name}`);
 
-      const createRes = await Fact.create(userId, parsed.data.name, parsed.data.context);
+      const createRes = await Fact.create(userId, parsed.data.name, parsed.data.context, parsed.data.formatters);
       if (createRes.isErr()) {
         context.error(createRes.error);
         return { status: 500 };
@@ -85,7 +85,7 @@ export async function factRequestHandler(
 
       Logger.log(`[factRequest] PUT userId=${userId} id=${id}`);
 
-      const updateRes = await Fact.update(id, userId, parsed.data.name, parsed.data.context);
+      const updateRes = await Fact.update(id, userId, parsed.data.name, parsed.data.context, parsed.data.formatters);
       if (updateRes.isErr()) {
         context.error(updateRes.error);
         return { status: updateRes.error.message === "Fact not found" ? 404 : 500 };

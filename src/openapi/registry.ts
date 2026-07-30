@@ -1408,6 +1408,7 @@ const FactSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   context: z.record(z.string(), z.unknown()),
+  formatters: z.array(z.string()).optional(),
 });
 
 const FactResultSchema = z.object({
@@ -1483,7 +1484,7 @@ registry.registerPath({
   path: "/factRequest",
   summary: "Create a saved fact config",
   ...auth,
-  request: { body: { content: { "application/json": { schema: z.object({ name: z.string(), context: z.record(z.string(), z.unknown()) }) } } } },
+  request: { body: { content: { "application/json": { schema: z.object({ name: z.string(), context: z.record(z.string(), z.unknown()), formatters: z.array(z.string()).optional() }) } } } },
   responses: {
     200: { description: "Created fact", ...json(z.object({ fact: FactSchema })) },
     400: badRequest,
@@ -1500,7 +1501,7 @@ registry.registerPath({
   ...auth,
   request: {
     params: z.object({ id: z.string() }),
-    body: { content: { "application/json": { schema: z.object({ name: z.string().optional(), context: z.record(z.string(), z.unknown()).optional() }) } } },
+    body: { content: { "application/json": { schema: z.object({ name: z.string().optional(), context: z.record(z.string(), z.unknown()).optional(), formatters: z.array(z.string()).optional() }) } } },
   },
   responses: {
     200: { description: "Updated fact", ...json(z.object({ fact: FactSchema })) },

@@ -198,7 +198,10 @@
               "formatters": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "ms_to_duration"
+                  ]
                 }
               },
               "dataType": {
@@ -269,7 +272,10 @@
               "formatters": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "ms_to_duration"
+                  ]
                 }
               },
               "dataType": {
@@ -342,7 +348,10 @@
               "formatters": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "ms_to_duration"
+                  ]
                 }
               },
               "dataType": {
@@ -413,7 +422,10 @@
               "formatters": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "ms_to_duration"
+                  ]
                 }
               },
               "dataType": {
@@ -508,7 +520,10 @@
               "formatters": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "ms_to_duration"
+                  ]
                 }
               },
               "dataType": {
@@ -579,7 +594,10 @@
               "formatters": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "ms_to_duration"
+                  ]
                 }
               },
               "dataType": {
@@ -634,7 +652,10 @@
           "formatters": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "ms_to_duration"
+              ]
             }
           },
           "calculation": {
@@ -4462,7 +4483,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -4533,7 +4557,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -4606,7 +4633,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -4677,7 +4707,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -4772,7 +4805,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -4843,7 +4879,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -4982,7 +5021,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -5053,7 +5095,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -5126,7 +5171,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -5197,7 +5245,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -5292,7 +5343,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -5363,7 +5417,10 @@
                       "formatters": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
                         }
                       },
                       "dataType": {
@@ -8934,6 +8991,12 @@
                             "additionalProperties": {
                               "nullable": true
                             }
+                          },
+                          "formatters": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
                           }
                         },
                         "required": [
@@ -9012,6 +9075,12 @@
                     "additionalProperties": {
                       "nullable": true
                     }
+                  },
+                  "formatters": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [
@@ -9052,6 +9121,12 @@
                           "type": "object",
                           "additionalProperties": {
                             "nullable": true
+                          }
+                        },
+                        "formatters": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
                           }
                         }
                       },
@@ -9119,6 +9194,12 @@
                     "additionalProperties": {
                       "nullable": true
                     }
+                  },
+                  "formatters": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -9155,6 +9236,12 @@
                           "type": "object",
                           "additionalProperties": {
                             "nullable": true
+                          }
+                        },
+                        "formatters": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
                           }
                         }
                       },

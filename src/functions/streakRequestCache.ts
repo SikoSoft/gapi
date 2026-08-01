@@ -4,6 +4,7 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
+import { Role } from "api-spec/models/Identity";
 import { SettingName } from "api-spec/models/Setting";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { Setting } from "../lib/Setting";
@@ -14,7 +15,7 @@ export async function streakRequestCache(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
-  if (!introspection.isLoggedIn) {
+  if (!introspection.isLoggedIn || !introspection.user.roles.includes(Role.DEBUG)) {
     return forbiddenReply();
   }
 

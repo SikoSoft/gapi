@@ -4,6 +4,7 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
+import { Role } from "api-spec/models/Identity";
 import { forbiddenReply, introspect, jsonReply } from "..";
 import { Fact } from "../lib/Fact";
 
@@ -12,7 +13,7 @@ export async function factCache(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const introspection = await introspect(request);
-  if (!introspection.isLoggedIn) {
+  if (!introspection.isLoggedIn || !introspection.user.roles.includes(Role.DEBUG)) {
     return forbiddenReply();
   }
 

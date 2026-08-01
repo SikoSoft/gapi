@@ -89,10 +89,10 @@ export async function chart(
           context.error(saveRes.error);
           return { status: 500 };
         }
-        return jsonReply({ segmentedData: res.value, chart: saveRes.value });
+        return jsonReply({ datasets: res.value, chart: saveRes.value });
       }
 
-      return jsonReply({ segmentedData: res.value });
+      return jsonReply({ datasets: res.value });
     }
 
     case HttpMethod.PUT: {

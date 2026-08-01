@@ -1,9 +1,9 @@
 import { Result, err, ok } from "neverthrow";
 import {
+  ChartDataset,
   ChartRequest,
   DataWindow,
   DataWindowType,
-  SegmentedDataPoint,
   SegmentationType,
   SegmentationTimeUnit,
 } from "api-spec/models/Statistic";
@@ -34,7 +34,7 @@ export class Chart {
   static async getChartData(
     request: ChartRequest,
     userId: string
-  ): Promise<Result<SegmentedDataPoint[], Error>> {
+  ): Promise<Result<ChartDataset[], Error>> {
     try {
       const resolvedWindow = Chart.resolveDataWindow(request.config.dataWindow);
       Logger.log(`[Chart] getChartData userId=${userId} dataPoints=${request.config.dataPoints.length} window=${resolvedWindow.start.toISOString()}..${resolvedWindow.end.toISOString()}`);
@@ -82,14 +82,11 @@ export class Chart {
         );
       }
 
-      const result: SegmentedDataPoint[] = [];
-      for (const segment of segments) {
-        for (const value of working.get(segment.key)!) {
-          result.push({ segment: segment.key, value: { value } });
-        }
-      }
+      const datasets: ChartDataset[] = request.config.dataPoints.map((_, i) => ({
+        data: segments.map(seg => ({ segment: seg.key, value: { value: working.get(seg.key)![i] } })),
+      }));
 
-      return ok(result);
+      return ok(datasets);
     } catch (error) {
       return err(new Error("Failed to compute chart data", { cause: error }));
     }

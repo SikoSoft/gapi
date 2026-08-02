@@ -12,7 +12,8 @@ import {
   FactContext,
   FactOperation,
 } from "api-spec/models/Fact";
-import { ListFilterTimeType } from "api-spec/models/List";
+import { ListFilter, ListFilterTimeType, ListFilterType } from "api-spec/models/List";
+import { PropertyDataValue } from "api-spec/models/Entity";
 import { prisma } from "..";
 import {
   AssistSegment,
@@ -82,9 +83,12 @@ export class Chart {
         );
       }
 
-      const datasets: ChartDataset[] = request.config.dataPoints.map((_, i) => ({
-        data: segments.map(seg => ({ segment: seg.key, value: { value: working.get(seg.key)![i] } })),
-      }));
+      const datasets: ChartDataset[] = await Promise.all(
+        request.config.dataPoints.map(async (dp, i) => ({
+          label: await Chart.getChartLabelFromDatapoint(dp, userId),
+          data: segments.map(seg => ({ segment: seg.key, value: { value: working.get(seg.key)![i] } })),
+        }))
+      );
 
       return ok(datasets);
     } catch (error) {
@@ -497,6 +501,82 @@ export class Chart {
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
+  }
+
+  private static async getChartLabelFromDatapoint(
+    dataPoint: FactContext,
+    userId: string
+  ): Promise<string> {
+    switch (dataPoint.operation) {
+      case FactOperation.ENTITY_COUNT:
+        return Chart.getLabelFromFilter(dataPoint.filter, "Count");
+      case FactOperation.UNIQUE_TAG_COUNT:
+        return Chart.getLabelFromFilter(dataPoint.filter, "Unique Tags");
+      case FactOperation.MEDAL_COUNT:
+        return dataPoint.series;
+      case FactOperation.ANALYSIS_CLASSIFICATION:
+        return Chart.camelToTitleCase(dataPoint.analysisType);
+      case FactOperation.PROPERTY_SUM: {
+        try {
+          const config = await prisma.propertyConfig.findFirst({
+            where: { id: dataPoint.propertyConfigId, userId },
+            select: { name: true },
+          });
+          return config?.name ?? "Sum";
+        } catch {
+          return "Sum";
+        }
+      }
+    }
+  }
+
+  private static getLabelFromFilter(filter: ListFilter, fallback: string): string {
+    if (filter.properties && filter.properties.length > 0) {
+      const values = filter.properties
+        .map(p => Chart.formatPropertyDataValue(p.value))
+        .filter(Boolean);
+      if (values.length > 0) {
+        return values.join(", ");
+      }
+    }
+
+    const allOf = filter.tagging?.[ListFilterType.CONTAINS_ALL_OF] ?? [];
+    if (allOf.length > 0) {
+      return allOf.join(", ");
+    }
+
+    const oneOf = filter.tagging?.[ListFilterType.CONTAINS_ONE_OF] ?? [];
+    if (oneOf.length > 0) {
+      return oneOf.join(", ");
+    }
+
+    return fallback;
+  }
+
+  private static formatPropertyDataValue(value: PropertyDataValue): string {
+    if (value === null || value === undefined) {
+      return "";
+    }
+    if (typeof value === "boolean") {
+      return value ? "Yes" : "No";
+    }
+    if (typeof value === "number") {
+      return String(value);
+    }
+    if (value instanceof Date) {
+      return value.toISOString().slice(0, 10);
+    }
+    if (typeof value === "string") {
+      return value;
+    }
+    if (typeof value === "object" && "alt" in value) {
+      return value.alt;
+    }
+    return "";
+  }
+
+  private static camelToTitleCase(str: string): string {
+    return str.replace(/([A-Z])/g, " $1").replace(/^[a-z]/, c => c.toUpperCase());
   }
 
   // Every FactOperation must have a case here. A missing case returns undefined,

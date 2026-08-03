@@ -1270,7 +1270,7 @@ registry.registerPath({
   ...auth,
   request: { body: { content: { "application/json": { schema: ChartRequestBody } } } },
   responses: {
-    200: { description: "Chart data", ...json(z.object({ segments: z.array(z.record(z.string(), z.unknown())) })) },
+    200: { description: "Chart data", ...json(z.object({ datasets: z.array(z.object({ label: z.string(), formatters: z.array(z.string()), data: z.array(z.object({ segment: z.string(), value: z.object({ value: z.union([z.number(), z.string(), z.null()]) }) })) })), chart: z.object({ id: z.number(), name: z.string(), config: z.record(z.string(), z.unknown()), userId: z.string(), createdAt: z.string(), updatedAt: z.string() }).optional() })) },
     403: forbidden,
     500: serverError,
   },

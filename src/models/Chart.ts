@@ -4,12 +4,15 @@ import {
   ChartConfigType,
   ChartConfigV1,
   ChartConfigV2,
+  ChartConfigV3,
   ChartVersion,
   DataWindowType,
+  FormattedDataPointRequest,
   SegmentationType,
   SegmentationTimeUnit,
 } from "api-spec/models/Statistic";
 import { AnalysisClassificationType } from "api-spec/models/Fact";
+import { FormatterId } from "api-spec/models/Formatter";
 
 export interface ChartSegment {
   key: string;
@@ -29,7 +32,11 @@ export type ChartRequestBodyConfigV2 = Omit<ChartConfigV2, "dataWindow"> & {
   dataWindow: ChartRequestBodyDataWindow;
 };
 
-export type ChartRequestBodyConfig = ChartRequestBodyConfigV1 | ChartRequestBodyConfigV2;
+export type ChartRequestBodyConfigV3 = Omit<ChartConfigV3, "dataWindow"> & {
+  dataWindow: ChartRequestBodyDataWindow;
+};
+
+export type ChartRequestBodyConfig = ChartRequestBodyConfigV1 | ChartRequestBodyConfigV2 | ChartRequestBodyConfigV3;
 
 export type ChartRequestBody = {
   config: ChartRequestBodyConfig;
@@ -63,6 +70,10 @@ const segmentationSchema = z.object({
 
 const dataPointsSchema = z.array(z.record(z.string(), z.unknown()));
 
+const v3DataPointSchema = z.array(
+  z.object({ formatters: z.array(z.nativeEnum(FormatterId)) }).passthrough()
+);
+
 export const ChartRequestBodySchema = z.object({
   config: z.union([
     z.object({
@@ -77,6 +88,13 @@ export const ChartRequestBodySchema = z.object({
       dataWindow: dataWindowSchema,
       segmentation: segmentationSchema,
       dataPoints: dataPointsSchema,
+    }),
+    z.object({
+      version: z.literal(ChartVersion.V3),
+      type: z.nativeEnum(ChartConfigType),
+      dataWindow: dataWindowSchema,
+      segmentation: segmentationSchema,
+      dataPoints: v3DataPointSchema,
     }),
   ]),
   name: z.string().optional(),

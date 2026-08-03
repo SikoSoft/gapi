@@ -4,6 +4,7 @@ import {
   ChartRequest,
   DataWindow,
   DataWindowType,
+  FormattedDataPointRequest,
   SegmentationType,
   SegmentationTimeUnit,
 } from "api-spec/models/Statistic";
@@ -87,6 +88,7 @@ export class Chart {
         request.config.dataPoints.map(async (dp, i) => ({
           label: await Chart.getChartLabelFromDatapoint(dp, userId),
           data: segments.map(seg => ({ segment: seg.key, value: { value: working.get(seg.key)![i] } })),
+          formatters: (dp as FormattedDataPointRequest).formatters ?? [],
         }))
       );
 

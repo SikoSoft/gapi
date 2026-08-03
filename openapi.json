@@ -993,6 +993,130 @@
                   "segmentation",
                   "dataPoints"
                 ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "number",
+                    "enum": [
+                      3
+                    ]
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "bar",
+                      "line",
+                      "scatter",
+                      "bubble",
+                      "pie",
+                      "doughnut",
+                      "polarArea",
+                      "radar"
+                    ]
+                  },
+                  "dataWindow": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "custom"
+                            ]
+                          },
+                          "start": {
+                            "type": "string"
+                          },
+                          "end": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "start",
+                          "end"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "yearToDate",
+                              "monthToDate",
+                              "weekToDate",
+                              "last365Days",
+                              "last30Days",
+                              "last7Days"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ]
+                      }
+                    ]
+                  },
+                  "segmentation": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "time"
+                        ]
+                      },
+                      "unit": {
+                        "type": "string",
+                        "enum": [
+                          "hour",
+                          "day",
+                          "week",
+                          "month",
+                          "year"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "unit"
+                    ]
+                  },
+                  "dataPoints": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "formatters": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "ms_to_duration"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "formatters"
+                      ],
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "version",
+                  "type",
+                  "dataWindow",
+                  "segmentation",
+                  "dataPoints"
+                ]
               }
             ]
           },
@@ -7921,18 +8045,101 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "segments": {
+                    "datasets": {
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "additionalProperties": {
-                          "nullable": true
-                        }
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "formatters": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "data": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "segment": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "object",
+                                  "properties": {
+                                    "value": {
+                                      "anyOf": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "nullable": true
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "value"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "segment",
+                                "value"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "label",
+                          "formatters",
+                          "data"
+                        ]
                       }
+                    },
+                    "chart": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "nullable": true
+                          }
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "config",
+                        "userId",
+                        "createdAt",
+                        "updatedAt"
+                      ]
                     }
                   },
                   "required": [
-                    "segments"
+                    "datasets"
                   ]
                 }
               }

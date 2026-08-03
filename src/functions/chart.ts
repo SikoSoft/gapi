@@ -23,6 +23,9 @@ function buildDataWindow(body: ChartRequestBody): DataWindow {
 
 function buildConfig(body: ChartRequestBody): ChartConfig {
   const dataWindow = buildDataWindow(body);
+  if (body.config.version === ChartVersion.V3) {
+    return { ...body.config, dataWindow };
+  }
   if (body.config.version === ChartVersion.V2) {
     return { ...body.config, dataWindow };
   }

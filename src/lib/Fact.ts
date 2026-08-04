@@ -1,11 +1,11 @@
 import { createHash } from "crypto";
 import { Result, err, ok } from "neverthrow";
-import { Fact as FactSpec, FactContext, FactOperation, FactResult } from "api-spec/models/Fact";
+import { Fact as FactSpec, FactContext, FactOperation, FactResult, ParseStrategy } from "api-spec/models/Fact";
 import { DataType, EntityPropertyCalculation } from "api-spec/models/Entity";
 import { FormatterId } from "api-spec/models/Formatter";
 import { prisma } from "..";
 import { FACT_TTL_MS, FactResolveOptions } from "../models/FactCache";
-import { PrismaFactConfig } from "../models/Fact";
+import { PARSE_STRATEGY_CONFIG, PrismaFactConfig } from "../models/Fact";
 import { EntityListQueryBuilder } from "./EntityListQueryBuilder";
 import { Logger } from "./Logger";
 
@@ -404,6 +404,47 @@ export class Fact {
         if (entityIds.length === 0) {
           Logger.log(`[Fact] compute PROPERTY_SUM userId=${userId} propertyConfigId=${context.propertyConfigId} result=0 (no entities)`);
           return 0;
+        }
+
+        if (context.parseStrategy) {
+          const strategyConfig = PARSE_STRATEGY_CONFIG[context.parseStrategy];
+          const propertyType = await prisma.propertyConfig.findUnique({
+            where: { id: context.propertyConfigId },
+            select: { dataType: true },
+          });
+          const isLongText = propertyType?.dataType === DataType.LONG_TEXT;
+          type SumRow = { sum: bigint | null };
+          let rows: SumRow[];
+          if (isLongText) {
+            rows = await prisma.$queryRaw<SumRow[]>`
+              SELECT COALESCE(SUM(
+                CASE WHEN ltpv.value ~ ${strategyConfig.matchPattern}
+                  THEN CAST(REGEXP_REPLACE(ltpv.value, ${strategyConfig.capturePattern}, '\\1') AS INTEGER)
+                  ELSE 0
+                END
+              ), 0) AS sum
+              FROM "EntityLongTextProperty" eltp
+              JOIN "LongTextPropertyValue" ltpv ON ltpv.id = eltp."propertyValueId"
+              WHERE eltp."entityId" = ANY(${entityIds})
+                AND eltp."propertyConfigId" = ${context.propertyConfigId}
+            `;
+          } else {
+            rows = await prisma.$queryRaw<SumRow[]>`
+              SELECT COALESCE(SUM(
+                CASE WHEN stpv.value ~ ${strategyConfig.matchPattern}
+                  THEN CAST(REGEXP_REPLACE(stpv.value, ${strategyConfig.capturePattern}, '\\1') AS INTEGER)
+                  ELSE 0
+                END
+              ), 0) AS sum
+              FROM "EntityShortTextProperty" estp
+              JOIN "ShortTextPropertyValue" stpv ON stpv.id = estp."propertyValueId"
+              WHERE estp."entityId" = ANY(${entityIds})
+                AND estp."propertyConfigId" = ${context.propertyConfigId}
+            `;
+          }
+          const parseSum = Number(rows[0]?.sum ?? 0);
+          Logger.log(`[Fact] compute PROPERTY_SUM userId=${userId} propertyConfigId=${context.propertyConfigId} parseStrategy=${context.parseStrategy} result=${parseSum}`);
+          return parseSum;
         }
 
         const propertyConfig = await prisma.propertyConfig.findUnique({

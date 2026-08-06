@@ -9,6 +9,10 @@ export const PARSE_STRATEGY_CONFIG: Record<ParseStrategy, { matchPattern: string
     matchPattern: '^[0-9]',
     capturePattern: '^([0-9]+).*$',
   },
+  [ParseStrategy.LEADING_NUMBER]: {
+    matchPattern: '^[0-9]',
+    capturePattern: '^([0-9]+(?:\\.[0-9]+)?).*$',
+  },
 };
 
 const filterSchema = z.custom<ListFilter>();

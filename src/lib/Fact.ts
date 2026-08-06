@@ -413,13 +413,13 @@ export class Fact {
             select: { dataType: true },
           });
           const isLongText = propertyType?.dataType === DataType.LONG_TEXT;
-          type SumRow = { sum: bigint | null };
+          type SumRow = { sum: number | null };
           let rows: SumRow[];
           if (isLongText) {
             rows = await prisma.$queryRaw<SumRow[]>`
               SELECT COALESCE(SUM(
                 CASE WHEN ltpv.value ~ ${strategyConfig.matchPattern}
-                  THEN CAST(REGEXP_REPLACE(ltpv.value, ${strategyConfig.capturePattern}, '\\1') AS INTEGER)
+                  THEN CAST(REGEXP_REPLACE(ltpv.value, ${strategyConfig.capturePattern}, '\\1') AS FLOAT8)
                   ELSE 0
                 END
               ), 0) AS sum
@@ -432,7 +432,7 @@ export class Fact {
             rows = await prisma.$queryRaw<SumRow[]>`
               SELECT COALESCE(SUM(
                 CASE WHEN stpv.value ~ ${strategyConfig.matchPattern}
-                  THEN CAST(REGEXP_REPLACE(stpv.value, ${strategyConfig.capturePattern}, '\\1') AS INTEGER)
+                  THEN CAST(REGEXP_REPLACE(stpv.value, ${strategyConfig.capturePattern}, '\\1') AS FLOAT8)
                   ELSE 0
                 END
               ), 0) AS sum
@@ -442,7 +442,7 @@ export class Fact {
                 AND estp."propertyConfigId" = ${context.propertyConfigId}
             `;
           }
-          const parseSum = Number(rows[0]?.sum ?? 0);
+          const parseSum = rows[0]?.sum ?? 0;
           Logger.log(`[Fact] compute PROPERTY_SUM userId=${userId} propertyConfigId=${context.propertyConfigId} parseStrategy=${context.parseStrategy} result=${parseSum}`);
           return parseSum;
         }

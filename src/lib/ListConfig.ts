@@ -135,6 +135,7 @@ export class ListConfig {
       const thisQuery = new EntityListQueryBuilder();
       thisQuery.setUserId(userId);
       thisQuery.setFilter(listConfig.filter);
+      await thisQuery.resolvePropertyConfigTypes();
       const thisListIds = await thisQuery.runIdsQuery();
 
       if (thisListIds.length > 0) {
@@ -152,6 +153,7 @@ export class ListConfig {
           const otherQuery = new EntityListQueryBuilder();
           otherQuery.setUserId(userId);
           otherQuery.setFilter(otherListConfig.filter);
+          await otherQuery.resolvePropertyConfigTypes();
           const otherIds = await otherQuery.runIdsQuery();
           otherIds.forEach((id) => otherEntityIds.add(id));
         }
@@ -702,6 +704,20 @@ export class ListConfig {
             });
             break;
           }
+          case Entity.DataType.FLOAT: {
+            const floatValue = await prisma.floatPropertyValue.create({
+              data: { value: property.value as number },
+            });
+            await prisma.listFilterFloatProperty.create({
+              data: {
+                listConfigId,
+                propertyConfigId: property.propertyId,
+                propertyValueId: floatValue.id,
+                matchUnset: property.matchUnset ?? false,
+              },
+            });
+            break;
+          }
           case Entity.DataType.LONG_TEXT: {
             const longTextValue = await prisma.longTextPropertyValue.create({
               data: { value: property.value as string },
@@ -914,6 +930,14 @@ export class ListConfig {
       });
     });
     data.intProperties.forEach((p) => {
+      properties.push({
+        propertyId: p.propertyConfigId,
+        value: p.propertyValue.value,
+        operation: List.TextType.CONTAINS,
+        matchUnset: p.matchUnset,
+      });
+    });
+    data.floatProperties.forEach((p) => {
       properties.push({
         propertyId: p.propertyConfigId,
         value: p.propertyValue.value,

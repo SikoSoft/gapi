@@ -72,6 +72,17 @@ export class EntityProperty {
         });
         return rows.map((r) => r.entityId);
       }
+      case DataType.FLOAT: {
+        const rows = await prisma.entityFloatProperty.findMany({
+          where: {
+            entityId: { in: entityIds },
+            propertyConfigId,
+            propertyValue: { value: value as number },
+          },
+          select: { entityId: true },
+        });
+        return rows.map((r) => r.entityId);
+      }
       case DataType.SHORT_TEXT: {
         const rows = await prisma.entityShortTextProperty.findMany({
           where: {
@@ -131,6 +142,14 @@ export class EntityProperty {
       }
       case DataType.INT: {
         const row = await prisma.entityIntProperty.findFirst({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        if (!row) { return undefined; }
+        return row.propertyValue.value;
+      }
+      case DataType.FLOAT: {
+        const row = await prisma.entityFloatProperty.findFirst({
           where: { entityId, propertyConfigId },
           include: { propertyValue: true },
         });
@@ -401,6 +420,14 @@ export class EntityProperty {
             where: { id: { in: ids } },
           });
           break;
+        case DataType.FLOAT:
+          await prisma.entityFloatProperty.deleteMany({
+            where: { propertyValueId: { in: ids }, entityId },
+          });
+          await prisma.floatPropertyValue.deleteMany({
+            where: { id: { in: ids } },
+          });
+          break;
         case DataType.SHORT_TEXT:
           await prisma.entityShortTextProperty.deleteMany({
             where: { propertyValueId: { in: ids }, entityId },
@@ -454,6 +481,10 @@ export class EntityProperty {
         });
       case DataType.INT:
         return prisma.entityIntProperty.count({
+          where: { entityId, propertyConfigId },
+        });
+      case DataType.FLOAT:
+        return prisma.entityFloatProperty.count({
           where: { entityId, propertyConfigId },
         });
       case DataType.SHORT_TEXT:
@@ -521,6 +552,9 @@ export class EntityProperty {
           break;
         case DataType.INT:
           await EntityProperty.syncIntProperty(entityId, property);
+          break;
+        case DataType.FLOAT:
+          await EntityProperty.syncFloatProperty(entityId, property);
           break;
         case DataType.SHORT_TEXT:
           await EntityProperty.syncShortTextProperty(entityId, property);
@@ -667,6 +701,49 @@ export class EntityProperty {
       return ok(null);
     } catch (error) {
       Logger.error("Error syncing int property:", error);
+      return err(error);
+    }
+  }
+
+  static async syncFloatProperty(
+    entityId: number,
+    property: ApiEntityProperty
+  ): Promise<Result<null, Error>> {
+    try {
+      const value = property.value as number;
+
+      if (!property.id) {
+        const floatPropertyValue = await prisma.floatPropertyValue.create({
+          data: {
+            value,
+          },
+        });
+
+        await prisma.entityFloatProperty.create({
+          data: {
+            entityId,
+            propertyConfigId: property.propertyConfigId,
+            propertyValueId: floatPropertyValue.id,
+            order: property.order,
+          },
+        });
+
+        return ok(null);
+      }
+
+      await prisma.floatPropertyValue.update({
+        where: { id: property.id },
+        data: {
+          value,
+          entityPropertyValue: {
+            update: { order: property.order },
+          },
+        },
+      });
+
+      return ok(null);
+    } catch (error) {
+      Logger.error("Error syncing float property:", error);
       return err(error);
     }
   }
@@ -933,6 +1010,19 @@ export class EntityProperty {
           });
           break;
         }
+        case DataType.FLOAT: {
+          const rows = await prisma.entityFloatProperty.findMany({
+            where: { entityId, propertyConfigId },
+            select: { propertyValueId: true },
+          });
+          await prisma.entityFloatProperty.deleteMany({
+            where: { entityId, propertyConfigId },
+          });
+          await prisma.floatPropertyValue.deleteMany({
+            where: { id: { in: rows.map((r) => r.propertyValueId) } },
+          });
+          break;
+        }
         case DataType.SHORT_TEXT: {
           const rows = await prisma.entityShortTextProperty.findMany({
             where: { entityId, propertyConfigId },
@@ -1026,6 +1116,17 @@ export class EntityProperty {
           )
           .map((r) => r.propertyValueId);
       }
+      case DataType.FLOAT: {
+        const rows = await prisma.entityFloatProperty.findMany({
+          where: { entityId, propertyConfigId },
+          include: { propertyValue: true },
+        });
+        return rows
+          .filter((r) =>
+            properties.some((p) => p.value === r.propertyValue?.value)
+          )
+          .map((r) => r.propertyValueId);
+      }
       case DataType.SHORT_TEXT: {
         const rows = await prisma.entityShortTextProperty.findMany({
           where: { entityId, propertyConfigId },
@@ -1086,6 +1187,12 @@ export class EntityProperty {
       case DataType.INT:
         await prisma.entityIntProperty.deleteMany({ where });
         await prisma.intPropertyValue.deleteMany({
+          where: { id: { in: propertyValueIds } },
+        });
+        break;
+      case DataType.FLOAT:
+        await prisma.entityFloatProperty.deleteMany({ where });
+        await prisma.floatPropertyValue.deleteMany({
           where: { id: { in: propertyValueIds } },
         });
         break;
@@ -1346,6 +1453,12 @@ export class EntityProperty {
             break;
           case DataType.INT:
             await prisma.entityIntProperty.updateMany({
+              where,
+              data: { order: property.order },
+            });
+            break;
+          case DataType.FLOAT:
+            await prisma.entityFloatProperty.updateMany({
               where,
               data: { order: property.order },
             });

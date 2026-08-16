@@ -230,6 +230,7 @@ export class Chart {
         end: resolvedWindow.end.toISOString(),
       },
     });
+    await builder.resolvePropertyConfigTypes();
     const entityIds = await builder.runIdsQuery();
 
     if (entityIds.length === 0) {

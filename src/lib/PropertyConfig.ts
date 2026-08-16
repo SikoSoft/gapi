@@ -18,6 +18,7 @@ import {
   CommonEntityPropertyConfig,
   DataType,
   DateDataValue,
+  FloatDataValue,
   ImageDataValue,
   IntDataValue,
   LongTextDataValue,
@@ -230,6 +231,17 @@ export class PropertyConfig {
           })),
           skipDuplicates: true,
         });
+      } else if (dataType === DataType.FLOAT) {
+        await prisma.optionsFloatOption.deleteMany({
+          where: { propertyConfigId },
+        });
+        await prisma.optionsFloatOption.createMany({
+          data: (options as number[]).map((value) => ({
+            propertyConfigId,
+            value,
+          })),
+          skipDuplicates: true,
+        });
       }
       return ok(null);
     } catch (error) {
@@ -321,6 +333,8 @@ export class PropertyConfig {
           return PropertyConfig.syncImageDefaultValue(propertyConfig);
         case DataType.INT:
           return PropertyConfig.syncIntDefaultValue(propertyConfig);
+        case DataType.FLOAT:
+          return PropertyConfig.syncFloatDefaultValue(propertyConfig);
         case DataType.LONG_TEXT:
           return PropertyConfig.syncLongTextDefaultValue(propertyConfig);
         case DataType.SHORT_TEXT:
@@ -469,6 +483,47 @@ export class PropertyConfig {
     } catch (error) {
       return err(
         new Error("Failed to update property config default int value", {
+          cause: error,
+        })
+      );
+    }
+  }
+
+  static async syncFloatDefaultValue(
+    propertyConfig: Entity.EntityPropertyConfig
+  ): Promise<Result<Entity.EntityPropertyConfig | null, Error>> {
+    Logger.log("Syncing float default value:", propertyConfig);
+    try {
+      const value = propertyConfig.defaultValue as FloatDataValue;
+      const existingDefault =
+        await prisma.propertyConfigFloatDefaultValue.findUnique({
+          where: { propertyConfigId: propertyConfig.id },
+        });
+
+      if (existingDefault) {
+        await prisma.floatPropertyValue.update({
+          where: { id: existingDefault.propertyValueId },
+          data: { value },
+        });
+
+        return ok(null);
+      }
+
+      const floatValue = await prisma.floatPropertyValue.create({
+        data: {
+          value,
+        },
+      });
+
+      await prisma.propertyConfigFloatDefaultValue.create({
+        data: {
+          propertyConfigId: propertyConfig.id,
+          propertyValueId: floatValue.id,
+        },
+      });
+    } catch (error) {
+      return err(
+        new Error("Failed to update property config default float value", {
           cause: error,
         })
       );
@@ -859,6 +914,9 @@ export class PropertyConfig {
     if (data.optionsInt.length) {
       options = data.optionsInt.map((option) => option.value);
     }
+    if (data.optionsFloat.length) {
+      options = data.optionsFloat.map((option) => option.value);
+    }
     return options;
   }
 
@@ -921,6 +979,12 @@ export class PropertyConfig {
           ...commonConfig,
           dataType: DataType.INT,
           defaultValue: data?.defaultIntValue?.intValue?.value || 0,
+        };
+      case DataType.FLOAT:
+        return {
+          ...commonConfig,
+          dataType: DataType.FLOAT,
+          defaultValue: data?.defaultFloatValue?.floatValue?.value || 0,
         };
       case DataType.IMAGE:
         return {

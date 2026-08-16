@@ -431,6 +431,80 @@
               "dataType": {
                 "type": "string",
                 "enum": [
+                  "float"
+                ]
+              },
+              "defaultValue": {
+                "type": "number"
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": [
+              "performDriftCheck",
+              "timeZone",
+              "name",
+              "required",
+              "repeat",
+              "allowed",
+              "prefix",
+              "suffix",
+              "hidden",
+              "optionsOnly",
+              "dataType",
+              "defaultValue",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "performDriftCheck": {
+                "type": "boolean"
+              },
+              "timeZone": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "required": {
+                "type": "number"
+              },
+              "repeat": {
+                "type": "number"
+              },
+              "allowed": {
+                "type": "number"
+              },
+              "prefix": {
+                "type": "string"
+              },
+              "suffix": {
+                "type": "string"
+              },
+              "hidden": {
+                "type": "boolean"
+              },
+              "optionsOnly": {
+                "type": "boolean"
+              },
+              "formatters": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "ms_to_duration"
+                  ]
+                }
+              },
+              "dataType": {
+                "type": "string",
+                "enum": [
                   "image"
                 ]
               },
@@ -4840,6 +4914,80 @@
                       "dataType": {
                         "type": "string",
                         "enum": [
+                          "float"
+                        ]
+                      },
+                      "defaultValue": {
+                        "type": "number"
+                      },
+                      "options": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "required": [
+                      "performDriftCheck",
+                      "timeZone",
+                      "name",
+                      "required",
+                      "repeat",
+                      "allowed",
+                      "prefix",
+                      "suffix",
+                      "hidden",
+                      "optionsOnly",
+                      "dataType",
+                      "defaultValue",
+                      "options"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "performDriftCheck": {
+                        "type": "boolean"
+                      },
+                      "timeZone": {
+                        "type": "number"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "required": {
+                        "type": "number"
+                      },
+                      "repeat": {
+                        "type": "number"
+                      },
+                      "allowed": {
+                        "type": "number"
+                      },
+                      "prefix": {
+                        "type": "string"
+                      },
+                      "suffix": {
+                        "type": "string"
+                      },
+                      "hidden": {
+                        "type": "boolean"
+                      },
+                      "optionsOnly": {
+                        "type": "boolean"
+                      },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
+                        }
+                      },
+                      "dataType": {
+                        "type": "string",
+                        "enum": [
                           "image"
                         ]
                       },
@@ -5305,6 +5453,80 @@
                         "type": "string",
                         "enum": [
                           "int"
+                        ]
+                      },
+                      "defaultValue": {
+                        "type": "number"
+                      },
+                      "options": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "required": [
+                      "performDriftCheck",
+                      "timeZone",
+                      "name",
+                      "required",
+                      "repeat",
+                      "allowed",
+                      "prefix",
+                      "suffix",
+                      "hidden",
+                      "optionsOnly",
+                      "dataType",
+                      "defaultValue",
+                      "options"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "performDriftCheck": {
+                        "type": "boolean"
+                      },
+                      "timeZone": {
+                        "type": "number"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "required": {
+                        "type": "number"
+                      },
+                      "repeat": {
+                        "type": "number"
+                      },
+                      "allowed": {
+                        "type": "number"
+                      },
+                      "prefix": {
+                        "type": "string"
+                      },
+                      "suffix": {
+                        "type": "string"
+                      },
+                      "hidden": {
+                        "type": "boolean"
+                      },
+                      "optionsOnly": {
+                        "type": "boolean"
+                      },
+                      "formatters": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "ms_to_duration"
+                          ]
+                        }
+                      },
+                      "dataType": {
+                        "type": "string",
+                        "enum": [
+                          "float"
                         ]
                       },
                       "defaultValue": {

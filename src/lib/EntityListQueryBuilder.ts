@@ -33,6 +33,7 @@ export class EntityListQueryBuilder {
   private isCustomSort: boolean = false;
   private systemMode: boolean = false;
   private calculatedPropertyConfigs: ResolvedCalculatedConfig[] = [];
+  private propertyConfigTypes: Map<number, DataType> = new Map();
 
   constructor() {}
 
@@ -64,6 +65,25 @@ export class EntityListQueryBuilder {
 
   setCalculatedPropertyConfigs(configs: ResolvedCalculatedConfig[]) {
     this.calculatedPropertyConfigs = configs;
+  }
+
+  setPropertyConfigTypes(types: Map<number, DataType>) {
+    this.propertyConfigTypes = types;
+  }
+
+  async resolvePropertyConfigTypes(): Promise<void> {
+    const properties = this.filter.properties;
+    if (!properties || properties.length === 0) {
+      return;
+    }
+    const ids = properties.map((p) => p.propertyId);
+    const configs = await prisma.propertyConfig.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, dataType: true },
+    });
+    this.propertyConfigTypes = new Map(
+      configs.map((c) => [c.id, c.dataType as DataType])
+    );
   }
 
   buildQuery(countOnly: boolean = false): string {
@@ -369,6 +389,8 @@ export class EntityListQueryBuilder {
     switch (dataType) {
       case DataType.INT:
         return `(SELECT ipv."value" FROM "EntityIntProperty" eip JOIN "IntPropertyValue" ipv ON eip."propertyValueId" = ipv."id" WHERE eip."entityId" = e."id" AND eip."propertyConfigId" = ${id} LIMIT 1)`;
+      case DataType.FLOAT:
+        return `(SELECT fpv."value" FROM "EntityFloatProperty" efp JOIN "FloatPropertyValue" fpv ON efp."propertyValueId" = fpv."id" WHERE efp."entityId" = e."id" AND efp."propertyConfigId" = ${id} LIMIT 1)`;
       case DataType.DATE:
         return `(SELECT (EXTRACT(EPOCH FROM dpv."value") * 1000)::bigint FROM "EntityDateProperty" edp JOIN "DatePropertyValue" dpv ON edp."propertyValueId" = dpv."id" WHERE edp."entityId" = e."id" AND edp."propertyConfigId" = ${id} LIMIT 1)`;
       default:
@@ -596,6 +618,12 @@ export class EntityListQueryBuilder {
           )
           AND NOT EXISTS (
             SELECT 1
+            FROM "EntityFloatProperty" efp2
+            WHERE efp2."entityId" = e."id"
+            AND efp2."propertyConfigId" = {${propIdParam}}::int
+          )
+          AND NOT EXISTS (
+            SELECT 1
             FROM "EntityLongTextProperty" eltp2
             WHERE eltp2."entityId" = e."id"
             AND eltp2."propertyConfigId" = {${propIdParam}}::int
@@ -628,6 +656,22 @@ export class EntityListQueryBuilder {
 
     if (typeof value === "number") {
       this.registerParam(propValParam, value);
+      const isFloat = this.propertyConfigTypes.get(prop.propertyId) === DataType.FLOAT;
+      if (isFloat) {
+        return `
+          AND (
+            EXISTS (
+              SELECT 1
+              FROM "EntityFloatProperty" efp
+              JOIN "FloatPropertyValue" fpv ON efp."propertyValueId" = fpv."id"
+              WHERE efp."entityId" = e."id"
+              AND efp."propertyConfigId" = {${propIdParam}}::int
+              AND fpv."value" = {${propValParam}}::float8
+            )
+            ${notSetClause}
+          )
+        `;
+      }
       return `
         AND (
           EXISTS (

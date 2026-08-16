@@ -425,6 +425,8 @@ export class Entity {
       listQuery.setCalculatedPropertyConfigs(calculatedConfigs);
     }
 
+    await listQuery.resolvePropertyConfigTypes();
+
     try {
       const total = await listQuery.runCountQuery();
       const entities = (await listQuery.runQuery()).map((entity) =>

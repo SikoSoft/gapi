@@ -62,6 +62,15 @@ model IntPropertyValue {
   listFilterPropertyValue    ListFilterIntProperty?
 }
 
+model FloatPropertyValue {
+  id    Int   @id @default(autoincrement())
+  value Float
+
+  propertyConfigDefaultValue PropertyConfigFloatDefaultValue?
+  entityPropertyValue        EntityFloatProperty?
+  listFilterPropertyValue    ListFilterFloatProperty?
+}
+
 model LongTextPropertyValue {
   id    Int    @id @default(autoincrement())
   value String
@@ -110,6 +119,14 @@ model PropertyConfigIntDefaultValue {
 
   propertyConfig PropertyConfig   @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
   intValue       IntPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model PropertyConfigFloatDefaultValue {
+  propertyValueId  Int @unique
+  propertyConfigId Int @unique
+
+  propertyConfig PropertyConfig     @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+  floatValue     FloatPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
 model PropertyConfigLongTextDefaultValue {
@@ -184,6 +201,20 @@ model EntityIntProperty {
   @@index([entityId, order], map: "idx_entityintprop_entityid_order")
 }
 
+model EntityFloatProperty {
+  id               Int @id @default(autoincrement())
+  entityId         Int
+  propertyConfigId Int
+  propertyValueId  Int @unique
+  order            Int @default(0)
+
+  entity         Entity             @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  propertyValue  FloatPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+  propertyConfig PropertyConfig     @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+
+  @@index([entityId, order], map: "idx_entityfloatprop_entityid_order")
+}
+
 model EntityLongTextProperty {
   id               Int @id @default(autoincrement())
   entityId         Int
@@ -249,6 +280,7 @@ model Entity {
   dateProperties        EntityDateProperty[]
   imageProperties       EntityImageProperty[]
   intProperties         EntityIntProperty[]
+  floatProperties       EntityFloatProperty[]
   longTextProperties    EntityLongTextProperty[]
   shortTextProperties   EntityShortTextProperty[]
   calculatedProperties  EntityCalculatedProperty[]
@@ -293,6 +325,17 @@ model OptionsIntOption {
   @@index([propertyConfigId], map: "idx_optionsintoption_propertyconfigid")
 }
 
+model OptionsFloatOption {
+  id               Int   @id @default(autoincrement())
+  propertyConfigId Int
+  value            Float
+
+  propertyConfig PropertyConfig @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyConfigId, value])
+  @@index([propertyConfigId], map: "idx_optionsfloatoption_propertyconfigid")
+}
+
 model PropertyConfig {
   id               Int                      @id @default(autoincrement())
   name             String                   @db.VarChar(128)
@@ -309,6 +352,7 @@ model PropertyConfig {
   calculation      Json?
   optionsShortText OptionsShortTextOption[]
   optionsInt       OptionsIntOption[]
+  optionsFloat     OptionsFloatOption[]
 
   entityConfig EntityConfig @relation(fields: [entityConfigId], references: [id], onDelete: Cascade)
 
@@ -316,6 +360,7 @@ model PropertyConfig {
   defaultDateValue      PropertyConfigDateDefaultValue?
   defaultImageValue     PropertyConfigImageDefaultValue?
   defaultIntValue       PropertyConfigIntDefaultValue?
+  defaultFloatValue     PropertyConfigFloatDefaultValue?
   defaultLongTextValue  PropertyConfigLongTextDefaultValue?
   defaultShortTextValue PropertyConfigShortTextDefaultValue?
 
@@ -325,6 +370,7 @@ model PropertyConfig {
   entityImageProperties       EntityImageProperty[]
   entityDateProperties        EntityDateProperty[]
   entityIntProperties         EntityIntProperty[]
+  entityFloatProperties       EntityFloatProperty[]
   entityLongTextProperties    EntityLongTextProperty[]
   entityShortTextProperties   EntityShortTextProperty[]
   entityCalculatedProperties  EntityCalculatedProperty[]
@@ -333,6 +379,7 @@ model PropertyConfig {
   listFilterDateProperties      ListFilterDateProperty[]
   listFilterImageProperties     ListFilterImageProperty[]
   listFilterIntProperties       ListFilterIntProperty[]
+  listFilterFloatProperties     ListFilterFloatProperty[]
   listFilterLongTextProperties  ListFilterLongTextProperty[]
   listFilterShortTextProperties ListFilterShortTextProperty[]
 
@@ -541,6 +588,7 @@ model ListFilter {
   dateProperties      ListFilterDateProperty[]
   imageProperties     ListFilterImageProperty[]
   intProperties       ListFilterIntProperty[]
+  floatProperties     ListFilterFloatProperty[]
   longTextProperties  ListFilterLongTextProperty[]
   shortTextProperties ListFilterShortTextProperty[]
 }
@@ -599,6 +647,18 @@ model ListFilterIntProperty {
   listFilter     ListFilter       @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
   propertyConfig PropertyConfig   @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
   propertyValue  IntPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
+}
+
+model ListFilterFloatProperty {
+  id               Int     @id @default(autoincrement())
+  listConfigId     String  @db.Uuid
+  propertyConfigId Int
+  propertyValueId  Int     @unique
+  matchUnset       Boolean @default(false)
+
+  listFilter     ListFilter         @relation(fields: [listConfigId], references: [listConfigId], onDelete: Cascade)
+  propertyConfig PropertyConfig     @relation(fields: [propertyConfigId], references: [id], onDelete: Cascade)
+  propertyValue  FloatPropertyValue @relation(fields: [propertyValueId], references: [id], onDelete: Cascade)
 }
 
 model ListFilterLongTextProperty {

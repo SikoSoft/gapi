@@ -56,6 +56,11 @@ export const entityConfigInclude = {
           intValue: true,
         },
       },
+      defaultFloatValue: {
+        include: {
+          floatValue: true,
+        },
+      },
       defaultImageValue: {
         include: {
           imageValue: true,
@@ -73,6 +78,7 @@ export const entityConfigInclude = {
       },
       optionsShortText: true,
       optionsInt: true,
+      optionsFloat: true,
     },
   },
   accessPolicy: {
@@ -127,6 +133,11 @@ export const entityInclude = {
     },
   },
   intProperties: {
+    include: {
+      propertyValue: true,
+    },
+  },
+  floatProperties: {
     include: {
       propertyValue: true,
     },

@@ -67,6 +67,26 @@ export class EntityMapper {
     return properties;
   }
 
+  static floatPropertiesToSpec(
+    entity: PrismaEntity
+  ): EntitySpec.EntityProperty[] {
+    const properties: EntitySpec.EntityProperty[] = [];
+
+    if (entity.floatProperties) {
+      entity.floatProperties.forEach((prop) => {
+        const raw = prop.propertyValue ? prop.propertyValue.value : 0;
+        properties.push({
+          id: prop.propertyValueId,
+          propertyConfigId: prop.propertyConfigId,
+          value: raw,
+          order: prop.order,
+        });
+      });
+    }
+
+    return properties;
+  }
+
   static imagePropertiesToSpec(
     entity: PrismaEntity
   ): EntitySpec.EntityProperty[] {
@@ -227,6 +247,7 @@ export class EntityMapper {
       ...EntityMapper.datePropertiesToSpec(entity),
       ...EntityMapper.imagePropertiesToSpec(entity),
       ...EntityMapper.intPropertiesToSpec(entity),
+      ...EntityMapper.floatPropertiesToSpec(entity),
       ...EntityMapper.longTextPropertiesToSpec(entity),
       ...EntityMapper.shortTextPropertiesToSpec(entity),
       ...EntityMapper.calculatedPropertiesToSpec(entity),

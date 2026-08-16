@@ -444,7 +444,7 @@ export class AnalysisClassificationScheduler {
         end: end.toISOString(),
       },
     });
-
+    await builder.resolvePropertyConfigTypes();
     const entityIds = await builder.runIdsQuery();
 
     if (entityIds.length === 0) {

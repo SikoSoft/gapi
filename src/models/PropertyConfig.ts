@@ -20,6 +20,11 @@ export const propertyConfigInclude = {
         intValue: true,
       },
     },
+    defaultFloatValue: {
+      include: {
+        floatValue: true,
+      },
+    },
     defaultImageValue: {
       include: {
         imageValue: true,
@@ -37,6 +42,7 @@ export const propertyConfigInclude = {
     },
     optionsShortText: true,
     optionsInt: true,
+    optionsFloat: true,
     formatters: true,
   } satisfies Prisma.PropertyConfigFindUniqueArgs["include"];
 
@@ -100,6 +106,11 @@ export const propertyConfigCreateSchema = z.discriminatedUnion("dataType", [
   }),
   CommonPropertyConfigSchema.extend({
     dataType: z.literal(DataType.INT),
+    defaultValue: z.number(),
+    options: z.array(z.number()),
+  }),
+  CommonPropertyConfigSchema.extend({
+    dataType: z.literal(DataType.FLOAT),
     defaultValue: z.number(),
     options: z.array(z.number()),
   }),
